@@ -35,7 +35,6 @@ class MapDeliveryScreen extends StatefulWidget {
 class _MapDeliveryScreenState extends State<MapDeliveryScreen> {
   final MapController _mapController = MapController();
   StreamSubscription<Position>? _positionSub;
-  RealtimeService? _realtime;
 
   // Default fallback: District 1, HCMC.
   static const LatLng _fallbackCenter = LatLng(10.7717, 106.7009);
@@ -44,7 +43,6 @@ class _MapDeliveryScreenState extends State<MapDeliveryScreen> {
   @override
   void initState() {
     super.initState();
-    _realtime = RealtimeService();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       await _startTracking();
@@ -183,34 +181,32 @@ class _MapDeliveryScreenState extends State<MapDeliveryScreen> {
                   ),
                 ],
               ),
-              Positioned(
-                top: 40,
-                left: 10,
-                child: CircleAvatar(
-                  backgroundColor: Colors.white,
-                  child: IconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: () => context.pop(),
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 40,
-                right: 10,
-                child: CircleAvatar(
-                  backgroundColor: Colors.white,
-                  child: IconButton(
-                    tooltip: 'My location',
-                    icon: const Icon(Icons.my_location,
-                        color: ColorsFrave.primaryColor),
-                    onPressed: () => _mapController.move(center, 16),
+              // Top action row — sits inside SafeArea so the back button
+              // is reachable on devices with a notch / status bar.
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _RoundIconButton(
+                        icon: Icons.arrow_back,
+                        tooltip: 'Back',
+                        onPressed: _safeBack,
+                      ),
+                      _RoundIconButton(
+                        icon: Icons.my_location,
+                        tooltip: 'My location',
+                        onPressed: () => _mapController.move(center, 16),
+                      ),
+                    ],
                   ),
                 ),
               ),
               Positioned(
                 left: 10,
                 right: 10,
-                top: 100,
+                top: 80,
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -245,7 +241,7 @@ class _MapDeliveryScreenState extends State<MapDeliveryScreen> {
                     context
                         .read<MapDeliveryBloc>()
                         .add(const OnDisconnectDeliveryEvent());
-                    context.pop();
+                    _safeBack();
                   },
                 ),
               ),
@@ -254,6 +250,17 @@ class _MapDeliveryScreenState extends State<MapDeliveryScreen> {
         },
       ),
     );
+  }
+
+  void _safeBack() {
+    if (!mounted) return;
+    final nav = GoRouter.of(context);
+    if (nav.canPop()) {
+      context.pop();
+    } else {
+      // No previous screen — fall back to the delivery home placeholder.
+      context.go('/delivery/home');
+    }
   }
 
   Marker _selfMarker(LatLngPoint p, bool hasLocation) {
@@ -280,6 +287,42 @@ class _MapDeliveryScreenState extends State<MapDeliveryScreen> {
         Icons.location_on,
         color: ColorsFrave.errorColor,
         size: 40,
+      ),
+    );
+  }
+}
+
+class _RoundIconButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  const _RoundIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade300,
+            blurRadius: 10,
+            spreadRadius: -5,
+          ),
+        ],
+      ),
+      child: CircleAvatar(
+        backgroundColor: Colors.white,
+        maxRadius: 25,
+        child: IconButton(
+          tooltip: tooltip,
+          icon: Icon(icon, color: ColorsFrave.darkText),
+          onPressed: onPressed,
+        ),
       ),
     );
   }

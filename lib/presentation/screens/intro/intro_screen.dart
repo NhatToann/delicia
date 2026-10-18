@@ -21,7 +21,7 @@ class IntroScreen extends StatelessWidget {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () => context.go('/login'),
+                  onPressed: () => context.push('/login'),
                   child: const TextCustom(
                     'Skip',
                     color: ColorsFrave.greyText,
@@ -51,7 +51,7 @@ class IntroScreen extends StatelessWidget {
               const Spacer(),
               BtnFrave(
                 text: 'Sign in with Email',
-                onPressed: () => context.go('/login'),
+                onPressed: () => context.push('/login'),
               ),
               const SizedBox(height: 12),
               BtnFrave(

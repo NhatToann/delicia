@@ -75,7 +75,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
               const Padding(
                 padding: EdgeInsets.only(right: 50.0),
                 child: TextCustom(
-                  'What do you want eat today?',
+                  'What do you want to eat today?',
                   fontSize: 24,
                   maxLines: 2,
                   fontWeight: FontWeight.w500,
@@ -110,7 +110,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
               ),
               const SizedBox(height: 20),
               const TextCustom(
-                'Populer Items',
+                'Popular Items',
                 fontSize: 21,
                 fontWeight: FontWeight.w500,
               ),
@@ -126,27 +126,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                       subtitle: 'Check back later for new items.',
                     );
                   }
-                  return GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.7,
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                    ),
-                    itemCount: state.topProducts.length,
-                    itemBuilder: (_, i) {
-                      final p = state.topProducts[i];
-                      return ProductCard(
-                        product: p,
-                        onTap: () => context.push(
-                          '/client/details-product/${p.id}',
-                        ),
-                      );
-                    },
-                  );
+                  return _ProductsGrid(products: state.topProducts);
                 },
               ),
               const SizedBox(height: 24),
@@ -164,6 +144,35 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       category: c.category,
     ));
     context.push('/client/search-category', extra: c);
+  }
+}
+
+class _ProductsGrid extends StatelessWidget {
+  final List products;
+  const _ProductsGrid({required this.products});
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 0.68,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+      ),
+      itemCount: products.length,
+      itemBuilder: (_, i) {
+        final p = products[i];
+        return ProductCard(
+          product: p,
+          onTap: () => context.push(
+            '/client/details-product/${p.id}',
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -297,31 +306,38 @@ class _AddressCard extends StatelessWidget {
             height: 50,
             width: 50,
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
+              color: ColorsFrave.primaryColor.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
-              Icons.place_outlined,
-              size: 30,
-              color: ColorsFrave.greyText,
+              Icons.location_on_outlined,
+              size: 26,
+              color: ColorsFrave.primaryColor,
             ),
           ),
           const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              TextCustom(
-                'Address',
-                fontSize: 13,
-                color: ColorsFrave.greyText,
-              ),
-              SizedBox(height: 2),
-              TextCustom(
-                'Add a delivery address',
-                color: ColorsFrave.primaryColor,
-                fontSize: 15,
-              ),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                TextCustom(
+                  'Deliver to',
+                  fontSize: 12,
+                  color: ColorsFrave.greyText,
+                ),
+                SizedBox(height: 2),
+                TextCustom(
+                  'Choose delivery address',
+                  color: ColorsFrave.primaryColor,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ],
+            ),
+          ),
+          const Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: ColorsFrave.greyText,
           ),
         ],
       ),

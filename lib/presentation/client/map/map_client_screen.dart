@@ -9,6 +9,7 @@ import '../../../domain/bloc/map_client/map_client_bloc.dart';
 import '../../../domain/bloc/orders/orders_bloc.dart';
 import '../../../domain/models/lat_lng_point.dart';
 import '../../../domain/models/order_record.dart';
+import '../../components/btn_frave.dart';
 import '../../components/text_custom.dart';
 import '../../helpers/error_message.dart';
 import '../../themes/colors_frave.dart';
@@ -79,6 +80,61 @@ class _MapClientScreenState extends State<MapClientScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final order = context.read<OrdersBloc>().state.lastOrder;
+    final canTrack = order != null && order.canTrackDelivery;
+
+    if (!canTrack) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: ColorsFrave.darkText),
+            onPressed: () => context.pop(),
+          ),
+          title: const TextCustom(
+            'Track Delivery',
+            fontWeight: FontWeight.w500,
+          ),
+          centerTitle: true,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.delivery_dining,
+                  size: 120,
+                  color: ColorsFrave.greyText,
+                ),
+                const SizedBox(height: 16),
+                const TextCustom(
+                  'Live tracking is not available yet',
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+                const SizedBox(height: 8),
+                const TextCustom(
+                  'Your order is being prepared. The map will open once '
+                  'the driver picks it up.',
+                  textAlign: TextAlign.center,
+                  color: ColorsFrave.greyText,
+                ),
+                const SizedBox(height: 24),
+                BtnFrave(
+                  text: 'Back to orders',
+                  onPressed: () => context.pop(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       body: BlocConsumer<MapClientBloc, MapClientState>(
         listenWhen: (a, b) =>

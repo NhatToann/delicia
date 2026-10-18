@@ -69,7 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.arrow_back_ios_new_outlined),
-                  onPressed: () => context.go('/intro'),
+                  onPressed: () => context.pop(),
                 ),
                 const SizedBox(height: 16),
                 const Icon(

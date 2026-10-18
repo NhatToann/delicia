@@ -40,6 +40,13 @@ class OrderRecord {
   static const String statusOnWay = 'ON WAY';
   static const String statusDelivered = 'DELIVERED';
 
+  /// Whether the client is allowed to open the live tracking map. Live
+  /// tracking is only useful once a driver has been assigned and is on
+  /// the way. Orders that are still PAID OUT or DELIVERED don't have a
+  /// moving courier, so the button is disabled.
+  bool get canTrackDelivery =>
+      status == statusOnWay || status == statusDispatched;
+
   Map<String, dynamic> toMap() => {
         'clientId': clientId,
         'addressId': addressId,

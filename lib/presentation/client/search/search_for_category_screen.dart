@@ -37,8 +37,12 @@ class _SearchForCategoryScreenState extends State<SearchForCategoryScreen> {
           idCategory: widget.category!.id,
           category: widget.category!.category,
         ));
+        // Filter the list to this category only.
+        bloc.add(const OnSearchProductEvent(''));
       } else {
-        bloc.add(const OnClearSearchEvent());
+        // Show all products right away, then narrow down as the user
+        // types.
+        bloc.add(const OnGetAllProductsEvent());
       }
     });
   }
@@ -127,18 +131,21 @@ class _SearchForCategoryScreenState extends State<SearchForCategoryScreen> {
                     return const ShimmerProductsGrid();
                   }
                   if (state.searchResults.isEmpty) {
+                    final typed = state.searchQuery.trim().isNotEmpty;
                     return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(
+                        children: [
+                          const Icon(
                             Icons.search_off,
                             size: 64,
                             color: ColorsFrave.greyText,
                           ),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
                           TextCustom(
-                            'No results',
+                            typed
+                                ? 'No results for "${state.searchQuery}"'
+                                : 'No products yet',
                             fontWeight: FontWeight.w600,
                           ),
                         ],
@@ -149,7 +156,7 @@ class _SearchForCategoryScreenState extends State<SearchForCategoryScreen> {
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
-                      childAspectRatio: 0.7,
+                      childAspectRatio: 0.72,
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
                     ),
