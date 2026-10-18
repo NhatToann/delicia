@@ -96,6 +96,32 @@ void main() {
     );
 
     blocTest<CartBloc, CartState>(
+      'increment is capped at 99 (spec UC-04)',
+      build: () => CartBloc(),
+      seed: () => const CartState(
+        products: [ProductCart(
+          uidProduct: 'p1',
+          imageProduct: 'a.jpg',
+          nameProduct: 'Burger',
+          price: 9.99,
+          quantity: 98,
+        )],
+      ),
+      act: (bloc) {
+        bloc
+          ..add(const OnIncreaseQuantityProductToCartEvent(0))
+          ..add(const OnIncreaseQuantityProductToCartEvent(0))
+          ..add(const OnIncreaseQuantityProductToCartEvent(0));
+      },
+      expect: () => [
+        // first tap: 98 -> 99
+        isA<CartState>().having((s) => s.products?.first.quantity, 'qty', 99),
+        // second tap: already at 99, no state change (no emit)
+        // third tap: same
+      ],
+    );
+
+    blocTest<CartBloc, CartState>(
       'clear resets the cart',
       build: () => CartBloc(),
       seed: () => const CartState(products: [_p1, _p2], selectedQuantity: 3),

@@ -42,7 +42,7 @@ class _CheckingLoginScreenState extends State<CheckingLoginScreen>
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
+    return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is LogOutAuthState) {
           context.go('/intro');
@@ -61,8 +61,18 @@ class _CheckingLoginScreenState extends State<CheckingLoginScreen>
               context.go('/intro');
           }
         }
+        // TEMP-FIX: when AuthBloc emits LoadingAuthState (e.g. during the
+        // initial CheckLoginEvent for a logged-out user, where the state
+        // is Loading with empty rolId), kick the user to /intro so the
+        // splash screen is not stuck indefinitely.  This is a workaround
+        // for a missing LogOutAuthState emission in CheckLoginEvent.
+        else if (state is LoadingAuthState) {
+          // Only redirect once — guard with a static flag on the state
+          // to avoid bouncing between /splash and /intro.
+          _SplashGuard.maybeRedirectToIntro(context);
+        }
       },
-      child: Scaffold(
+      builder: (_, __) => Scaffold(
         backgroundColor: ColorsFrave.primaryColor,
         body: Center(
           child: ScaleTransition(
@@ -76,5 +86,22 @@ class _CheckingLoginScreenState extends State<CheckingLoginScreen>
         ),
       ),
     );
+  }
+}
+
+/// TEMP-FIX: tiny helper that ensures we only push the /intro route once
+/// per app session, so a re-emitted LoadingAuthState can't bounce the
+/// user back from /intro to /splash.
+class _SplashGuard {
+  _SplashGuard._();
+  static bool _redirected = false;
+  static void maybeRedirectToIntro(BuildContext context) {
+    if (_redirected) return;
+    _redirected = true;
+    // Defer to the next frame so we don't navigate while the splash
+    // is still building.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) context.go('/intro');
+    });
   }
 }

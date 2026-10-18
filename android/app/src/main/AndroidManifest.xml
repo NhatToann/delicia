@@ -1,7 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <!-- UC-03: Realtime map (Google Maps + geolocation) -->
+    <!-- UC-03: Realtime map (OpenStreetMap via flutter_map) — no Google
+         Maps key required. Realtime updates flow over Firebase RTDB
+         (see RealtimeService), not a socket server. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <application
@@ -30,12 +32,9 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <!-- UC-03: Google Maps API key. Replace the literal value with a
-             production key or inject via gradle (`manifestPlaceholders`) before
-             shipping. -->
-        <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="YOUR_GOOGLE_MAPS_API_KEY" />
+        <!-- UC-03: Map provider is OpenStreetMap via flutter_map — no API
+             key, no meta-data tag required. Tile URL lives in
+             lib/data/env/environment.dart (Environment.tileServerUrl). -->
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
@@ -52,7 +51,8 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
-        <!-- UC-03: Allow opening external Google Maps app for navigation -->
+        <!-- UC-03: Allow opening external map app for navigation
+             (geo: scheme works with Google Maps, OsmAnd, etc.) -->
         <intent>
             <action android:name="android.intent.action.VIEW"/>
             <data android:scheme="geo"/>

@@ -1,35 +1,43 @@
 // UC-03 — MapDeliveryBloc tests.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:delicia/domain/bloc/map_delivery/map_delivery_bloc.dart';
 import 'package:delicia/domain/models/lat_lng_point.dart';
-import 'package:delicia/domain/services/socket_service.dart';
+import 'package:delicia/domain/services/realtime_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-class _NoopTransport implements SocketTransport {
-  final List<({String event, Map<String, dynamic> data})> emits = [];
+class _FakeRealtime implements RealtimeService {
+  final List<({String orderId, double latitude, double longitude})>
+      published = [];
+
   @override
-  void connect() {}
-  @override
-  void disconnect() {}
-  @override
-  void emit(String event, Map<String, dynamic> data) {
-    emits.add((event: event, data: data));
+  Future<void> publishPosition({
+    required String orderId,
+    required double latitude,
+    required double longitude,
+  }) async {
+    published.add((orderId: orderId, latitude: latitude, longitude: longitude));
   }
 
   @override
-  Stream<dynamic> on(String event) => const Stream.empty();
-  @override
-  bool get isConnected => false;
+  RealtimeSubscription subscribeOrder(String orderId) {
+    final controller = StreamController<RealtimePositionUpdate>.broadcast();
+    return RealtimeSubscription(
+      controller: controller,
+      cancelRaw: () async {
+        await controller.close();
+      },
+    );
+  }
 }
 
 void main() {
   group('MapDeliveryBloc', () {
     blocTest<MapDeliveryBloc, MapDeliveryState>(
       'OnMapReadyEvent toggles isReadyMapDelivery',
-      build: () => MapDeliveryBloc(
-        socketService: SocketService(transport: _NoopTransport()),
-      ),
+      build: () => MapDeliveryBloc(realtimeService: _FakeRealtime()),
       act: (bloc) => bloc.add(const OnMapReadyEvent()),
       expect: () => [
         isA<MapDeliveryState>().having(
@@ -42,9 +50,7 @@ void main() {
 
     blocTest<MapDeliveryBloc, MapDeliveryState>(
       'OnMarkertsDeliveryEvent updates both markers',
-      build: () => MapDeliveryBloc(
-        socketService: SocketService(transport: _NoopTransport()),
-      ),
+      build: () => MapDeliveryBloc(realtimeService: _FakeRealtime()),
       act: (bloc) => bloc.add(const OnMarkertsDeliveryEvent(
         LatLngPoint(latitude: 10, longitude: 20),
         LatLngPoint(latitude: 11, longitude: 21),
@@ -58,9 +64,7 @@ void main() {
 
     blocTest<MapDeliveryBloc, MapDeliveryState>(
       'OnUpdateCurrentLocationEvent updates current + polyline',
-      build: () => MapDeliveryBloc(
-        socketService: SocketService(transport: _NoopTransport()),
-      ),
+      build: () => MapDeliveryBloc(realtimeService: _FakeRealtime()),
       act: (bloc) => bloc.add(OnUpdateCurrentLocationEvent(
         const DeliveryPositionUpdate(
           orderId: 'o1',
@@ -75,5 +79,29 @@ void main() {
             .having((s) => s.polyline.length, 'polyline', 1),
       ],
     );
+
+    test('OnEmitLocationDeliveryEvent publishes to realtime every tick',
+        () async {
+      final realtime = _FakeRealtime();
+      final bloc = MapDeliveryBloc(
+        realtimeService: realtime,
+        emitInterval: const Duration(milliseconds: 30),
+      );
+      bloc.add(OnUpdateCurrentLocationEvent(
+        const DeliveryPositionUpdate(
+          orderId: 'o1',
+          latitude: 1.0,
+          longitude: 2.0,
+        ),
+      ));
+      bloc.add(const OnEmitLocationDeliveryEvent('o1'));
+      // Let the periodic timer fire at least twice.
+      await Future<void>.delayed(const Duration(milliseconds: 90));
+      await bloc.close();
+      expect(realtime.published.length, greaterThanOrEqualTo(1));
+      expect(realtime.published.first.orderId, 'o1');
+      expect(realtime.published.first.latitude, 1.0);
+      expect(realtime.published.first.longitude, 2.0);
+    });
   });
 }

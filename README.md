@@ -1,7 +1,7 @@
 # Delicia — Flutter Food Delivery App
 
 > App đặt đồ ăn nhiều role: **Client** đặt món, **Admin** (nhà hàng) quản lý menu/đơn, **Delivery** nhận & giao đơn.
-> Stack: **Flutter 3.47** + **Firebase** (Auth + Realtime Database + Storage) + **Google Maps** + **Socket.io** + **Stripe** (mock).
+> Stack: **Flutter 3.47** + **Firebase** (Auth + Realtime Database + Storage) + **OpenStreetMap** (via flutter_map, no API key) + **Firebase RTDB realtime** (no separate socket server) + **Stripe** (mock).
 
 ---
 
@@ -35,7 +35,7 @@ lib/
 ├── data/                  # Infrastructure: env, storage, API config, services
 │   ├── env/environment.dart
 │   ├── local_secure/secure_storage.dart
-│   └── services/          # AuthService, ProductsService, OrdersService, SocketService, NotificationService, ...
+│   └── services/          # AuthService, ProductsService, OrdersService, RealtimeService, NotificationService, ...
 ├── domain/                # Business logic
 │   ├── models/            # User, Product, Order, Address, DeliveryStatus, ...
 │   ├── repositories/      # ProductRepository, OrderRepository, ...
@@ -152,8 +152,8 @@ APK debug hiện tại: `build/app/outputs/flutter-apk/app-debug.apk` (~165 MB).
 | `Database lives in a different region` | Set `databaseURL` trong `lib/data/env/environment.dart` = `https://delicia-60e0a-default-rtdb.asia-southeast1.firebasedatabase.app` |
 | `Can't sign out` | App dùng GoRouter — dùng `context.go('/intro')` thay vì `Navigator.popUntil()`. |
 | `BLASTBufferQueue: Can't acquire next buffer` | Vendor noise (Vivo), bỏ qua. |
-| `Google Maps không hiển thị` | Kiểm tra `GOOGLE_MAPS_API_KEY` trong `android/app/src/main/AndroidManifest.xml` + `lib/data/env/environment.dart` |
-| `Socket.io không connect` | Kiểm tra server URL trong `SocketService` + firewall port |
+| `Map không hiển thị` | Kiểm tra `Environment.tileServerUrl` (mặc định OSM) + Internet permission |
+| `Realtime không update` | Kiểm tra `Environment.firebaseDatabaseUrl` + quyền read/write RTDB |
 
 ---
 

@@ -42,11 +42,14 @@ dependencies:
   cached_network_image: ^3.4.1
 
   # Maps + Realtime
-  google_maps_flutter: ^2.6.1
+  # Using flutter_map + OpenStreetMap (free, no API key, no billing)
+  # instead of google_maps_flutter. Tile URL is configurable in
+  # lib/data/env/environment.dart via [Environment.tileServerUrl].
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
   geolocator: ^12.0.0
   geocoding: ^5.0.0
   permission_handler: ^11.3.1
-  socket_io_client: ^2.0.3+1
   url_launcher: ^6.3.1
 
 dev_dependencies:

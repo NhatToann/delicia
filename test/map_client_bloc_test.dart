@@ -1,31 +1,38 @@
-// UC-03 — MapClientBloc tests. Uses a fake SocketService.
+// UC-03 — MapClientBloc tests. Uses a fake RealtimeService.
+
+import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:delicia/domain/bloc/map_client/map_client_bloc.dart';
 import 'package:delicia/domain/models/lat_lng_point.dart';
-import 'package:delicia/domain/services/socket_service.dart';
+import 'package:delicia/domain/services/realtime_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-class _NoopTransport implements SocketTransport {
+class _NoopRealtime implements RealtimeService {
   @override
-  void connect() {}
+  Future<void> publishPosition({
+    required String orderId,
+    required double latitude,
+    required double longitude,
+  }) async {}
+
   @override
-  void disconnect() {}
-  @override
-  void emit(String event, Map<String, dynamic> data) {}
-  @override
-  Stream<dynamic> on(String event) => const Stream.empty();
-  @override
-  bool get isConnected => false;
+  RealtimeSubscription subscribeOrder(String orderId) {
+    final controller = StreamController<RealtimePositionUpdate>.broadcast();
+    return RealtimeSubscription(
+      controller: controller,
+      cancelRaw: () async {
+        await controller.close();
+      },
+    );
+  }
 }
 
 void main() {
   group('MapClientBloc', () {
     blocTest<MapClientBloc, MapClientState>(
       'OnReadyMapClientEvent toggles isReadyMapClient',
-      build: () => MapClientBloc(
-        socketService: SocketService(transport: _NoopTransport()),
-      ),
+      build: () => MapClientBloc(realtimeService: _NoopRealtime()),
       act: (bloc) => bloc.add(const OnReadyMapClientEvent()),
       expect: () => [
         isA<MapClientState>().having(
@@ -38,9 +45,7 @@ void main() {
 
     blocTest<MapClientBloc, MapClientState>(
       'OnMarkerClientEvent updates both markers',
-      build: () => MapClientBloc(
-        socketService: SocketService(transport: _NoopTransport()),
-      ),
+      build: () => MapClientBloc(realtimeService: _NoopRealtime()),
       act: (bloc) => bloc.add(const OnMarkerClientEvent(
         LatLngPoint(latitude: 1, longitude: 2),
         LatLngPoint(latitude: 3, longitude: 4),
@@ -54,9 +59,7 @@ void main() {
 
     blocTest<MapClientBloc, MapClientState>(
       'OnUpdateDeliveryPositionEvent moves the delivery marker',
-      build: () => MapClientBloc(
-        socketService: SocketService(transport: _NoopTransport()),
-      ),
+      build: () => MapClientBloc(realtimeService: _NoopRealtime()),
       act: (bloc) => bloc.add(OnUpdateDeliveryPositionEvent(
         const DeliveryPositionUpdate(
           orderId: 'o1',

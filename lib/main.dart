@@ -12,7 +12,7 @@ import 'domain/services/auth_service.dart';
 import 'domain/services/firebase_orders_service.dart';
 import 'domain/services/products_service.dart'
     show FirebaseCategoryService, FirebaseProductsService;
-import 'domain/services/socket_service.dart';
+import 'domain/services/realtime_service.dart';
 import 'presentation/themes/colors_frave.dart';
 import 'router/app_router.dart';
 
@@ -45,10 +45,10 @@ class DeliciaApp extends StatelessWidget {
           create: (_) => OrdersBloc(ordersService: FirebaseOrdersService()),
         ),
         BlocProvider<MapClientBloc>(
-          create: (_) => MapClientBloc(socketService: SocketService()),
+          create: (_) => MapClientBloc(realtimeService: RealtimeService()),
         ),
         BlocProvider<MapDeliveryBloc>(
-          create: (_) => MapDeliveryBloc(socketService: SocketService()),
+          create: (_) => MapDeliveryBloc(realtimeService: RealtimeService()),
         ),
       ],
       child: MaterialApp.router(

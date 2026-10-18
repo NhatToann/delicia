@@ -6,7 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 /// The Frave-style backend stored images as relative URLs
 /// (`products/burger.png`). The project has been ported to use **local
 /// assets** instead, so a picture value of `products/burger.png` is
-/// resolved to `assets/images/products/burger.png`.
+/// resolved to `assets/products/burger.png`.
 ///
 /// To support a smooth migration from a remote storage later, a fully
 /// qualified URL (`http://…` / `https://…`) is also accepted and loaded
@@ -15,8 +15,12 @@ class ImageResolver {
   const ImageResolver._();
 
   /// Root directory that holds the local assets shipped with the app.
-  /// Must match the `assets/` block in `pubspec.yaml`.
-  static const String _root = 'assets/images';
+  /// Must match the top-level folders registered in `pubspec.yaml`
+  /// (`assets/logos/`, `assets/icons/`, `assets/categories/`,
+  /// `assets/products/`, `assets/map/`). The Frave-style relative
+  /// picture values (e.g. `products/burger-classic.jpg`) are resolved
+  /// relative to this root.
+  static const String _root = 'assets';
 
   /// Default fallback when the asset cannot be located.
   static const String defaultFallback = 'assets/icons/no-data.svg';

@@ -21,6 +21,6 @@
     "p9":  { "nameProduct": "Iced Coffee",          "description": "Cold-brewed coffee served over ice with a splash of milk.",             "price": 4.25, "status": 1, "picture": "products/coffee.jpg",          "category": "Drinks",   "categoryId": "c3" },
     "p10": { "nameProduct": "Crispy French Fries",  "description": "Golden, lightly salted fries with a side of ketchup.",                  "price": 3.50, "status": 1, "picture": "products/fries.jpg",           "category": "Burgers",  "categoryId": "c1" },
     "p11": { "nameProduct": "Vanilla Ice Cream",    "description": "Two scoops of smooth vanilla bean ice cream.",                          "price": 4.50, "status": 1, "picture": "products/ice-cream.jpg",       "category": "Desserts", "categoryId": "c4" },
-    "p12": { "nameProduct": "Pepperoni Pizza",      "description": "Classic pepperoni and mozzarella on a crispy crust.",                   "price": 13.25,"status": 1, "picture": "products/pizza-margherita.jpg","category": "Pizza",    "categoryId": "c2" }
+    "p12": { "nameProduct": "Pepperoni Pizza",      "description": "Classic pepperoni and mozzarella on a crispy crust.",                   "price": 13.25,"status": 1, "picture": "products/pizza-pepperoni.jpg","category": "Pizza",    "categoryId": "c2" }
   }
 }
