@@ -71,7 +71,19 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
               _SearchBar(
                 onTap: () => context.push('/client/search-category'),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
+              const Padding(
+                padding: EdgeInsets.only(right: 50.0),
+                child: TextCustom(
+                  'What do you want eat today?',
+                  fontSize: 24,
+                  maxLines: 2,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const _AddressCard(),
+              const SizedBox(height: 20),
               const TextCustom(
                 'Categories',
                 fontSize: 20,
@@ -96,11 +108,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                   );
                 },
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
               const TextCustom(
-                'Top Products',
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+                'Populer Items',
+                fontSize: 21,
+                fontWeight: FontWeight.w500,
               ),
               const SizedBox(height: 12),
               BlocBuilder<ProductsBloc, ProductsState>(
@@ -266,6 +278,52 @@ class _SearchBar extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _AddressCard extends StatelessWidget {
+  const _AddressCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () {},
+      borderRadius: BorderRadius.circular(12),
+      child: Row(
+        children: [
+          Container(
+            height: 50,
+            width: 50,
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.place_outlined,
+              size: 30,
+              color: ColorsFrave.greyText,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              TextCustom(
+                'Address',
+                fontSize: 13,
+                color: ColorsFrave.greyText,
+              ),
+              SizedBox(height: 2),
+              TextCustom(
+                'Add a delivery address',
+                color: ColorsFrave.primaryColor,
+                fontSize: 15,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
