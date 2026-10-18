@@ -3,7 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'domain/bloc/auth/auth_bloc.dart';
+import 'domain/bloc/cart/cart_bloc.dart';
+import 'domain/bloc/map_client/map_client_bloc.dart';
+import 'domain/bloc/map_delivery/map_delivery_bloc.dart';
+import 'domain/bloc/orders/orders_bloc.dart';
+import 'domain/bloc/products/products_bloc.dart';
 import 'domain/services/auth_service.dart';
+import 'domain/services/firebase_orders_service.dart';
+import 'domain/services/products_service.dart'
+    show FirebaseCategoryService, FirebaseProductsService;
+import 'domain/services/socket_service.dart';
 import 'presentation/themes/colors_frave.dart';
 import 'router/app_router.dart';
 
@@ -22,6 +31,24 @@ class DeliciaApp extends StatelessWidget {
       providers: [
         BlocProvider<AuthBloc>(
           create: (_) => AuthBloc(authService: AuthService()),
+        ),
+        BlocProvider<ProductsBloc>(
+          create: (_) => ProductsBloc(
+            categoryService: FirebaseCategoryService(),
+            productsService: FirebaseProductsService(),
+          ),
+        ),
+        BlocProvider<CartBloc>(
+          create: (_) => CartBloc(),
+        ),
+        BlocProvider<OrdersBloc>(
+          create: (_) => OrdersBloc(ordersService: FirebaseOrdersService()),
+        ),
+        BlocProvider<MapClientBloc>(
+          create: (_) => MapClientBloc(socketService: SocketService()),
+        ),
+        BlocProvider<MapDeliveryBloc>(
+          create: (_) => MapDeliveryBloc(socketService: SocketService()),
         ),
       ],
       child: MaterialApp.router(
