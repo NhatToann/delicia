@@ -16,6 +16,7 @@ import '../presentation/client/cart/cart_screen.dart';
 import '../presentation/client/checkout/checkout_screen.dart';
 import '../presentation/client/map/map_client_screen.dart';
 import '../presentation/client/orders/orders_screen.dart';
+import '../presentation/client/address/select_address_screen.dart';
 import '../presentation/delivery/map/map_delivery_screen.dart';
 
 /// App router (GoRouter). Wires the UC-01 auth flow plus the Leader's
@@ -82,6 +83,10 @@ class AppRouter {
       GoRoute(
         path: '/client/orders',
         builder: (_, __) => const ClientOrdersScreen(),
+      ),
+      GoRoute(
+        path: '/client/select-address',
+        builder: (_, __) => const SelectAddressScreen(),
       ),
       GoRoute(
         path: '/client/map',

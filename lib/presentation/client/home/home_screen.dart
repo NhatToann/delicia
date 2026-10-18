@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../domain/bloc/auth/auth_bloc.dart';
 import '../../../domain/bloc/cart/cart_bloc.dart';
 import '../../../domain/bloc/products/products_bloc.dart';
+import '../../../domain/models/address.dart';
 import '../../../domain/models/category.dart';
 import '../../components/shimmer_frave.dart';
 import '../../components/text_custom.dart';
@@ -31,6 +32,11 @@ class ClientHomeScreen extends StatefulWidget {
 }
 
 class _ClientHomeScreenState extends State<ClientHomeScreen> {
+  /// The user-selected delivery address. `null` means "no address
+  /// chosen yet" — the address card shows a "Choose delivery
+  /// address" placeholder.
+  Address? _selectedAddress;
+
   @override
   void initState() {
     super.initState();
@@ -39,6 +45,15 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       bloc.add(const OnGetCategoriesEvent());
       bloc.add(const OnGetTopProductsEvent());
     });
+  }
+
+  Future<void> _pickAddress() async {
+    final result = await context.push<Address>(
+      '/client/select-address',
+    );
+    if (result != null && mounted) {
+      setState(() => _selectedAddress = result);
+    }
   }
 
   @override
@@ -82,7 +97,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              const _AddressCard(),
+              _AddressCard(
+                address: _selectedAddress,
+                onTap: _pickAddress,
+              ),
               const SizedBox(height: 20),
               const TextCustom(
                 'Categories',
@@ -293,12 +311,15 @@ class _SearchBar extends StatelessWidget {
 }
 
 class _AddressCard extends StatelessWidget {
-  const _AddressCard();
+  final Address? address;
+  final VoidCallback onTap;
+  const _AddressCard({required this.address, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
+    final hasAddress = address != null;
     return InkWell(
-      onTap: () {},
+      onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Row(
         children: [
@@ -309,8 +330,10 @@ class _AddressCard extends StatelessWidget {
               color: ColorsFrave.primaryColor.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
-              Icons.location_on_outlined,
+            child: Icon(
+              hasAddress
+                  ? Icons.location_on
+                  : Icons.location_on_outlined,
               size: 26,
               color: ColorsFrave.primaryColor,
             ),
@@ -319,18 +342,20 @@ class _AddressCard extends StatelessWidget {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                TextCustom(
+              children: [
+                const TextCustom(
                   'Deliver to',
                   fontSize: 12,
                   color: ColorsFrave.greyText,
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 TextCustom(
-                  'Choose delivery address',
+                  hasAddress ? address!.street : 'Choose delivery address',
                   color: ColorsFrave.primaryColor,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
