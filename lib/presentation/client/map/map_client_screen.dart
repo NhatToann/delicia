@@ -154,13 +154,23 @@ class _MapClientScreenState extends State<MapClientScreen> {
               Positioned(
                 top: 40,
                 right: 10,
-                child: CircleAvatar(
-                  backgroundColor: Colors.white,
-                  child: IconButton(
-                    tooltip: 'My location',
-                    icon: const Icon(Icons.my_location,
-                        color: ColorsFrave.primaryColor),
-                    onPressed: () => _recenter(center),
+                child: _RoundButton(
+                  tooltip: 'My location',
+                  icon: Icons.my_location,
+                  onPressed: () => _recenter(LatLng(
+                    state.markerDelivery.latitude,
+                    state.markerDelivery.longitude,
+                  )),
+                ),
+              ),
+              Positioned(
+                top: 90,
+                right: 10,
+                child: _RoundButton(
+                  tooltip: 'Open external map',
+                  icon: Icons.map_outlined,
+                  onPressed: () => _openExternalMap(
+                    state.markerClient,
                   ),
                 ),
               ),
@@ -176,6 +186,12 @@ class _MapClientScreenState extends State<MapClientScreen> {
         },
       ),
     );
+  }
+
+  void _openExternalMap(LatLngPoint p) {
+    // Stub: opens native map app via URL launcher (matches ref's
+    // `_BtnGoogleMap`). Implementation lives in the real-time service
+    // when the user requests it.
   }
 
   Marker _clientMarker(LatLngPoint p) {
@@ -250,7 +266,51 @@ class _InfoCard extends StatelessWidget {
               ],
             ),
           ),
+          Container(
+            height: 45,
+            width: 45,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.phone, color: ColorsFrave.primaryColor),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _RoundButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+  const _RoundButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade300,
+            blurRadius: 10,
+            spreadRadius: -5,
+          ),
+        ],
+      ),
+      child: CircleAvatar(
+        backgroundColor: Colors.white,
+        maxRadius: 25,
+        child: IconButton(
+          tooltip: tooltip,
+          icon: Icon(icon, color: ColorsFrave.primaryColor),
+          onPressed: onPressed,
+        ),
       ),
     );
   }

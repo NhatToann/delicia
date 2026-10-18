@@ -46,15 +46,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final orders = context.read<OrdersBloc>();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF7FAFC),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFF7FAFC),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: ColorsFrave.darkText),
           onPressed: () => context.pop(),
         ),
-        title: const TextCustom('Checkout', fontWeight: FontWeight.bold),
+        title: const TextCustom('Checkout', fontWeight: FontWeight.w500),
         centerTitle: true,
       ),
       body: BlocConsumer<OrdersBloc, OrdersState>(
@@ -69,33 +69,42 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           }
           if (!mounted) return;
           if (state.error != null) {
+            if (!context.mounted) return;
             errorMessageSnack(context, state.error!);
           } else if (state.lastOrder != null) {
+            if (!context.mounted) return;
             context.read<CartBloc>().add(const OnClearCartEvent());
             await modalSuccess(context, 'Order placed!');
             if (!mounted) return;
+            if (!context.mounted) return;
             context.go('/client/orders');
           }
         },
-        builder: (_, __) {
+        builder: (_, _) {
           return ListView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
             children: [
-              _SectionTitle('Delivery address'),
-              AddressSelector(
-                addresses: const [Address.hardcodedDefault],
-                selectedId: _selectedAddress.id,
-                onSelect: (a) => setState(() => _selectedAddress = a),
+              const _SectionTitle('Shipping Address'),
+              _Card(
+                child: AddressSelector(
+                  addresses: const [Address.hardcodedDefault],
+                  selectedId: _selectedAddress.id,
+                  onSelect: (a) => setState(() => _selectedAddress = a),
+                ),
               ),
-              const SizedBox(height: 16),
-              _SectionTitle('Payment method'),
-              PaymentMethodSelector(
-                selected: _payment,
-                onSelected: (m) => setState(() => _payment = m),
+              const SizedBox(height: 20),
+              const _SectionTitle('Payment Methods'),
+              _Card(
+                child: PaymentMethodSelector(
+                  selected: _payment,
+                  onSelected: (m) => setState(() => _payment = m),
+                ),
               ),
-              const SizedBox(height: 16),
-              _SectionTitle('Order summary'),
-              _Summary(total: cart.total),
+              const SizedBox(height: 20),
+              const _SectionTitle('Order Summary'),
+              _Card(
+                child: _Summary(total: cart.total),
+              ),
               const SizedBox(height: 20),
               BtnFrave(
                 text: 'Confirm Order  \$${cart.total.toStringAsFixed(2)}',
@@ -133,12 +142,30 @@ class _SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       child: TextCustom(
         text,
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
       ),
+    );
+  }
+}
+
+class _Card extends StatelessWidget {
+  final Widget child;
+  const _Card({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: child,
     );
   }
 }
@@ -151,36 +178,36 @@ class _Summary extends StatelessWidget {
   Widget build(BuildContext context) {
     final fee = Environment.defaultDeliveryFee;
     final subtotal = (total - fee).clamp(0, double.infinity).toDouble();
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: ColorsFrave.backgroundColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          _row('Subtotal', '\$${subtotal.toStringAsFixed(2)}'),
-          const SizedBox(height: 6),
-          _row('Delivery fee', '\$${fee.toStringAsFixed(2)}'),
-          const Divider(),
-          _row('Total', '\$${total.toStringAsFixed(2)}', bold: true),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const TextCustom('Order Summary', fontWeight: FontWeight.w500),
+        const Divider(),
+        _row('Subtotal', '\$${subtotal.toStringAsFixed(2)}', grey: true),
+        const SizedBox(height: 10),
+        _row('IGV', '\$2.50', grey: true),
+        const SizedBox(height: 10),
+        _row('Shipping', '\$0.00', grey: true),
+        const Divider(),
+        _row('Total', '\$${total.toStringAsFixed(2)}', bold: true),
+      ],
     );
   }
 
-  Widget _row(String label, String value, {bool bold = false}) {
+  Widget _row(String label, String value, {bool bold = false, bool grey = false}) {
+    final color = grey ? Colors.grey : null;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         TextCustom(
           label,
-          color: bold ? ColorsFrave.darkText : ColorsFrave.greyText,
-          fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+          color: color,
+          fontWeight: bold ? FontWeight.w500 : FontWeight.normal,
         ),
         TextCustom(
           value,
-          fontWeight: bold ? FontWeight.bold : FontWeight.w500,
+          color: color,
+          fontWeight: bold ? FontWeight.w500 : FontWeight.normal,
         ),
       ],
     );

@@ -24,15 +24,15 @@ class PaymentMethodSelector extends StatelessWidget {
         return InkWell(
           onTap: () => onSelected(p),
           child: Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(15),
             decoration: BoxDecoration(
               color: isSelected
                   ? p.color.withValues(alpha: 0.08)
                   : Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: isSelected ? p.color : ColorsFrave.backgroundColor,
+                color: isSelected ? p.color : Colors.grey.shade200,
               ),
             ),
             child: Row(
