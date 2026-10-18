@@ -153,10 +153,11 @@ class _SearchForCategoryScreenState extends State<SearchForCategoryScreen> {
                     );
                   }
                   return GridView.builder(
+                    padding: const EdgeInsets.only(bottom: 16),
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
-                      childAspectRatio: 0.72,
+                      childAspectRatio: 0.65,
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
                     ),
