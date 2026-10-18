@@ -48,9 +48,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
   }
 
   Future<void> _pickAddress() async {
+    debugPrint('[delicia] _pickAddress → push /client/select-address');
     final result = await context.push<Address>(
       '/client/select-address',
     );
+    debugPrint('[delicia] _pickAddress → returned $result');
     if (result != null && mounted) {
       setState(() => _selectedAddress = result);
     }
