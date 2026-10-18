@@ -7,9 +7,11 @@ import '../../../themes/colors_frave.dart';
 
 /// Card showing a single product (image + name + price).
 ///
-/// Tapping the card invokes [onTap]. Image loading is delegated to
-/// [ImageResolver] so the same widget can render local assets (the
-/// current setup) or remote URLs (future migration to storage).
+/// The card uses a [LayoutBuilder] to derive the image height from the
+/// actual cell width instead of an `AspectRatio` + `childAspectRatio`
+/// pair. This avoids the "bottom overflow" that happens when the
+/// 2-line name text plus price row push past the cell's natural
+/// height. Everything else is sized relative to the column height.
 class ProductCard extends StatelessWidget {
   final Productsdb product;
   final VoidCallback onTap;
@@ -25,47 +27,64 @@ class ProductCard extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x14000000),
-              blurRadius: 8,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AspectRatio(
-              aspectRatio: 1,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: ImageResolver.resolveWidget(
-                  product.picture,
-                  fit: BoxFit.cover,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // The image takes 60% of the cell height, leaving comfortable
+          // room for the 2-line name + price even on the smallest
+          // devices.
+          final imageHeight = constraints.maxHeight * 0.6;
+          return Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x14000000),
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
                 ),
-              ),
+              ],
             ),
-            const SizedBox(height: 8),
-            TextCustom(
-              product.nameProduct,
-              fontWeight: FontWeight.w600,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                SizedBox(
+                  height: imageHeight,
+                  width: double.infinity,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: ImageResolver.resolveWidget(
+                      product.picture,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextCustom(
+                        product.nameProduct,
+                        fontWeight: FontWeight.w600,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      TextCustom(
+                        '\$${product.price.toStringAsFixed(2)}',
+                        color: ColorsFrave.primaryColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
-            TextCustom(
-              '\$${product.price.toStringAsFixed(2)}',
-              color: ColorsFrave.primaryColor,
-              fontWeight: FontWeight.bold,
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
