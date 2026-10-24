@@ -16,6 +16,10 @@ class _FakeUserService implements ClientUserService {
   bool throwOnUpdate = false;
   bool throwOnAvatar = false;
 
+  /// Bytes returned by [loadAvatarBytes] — used to exercise the inline
+  /// (Realtime Database fallback) avatar rendering.
+  Uint8List? avatarBytes;
+
   @override
   Future<User> loadProfile(String uid) async {
     if (throwOnLoad) throw ClientUserServiceException('load failed');
@@ -73,6 +77,9 @@ class _FakeUserService implements ClientUserService {
   Stream<User?> watchProfile(String uid) {
     return Stream<User?>.value(user);
   }
+
+  @override
+  Future<Uint8List?> loadAvatarBytes(String uid) async => avatarBytes;
 }
 
 void main() {
@@ -222,6 +229,26 @@ void main() {
             .having((s) => s.isUploadingAvatar, 'busy', false)
             .having((s) => s.error, 'error', contains('avatar failed')),
       ],
+    );
+
+    blocTest<UserBloc, UserState>(
+      'exposes the inline avatar bytes after loading the profile',
+      build: () => UserBloc(
+        userService: _FakeUserService(
+          user: User(
+            uid: 'u1',
+            email: 'a@b.com',
+            firstName: 'A',
+            lastName: 'B',
+            rolId: 2,
+          ),
+        )..avatarBytes = Uint8List.fromList([9, 8, 7]),
+      ),
+      act: (bloc) => bloc.add(const OnLoadUserProfileEvent(uid: 'u1')),
+      verify: (bloc) {
+        expect(bloc.state.avatarBytes, isNotNull);
+        expect(bloc.state.avatarBytes!.length, 3);
+      },
     );
   });
 }

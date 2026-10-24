@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -45,6 +46,14 @@ abstract class ClientUserService {
 
   /// Streams the user's profile so UI changes flow through immediately.
   Stream<User?> watchProfile(String uid);
+
+  /// Reads the raw avatar bytes of a user, if any were stored.
+  ///
+  /// The bytes live under `users/{uid}/avatar` (base64) when the
+  /// Realtime Database fallback was used, or are downloaded from
+  /// Firebase Storage when the bucket is available.  Returns `null` when
+  /// the user has no avatar.
+  Future<Uint8List?> loadAvatarBytes(String uid);
 }
 
 /// Firebase backed [ClientUserService].
@@ -170,7 +179,85 @@ class FirebaseClientUserService implements ClientUserService {
       }
       return await loadProfile(uid);
     } catch (e) {
+      // The Storage bucket of this Firebase project is not provisioned
+      // yet (every request answers 404).  Rather than failing the whole
+      // UC-06 flow we fall back to storing the image inline in the
+      // Realtime Database, which is already used for the profile.
+      if (_isBucketMissing(e)) {
+        return _uploadAvatarToDatabase(uid, bytes);
+      }
       throw ClientUserServiceException('Failed to upload avatar: $e');
+    }
+  }
+
+  /// Detects the "bucket does not exist / cannot be reached" family of
+  /// Storage errors.
+  ///
+  /// The Firebase project of this team has **no Storage bucket
+  /// provisioned** yet, so every call fails either with
+  /// "The specified bucket does not exist" (404) or with a DNS lookup
+  /// error because the bucket host does not resolve.
+  bool _isBucketMissing(Object e) {
+    final text = e.toString().toLowerCase();
+    final mentionsBucket = text.contains('bucket') || text.contains('storage');
+    final unreachable = text.contains('404') ||
+        text.contains('not found') ||
+        text.contains('does not exist') ||
+        text.contains('failed host lookup') ||
+        text.contains('socketexception') ||
+        text.contains('nodename nor servname') ||
+        text.contains('no such host') ||
+        text.contains('network is unreachable');
+    return mentionsBucket && unreachable;
+  }
+
+  /// Stores the avatar as base64 under `users/{uid}/avatar`.
+  ///
+  /// The `image` field is intentionally **not** touched here: the profile
+  /// widget renders the inline bytes directly (see `avatarBytes` in the
+  /// user state), so there is no valid public URL to point at while the
+  /// Storage bucket is missing.
+  Future<User> _uploadAvatarToDatabase(String uid, Uint8List bytes) async {
+    final userRef = _userRef(uid);
+    if (userRef == null) {
+      throw ClientUserServiceException('Firebase Database not initialized.');
+    }
+    try {
+      await userRef.update({
+        'avatar': base64Encode(bytes),
+        'updatedAt': ServerValue.timestamp,
+      });
+      return await loadProfile(uid);
+    } catch (e) {
+      throw ClientUserServiceException('Failed to upload avatar: $e');
+    }
+  }
+
+  @override
+  Future<Uint8List?> loadAvatarBytes(String uid) async {
+    final userRef = _userRef(uid);
+    if (userRef == null) return null;
+    try {
+      final snap = await userRef.child('avatar').once();
+      final value = snap.snapshot.value;
+      if (value is String && value.isNotEmpty) {
+        return base64Decode(value);
+      }
+    } catch (_) {
+      // fall through to the Storage attempt below
+    }
+    // Fall back to Firebase Storage (works once the bucket exists).
+    final storage = _storage;
+    if (storage == null) return null;
+    try {
+      final ref = storage
+          .ref()
+          .child(ClientDbPaths.avatarsRoot)
+          .child('$uid.jpg');
+      final data = await ref.getData();
+      return data;
+    } catch (_) {
+      return null;
     }
   }
 

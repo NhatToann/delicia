@@ -172,25 +172,31 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: const BoxDecoration(
-            color: ColorsFrave.backgroundColor,
-            shape: BoxShape.circle,
+        // UC-05 / UC-06 entry point (Member A). Tapping the avatar opens
+        // the profile; the receipt icon opens the client's order list.
+        InkWell(
+          onTap: () => context.push('/client/profile'),
+          borderRadius: BorderRadius.circular(22),
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: const BoxDecoration(
+              color: ColorsFrave.backgroundColor,
+              shape: BoxShape.circle,
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: (avatarUrl == null || avatarUrl!.isEmpty)
+                ? const Icon(
+                    Icons.person,
+                    color: ColorsFrave.primaryColor,
+                  )
+                : ImageResolver.resolveWidget(
+                    avatarUrl!,
+                    width: 44,
+                    height: 44,
+                    fit: BoxFit.cover,
+                  ),
           ),
-          clipBehavior: Clip.antiAlias,
-          child: (avatarUrl == null || avatarUrl!.isEmpty)
-              ? const Icon(
-                  Icons.person,
-                  color: ColorsFrave.primaryColor,
-                )
-              : ImageResolver.resolveWidget(
-                  avatarUrl!,
-                  width: 44,
-                  height: 44,
-                  fit: BoxFit.cover,
-                ),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -203,6 +209,16 @@ class _Header extends StatelessWidget {
         Stack(
           clipBehavior: Clip.none,
           children: [
+            // UC-05 entry point (Member A).
+            IconButton(
+              icon: const Icon(
+                Icons.receipt_long_outlined,
+                size: 26,
+                color: ColorsFrave.darkText,
+              ),
+              tooltip: 'My orders',
+              onPressed: () => context.push('/client/orders'),
+            ),
             IconButton(
               icon: const Icon(
                 Icons.shopping_bag_outlined,

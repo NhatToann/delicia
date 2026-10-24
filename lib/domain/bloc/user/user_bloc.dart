@@ -55,7 +55,16 @@ class UserBloc extends Bloc<UserEvent, UserState> {
     emit(state.copyWith(isLoading: true, clearError: true));
     try {
       final user = await _userService.loadProfile(event.uid);
-      emit(state.copyWith(isLoading: false, user: user, activeUid: event.uid));
+      final bytes = await _userService.loadAvatarBytes(event.uid);
+      emit(
+        state.copyWith(
+          isLoading: false,
+          user: user,
+          activeUid: event.uid,
+          avatarBytes: bytes,
+          clearAvatarBytes: bytes == null,
+        ),
+      );
     } on ClientUserServiceException catch (e) {
       emit(state.copyWith(isLoading: false, error: e.message));
     } catch (e) {
@@ -136,8 +145,15 @@ class UserBloc extends Bloc<UserEvent, UserState> {
     emit(state.copyWith(isUploadingAvatar: true, clearError: true));
     try {
       final user = await _userService.uploadAvatarFile(uid, event.file);
+      final bytes = await _userService.loadAvatarBytes(uid);
       emit(
-        state.copyWith(isUploadingAvatar: false, user: user, activeUid: uid),
+        state.copyWith(
+          isUploadingAvatar: false,
+          user: user,
+          activeUid: uid,
+          avatarBytes: bytes,
+          clearAvatarBytes: bytes == null,
+        ),
       );
     } on ClientUserServiceException catch (e) {
       emit(state.copyWith(isUploadingAvatar: false, error: e.message));
@@ -167,8 +183,15 @@ class UserBloc extends Bloc<UserEvent, UserState> {
         event.bytes,
         mime: event.mime,
       );
+      final bytes = await _userService.loadAvatarBytes(uid);
       emit(
-        state.copyWith(isUploadingAvatar: false, user: user, activeUid: uid),
+        state.copyWith(
+          isUploadingAvatar: false,
+          user: user,
+          activeUid: uid,
+          avatarBytes: bytes,
+          clearAvatarBytes: bytes == null,
+        ),
       );
     } on ClientUserServiceException catch (e) {
       emit(state.copyWith(isUploadingAvatar: false, error: e.message));

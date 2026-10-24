@@ -62,6 +62,9 @@ class _SeedUserService implements ClientUserService {
   Stream<User?> watchProfile(String uid) async* {
     yield user;
   }
+
+  @override
+  Future<Uint8List?> loadAvatarBytes(String uid) async => null;
 }
 
 Future<void> seedAuth(WidgetTester tester, AuthBloc auth) async {

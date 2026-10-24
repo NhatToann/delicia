@@ -16,6 +16,11 @@ class UserState {
   /// Last successful save timestamp (used to drive a brief inline toast).
   final DateTime? lastSavedAt;
 
+  /// Raw bytes of the current avatar, when it is stored inline in the
+  /// Realtime Database (the Firebase Storage bucket of this project is
+  /// not provisioned yet, so the service falls back to base64 storage).
+  final Uint8List? avatarBytes;
+
   const UserState({
     this.isLoading = false,
     this.isSaving = false,
@@ -24,6 +29,7 @@ class UserState {
     this.user,
     this.activeUid,
     this.lastSavedAt,
+    this.avatarBytes,
   });
 
   bool get isBusy => isLoading || isSaving || isUploadingAvatar;
@@ -36,8 +42,10 @@ class UserState {
     User? user,
     String? activeUid,
     DateTime? lastSavedAt,
+    Uint8List? avatarBytes,
     bool clearError = false,
     bool clearLastSaved = false,
+    bool clearAvatarBytes = false,
   }) {
     return UserState(
       isLoading: isLoading ?? this.isLoading,
@@ -47,6 +55,7 @@ class UserState {
       user: user ?? this.user,
       activeUid: activeUid ?? this.activeUid,
       lastSavedAt: clearLastSaved ? null : (lastSavedAt ?? this.lastSavedAt),
+      avatarBytes: clearAvatarBytes ? null : (avatarBytes ?? this.avatarBytes),
     );
   }
 }

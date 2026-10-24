@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -114,6 +115,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               _AvatarSection(
                 imageUrl: user?.image,
+                avatarBytes: state.avatarBytes,
                 isUploading: state.isUploadingAvatar,
                 onChange: () => _pickAvatar(context, uid),
               ),
@@ -272,11 +274,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
 class _AvatarSection extends StatelessWidget {
   final String? imageUrl;
+  final Uint8List? avatarBytes;
   final bool isUploading;
   final VoidCallback onChange;
 
   const _AvatarSection({
     required this.imageUrl,
+    this.avatarBytes,
     required this.isUploading,
     required this.onChange,
   });
@@ -300,18 +304,7 @@ class _AvatarSection extends StatelessWidget {
                   ],
                 ),
                 clipBehavior: Clip.antiAlias,
-                child: (imageUrl == null || imageUrl!.isEmpty)
-                    ? const Icon(
-                        Icons.person,
-                        size: 56,
-                        color: ColorsFrave.primaryColor,
-                      )
-                    : ImageResolver.resolveWidget(
-                        imageUrl!,
-                        fit: BoxFit.cover,
-                        width: 110,
-                        height: 110,
-                      ),
+                child: _avatarImage(),
               ),
               Positioned(
                 child: InkWell(
@@ -352,6 +345,37 @@ class _AvatarSection extends StatelessWidget {
       ),
     );
   }
+
+  /// Renders the avatar: inline bytes first (Realtime Database fallback),
+  /// then the remote URL, then the default placeholder icon.
+  Widget _avatarImage() {
+    final bytes = avatarBytes;
+    if (bytes != null && bytes.isNotEmpty) {
+      return Image.memory(
+        bytes,
+        fit: BoxFit.cover,
+        width: 110,
+        height: 110,
+        gaplessPlayback: true,
+        errorBuilder: (_, __, ___) => _placeholderIcon(),
+      );
+    }
+    if (imageUrl == null || imageUrl!.isEmpty) {
+      return _placeholderIcon();
+    }
+    return ImageResolver.resolveWidget(
+      imageUrl!,
+      fit: BoxFit.cover,
+      width: 110,
+      height: 110,
+    );
+  }
+
+  Widget _placeholderIcon() => const Icon(
+        Icons.person,
+        size: 56,
+        color: ColorsFrave.primaryColor,
+      );
 }
 
 class _LabelText extends StatelessWidget {
