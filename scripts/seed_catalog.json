@@ -1,0 +1,26 @@
+{
+  "categories": {
+    "c1": { "category": "Burgers", "description": "Juicy grilled burgers", "picture": "categories/burgers.jpg" },
+    "c2": { "category": "Pizza", "description": "Italian-style pizzas", "picture": "categories/pizza.jpg" },
+    "c3": { "category": "Drinks", "description": "Cold beverages", "picture": "categories/drinks.jpg" },
+    "c4": { "category": "Desserts", "description": "Sweet treats", "picture": "categories/desserts.jpg" },
+    "c5": { "category": "Salads", "description": "Fresh and healthy", "picture": "categories/salads.jpg" },
+    "c6": { "category": "Mexican", "description": "Tacos and more", "picture": "categories/mexican.jpg" },
+    "c7": { "category": "Japanese", "description": "Sushi and rolls", "picture": "categories/japanese.jpg" },
+    "c8": { "category": "Italian", "description": "Pasta and more", "picture": "categories/italian.jpg" }
+  },
+  "products": {
+    "p1":  { "nameProduct": "Classic Cheeseburger", "description": "Beef patty, cheddar, lettuce, tomato, house sauce on a toasted brioche bun.", "price": 8.99, "status": 1, "picture": "products/burger-classic.jpg",  "category": "Burgers",  "categoryId": "c1" },
+    "p2":  { "nameProduct": "Margherita Pizza",    "description": "Tomato, fresh mozzarella, basil, olive oil on a hand-tossed crust.",      "price": 12.50,"status": 1, "picture": "products/pizza-margherita.jpg","category": "Pizza",    "categoryId": "c2" },
+    "p3":  { "nameProduct": "Iced Cola",            "description": "Chilled 330ml can of classic cola, served with ice.",                   "price": 2.50, "status": 1, "picture": "products/drink-cola.jpg",      "category": "Drinks",   "categoryId": "c3" },
+    "p4":  { "nameProduct": "Chocolate Lava Cake",  "description": "Warm chocolate cake with a molten center, served with vanilla ice cream.", "price": 6.75, "status": 1, "picture": "products/dessert-cake.jpg",    "category": "Desserts", "categoryId": "c4" },
+    "p5":  { "nameProduct": "Caesar Salad",         "description": "Crisp romaine, parmesan, croutons, creamy Caesar dressing.",             "price": 9.25, "status": 1, "picture": "products/salad-caesar.jpg",    "category": "Salads",   "categoryId": "c5" },
+    "p6":  { "nameProduct": "Beef Tacos (3 pcs)",   "description": "Soft corn tortillas with seasoned beef, salsa, lime, and cilantro.",     "price": 7.99, "status": 1, "picture": "products/tacos.jpg",           "category": "Mexican",  "categoryId": "c6" },
+    "p7":  { "nameProduct": "Salmon Sushi Roll",    "description": "Fresh salmon and avocado roll with soy and wasabi.",                     "price": 11.00,"status": 1, "picture": "products/sushi.jpg",           "category": "Japanese", "categoryId": "c7" },
+    "p8":  { "nameProduct": "Spaghetti Carbonara",  "description": "Pancetta, egg yolk, pecorino, cracked pepper — a Roman classic.",       "price": 10.50,"status": 1, "picture": "products/pasta.jpg",           "category": "Italian",  "categoryId": "c8" },
+    "p9":  { "nameProduct": "Iced Coffee",          "description": "Cold-brewed coffee served over ice with a splash of milk.",             "price": 4.25, "status": 1, "picture": "products/coffee.jpg",          "category": "Drinks",   "categoryId": "c3" },
+    "p10": { "nameProduct": "Crispy French Fries",  "description": "Golden, lightly salted fries with a side of ketchup.",                  "price": 3.50, "status": 1, "picture": "products/fries.jpg",           "category": "Burgers",  "categoryId": "c1" },
+    "p11": { "nameProduct": "Vanilla Ice Cream",    "description": "Two scoops of smooth vanilla bean ice cream.",                          "price": 4.50, "status": 1, "picture": "products/ice-cream.jpg",       "category": "Desserts", "categoryId": "c4" },
+    "p12": { "nameProduct": "Pepperoni Pizza",      "description": "Classic pepperoni and mozzarella on a crispy crust.",                   "price": 13.25,"status": 1, "picture": "products/pizza-pepperoni.jpg","category": "Pizza",    "categoryId": "c2" }
+  }
+}
