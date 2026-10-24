@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../domain/bloc/auth/auth_bloc.dart';
 import '../../../domain/bloc/client_orders/client_orders_bloc.dart';
+import '../../../domain/bloc/orders/orders_bloc.dart';
 import '../../../domain/models/order_item.dart';
 import '../../../domain/models/order_record.dart';
 import '../../../domain/services/client_orders_service.dart';
@@ -152,11 +153,21 @@ class _Loaded extends StatelessWidget {
           text: 'Open live tracking',
           color: Colors.white,
           textColor: ColorsFrave.primaryColor,
-          onPressed: () => context.push('/client/map'),
+          onPressed: () => _openTracking(context, order),
         ),
         const SizedBox(height: 24),
       ],
     );
+  }
+
+  /// Publishes the order to the shared [OrdersBloc] before opening the map.
+  ///
+  /// The map reads `OrdersBloc.state.lastOrder`, which is normally set by
+  /// the checkout flow.  Opening the map from the order history has to hand
+  /// the order over explicitly, otherwise the map has nothing to centre on.
+  void _openTracking(BuildContext context, OrderRecord order) {
+    context.read<OrdersBloc>().add(OnTrackOrderEvent(order));
+    context.push('/client/map');
   }
 
   Future<void> _confirmCancel(
