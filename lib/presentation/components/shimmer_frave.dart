@@ -62,9 +62,9 @@ class ShimmerProductsGrid extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          childAspectRatio: 0.7,
-          mainAxisSpacing: 15,
-          crossAxisSpacing: 15,
+          childAspectRatio: 0.65,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
         ),
         itemCount: itemCount,
         itemBuilder: (_, __) => const Padding(

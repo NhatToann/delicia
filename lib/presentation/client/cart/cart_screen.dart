@@ -27,8 +27,21 @@ class CartScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, color: ColorsFrave.darkText),
           onPressed: () => context.pop(),
         ),
-        title: const TextCustom('My Cart', fontWeight: FontWeight.bold),
+        title: const TextCustom('My Bag', fontWeight: FontWeight.w500),
         centerTitle: true,
+        actions: [
+          BlocBuilder<CartBloc, CartState>(
+            builder: (_, state) => Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: Center(
+                child: TextCustom(
+                  '${state.quantityCart} Items',
+                  fontSize: 17,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: BlocBuilder<CartBloc, CartState>(
         builder: (_, state) {
@@ -40,9 +53,9 @@ class CartScreen extends StatelessWidget {
             children: [
               Expanded(
                 child: ListView.separated(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
                   itemCount: products.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  separatorBuilder: (_, _) => const SizedBox(height: 15),
                   itemBuilder: (_, i) {
                     final p = products[i];
                     return _CartItem(
@@ -60,12 +73,37 @@ class CartScreen extends StatelessWidget {
                   },
                 ),
               ),
-              _Summary(total: state.total, count: state.quantityCart),
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: BtnFrave(
-                  text: 'Checkout  \$${state.total.toStringAsFixed(2)}',
-                  onPressed: () => context.push('/client/checkout'),
+              Container(
+                color: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 20,
+                ),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: ColorsFrave.backgroundColor,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _SummaryRow(label: 'Total', value: state.total),
+                      const SizedBox(height: 20),
+                      _SummaryRow(label: 'Sub Total', value: state.total),
+                      const SizedBox(height: 20),
+                      BtnFrave(
+                        text: 'Checkout  \$${state.total.toStringAsFixed(2)}',
+                        onPressed: state.quantityCart == 0
+                            ? null
+                            : () => context.push('/client/checkout'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -95,108 +133,119 @@ class _CartItem extends StatelessWidget {
     return Dismissible(
       key: ValueKey('cart-${product.uidProduct}'),
       direction: DismissDirection.endToStart,
-      background: Container(
+      background: Container(),
+      secondaryBackground: Container(
+        margin: const EdgeInsets.only(bottom: 15),
+        padding: const EdgeInsets.only(right: 35),
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        decoration: BoxDecoration(
-          color: ColorsFrave.errorColor,
-          borderRadius: BorderRadius.circular(12),
+        decoration: const BoxDecoration(
+          color: Colors.red,
+          borderRadius: BorderRadius.only(
+            topRight: Radius.circular(20),
+            bottomRight: Radius.circular(20),
+          ),
         ),
-        child: const Icon(Icons.delete, color: Colors.white),
+        child: const Icon(Icons.delete_sweep_rounded,
+            color: Colors.white, size: 40),
       ),
       onDismissed: (_) => onDelete(),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        height: 90,
+        alignment: Alignment.center,
+        margin: const EdgeInsets.only(bottom: 15),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x10000000),
-              blurRadius: 6,
-              offset: Offset(0, 2),
-            ),
-          ],
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: SizedBox(
-                width: 64,
-                height: 64,
+            SizedBox(
+              width: 100,
+              child: Padding(
+                padding: const EdgeInsets.all(5),
                 child: ImageResolver.resolveWidget(
                   product.imageProduct,
                   fit: BoxFit.cover,
                 ),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextCustom(
-                    product.nameProduct,
-                    fontWeight: FontWeight.w600,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  TextCustom(
-                    '\$${product.price.toStringAsFixed(2)}',
-                    color: ColorsFrave.primaryColor,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ],
+            SizedBox(
+              width: 130,
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TextCustom(
+                      product.nameProduct,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 18,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    TextCustom(
+                      '\$${(product.price * product.quantity).toStringAsFixed(2)}',
+                      color: ColorsFrave.primaryColor,
+                    ),
+                  ],
+                ),
               ),
             ),
-            Column(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.add_circle_outline),
-                  onPressed: onIncrease,
-                ),
-                TextCustom(product.quantity.toString()),
-                IconButton(
-                  icon: const Icon(Icons.remove_circle_outline),
-                  onPressed: product.quantity > 1 ? onDecrease : null,
-                ),
-              ],
+            Expanded(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _circleBtn(
+                    icon: Icons.remove,
+                    onTap: product.quantity > 1 ? onDecrease : null,
+                  ),
+                  const SizedBox(width: 10),
+                  TextCustom(
+                    product.quantity.toString(),
+                    color: ColorsFrave.primaryColor,
+                  ),
+                  const SizedBox(width: 10),
+                  _circleBtn(icon: Icons.add, onTap: onIncrease),
+                ],
+              ),
             ),
           ],
         ),
       ),
     );
   }
+
+  Widget _circleBtn({required IconData icon, VoidCallback? onTap}) {
+    return Container(
+      alignment: Alignment.center,
+      padding: const EdgeInsets.all(2),
+      decoration: const BoxDecoration(
+        color: ColorsFrave.primaryColor,
+        shape: BoxShape.circle,
+      ),
+      child: InkWell(
+        onTap: onTap,
+        child: Icon(icon, color: Colors.white, size: 20),
+      ),
+    );
+  }
 }
 
-class _Summary extends StatelessWidget {
-  final double total;
-  final int count;
-  const _Summary({required this.total, required this.count});
+class _SummaryRow extends StatelessWidget {
+  final String label;
+  final double value;
+  const _SummaryRow({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: Color(0x11000000))),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          TextCustom(
-            '$count item${count == 1 ? '' : 's'}',
-            color: ColorsFrave.greyText,
-          ),
-          TextCustom(
-            'Total: \$${total.toStringAsFixed(2)}',
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ],
-      ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        TextCustom(label),
+        TextCustom('\$${value.toStringAsFixed(2)}'),
+      ],
     );
   }
 }
@@ -211,22 +260,18 @@ class _Empty extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(
-              Icons.shopping_bag_outlined,
-              size: 96,
+              Icons.shopping_cart_outlined,
+              size: 120,
               color: ColorsFrave.greyText,
             ),
             const SizedBox(height: 16),
             const TextCustom(
-              'Your cart is empty',
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
+              'Without products',
+              fontSize: 21,
+              fontWeight: FontWeight.w500,
+              color: ColorsFrave.primaryColor,
             ),
-            const SizedBox(height: 8),
-            const TextCustom(
-              'Add products to get started',
-              color: ColorsFrave.greyText,
-            ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             BtnFrave(
               text: 'Continue Shopping',
               color: Colors.white,

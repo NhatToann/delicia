@@ -13,6 +13,10 @@ class OnGetTopProductsEvent extends ProductsEvent {
   const OnGetTopProductsEvent();
 }
 
+class OnGetAllProductsEvent extends ProductsEvent {
+  const OnGetAllProductsEvent();
+}
+
 class OnGetDetailsProductEvent extends ProductsEvent {
   final String productId;
   const OnGetDetailsProductEvent(this.productId);
