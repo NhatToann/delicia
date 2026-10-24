@@ -172,4 +172,68 @@ void main() {
     expect(find.text('First name is required'), findsOneWidget);
     expect(find.text('Last name is required'), findsOneWidget);
   });
+
+  testWidgets('Sign out confirms, dismisses the loader and leaves no dialog', (
+    tester,
+  ) async {
+    final user = User(
+      uid: 'user-1',
+      email: 'a@b.com',
+      firstName: 'Alice',
+      lastName: 'Doe',
+      phone: '+84123',
+      image: null,
+      rolId: 2,
+    );
+    final auth = AuthBloc(authService: StubAuthService.loggedIn());
+    final userBloc = UserBloc(userService: _SeedUserService(user));
+    addTearDown(auth.close);
+    addTearDown(userBloc.close);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MultiBlocProvider(
+          providers: [
+            BlocProvider<AuthBloc>.value(value: auth),
+            BlocProvider<UserBloc>.value(value: userBloc),
+          ],
+          child: const ProfileScreen(),
+        ),
+      ),
+    );
+    await seedAuth(tester, auth);
+    await settleMicrotasks(tester);
+
+    await tester.scrollUntilVisible(
+      find.text('Sign out'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Sign out'));
+    await settleMicrotasks(tester);
+
+    // Confirmation dialog appears.
+    expect(find.text('Sign out?'), findsOneWidget);
+    // Tap the dialog's own "Sign out" action. The page behind the dialog
+    // also renders a "Sign out" button, so scope the finder to the dialog.
+    final confirmButton = find.descendant(
+      of: find.byType(AlertDialog),
+      matching: find.widgetWithText(ElevatedButton, 'Sign out'),
+    );
+    expect(confirmButton, findsOneWidget);
+    await tester.tap(confirmButton);
+    await settleMicrotasks(tester);
+    // Let the dialog's exit transition finish — the loading dialog is
+    // still in the widget tree while it animates away.
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 200));
+    }
+
+    // The loading dialog must NOT stay on screen: the sign-out used to
+    // `await modalLoading(...)`, which deadlocked because the dialog future
+    // only completes once the dialog is popped.
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    // The confirm dialog is gone too.
+    expect(find.text('Sign out?'), findsNothing);
+  });
 }

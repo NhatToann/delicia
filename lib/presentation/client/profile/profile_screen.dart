@@ -14,7 +14,6 @@ import '../../components/form_field_frave.dart';
 import '../../components/text_custom.dart';
 import '../../helpers/error_message.dart';
 import '../../helpers/image_resolver.dart';
-import '../../helpers/modal_loading.dart';
 import '../../themes/colors_frave.dart';
 
 /// ProfileScreen — main entry point for the client's profile (UC-06).
@@ -263,16 +262,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
     if (confirmed != true || !context.mounted) return;
-    await modalLoading(context);
     // Clear cached credentials then sign out through the auth bloc.
-    await SecureStorageFrave.instance.deleteSecureStorage();
-    if (context.mounted) {
-      Navigator.of(context, rootNavigator: true).pop();
-      context.read<AuthBloc>().add(LogOutEvent());
-      // Reset profile state so a subsequent sign-in starts clean.
-      context.read<UserBloc>().add(const OnClearUserProfileEvent());
-      if (context.mounted) context.go('/intro');
+    // A storage failure must never block the sign-out — the user has to be
+    // able to leave the account even if the local cache can't be cleared.
+    try {
+      await SecureStorageFrave.instance.deleteSecureStorage();
+    } catch (_) {
+      // Ignored on purpose: the auth sign-out below is what matters.
     }
+    if (!context.mounted) return;
+    context.read<AuthBloc>().add(LogOutEvent());
+    // Reset profile state so a subsequent sign-in starts clean.
+    context.read<UserBloc>().add(const OnClearUserProfileEvent());
+    if (context.mounted) context.go('/intro');
   }
 }
 
