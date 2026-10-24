@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../domain/bloc/auth/auth_bloc.dart';
 import '../../../domain/bloc/cart/cart_bloc.dart';
 import '../../../domain/bloc/products/products_bloc.dart';
+import '../../../domain/models/address.dart';
 import '../../../domain/models/category.dart';
 import '../../components/shimmer_frave.dart';
 import '../../components/text_custom.dart';
@@ -32,6 +33,11 @@ class ClientHomeScreen extends StatefulWidget {
 }
 
 class _ClientHomeScreenState extends State<ClientHomeScreen> {
+  /// The user-selected delivery address. `null` means "no address
+  /// chosen yet" — the address card shows a "Choose delivery
+  /// address" placeholder.
+  Address? _selectedAddress;
+
   @override
   void initState() {
     super.initState();
@@ -40,6 +46,17 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       bloc.add(const OnGetCategoriesEvent());
       bloc.add(const OnGetTopProductsEvent());
     });
+  }
+
+  Future<void> _pickAddress() async {
+    debugPrint('[delicia] _pickAddress → push /client/select-address');
+    final result = await context.push<Address>(
+      '/client/select-address',
+    );
+    debugPrint('[delicia] _pickAddress → returned $result');
+    if (result != null && mounted) {
+      setState(() => _selectedAddress = result);
+    }
   }
 
   @override
@@ -76,7 +93,22 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
               _SearchBar(
                 onTap: () => context.push('/client/search-category'),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
+              const Padding(
+                padding: EdgeInsets.only(right: 50.0),
+                child: TextCustom(
+                  'What do you want to eat today?',
+                  fontSize: 24,
+                  maxLines: 2,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _AddressCard(
+                address: _selectedAddress,
+                onTap: _pickAddress,
+              ),
+              const SizedBox(height: 20),
               const TextCustom(
                 'Categories',
                 fontSize: 20,
@@ -101,11 +133,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                   );
                 },
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
               const TextCustom(
-                'Top Products',
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+                'Popular Items',
+                fontSize: 21,
+                fontWeight: FontWeight.w500,
               ),
               const SizedBox(height: 12),
               BlocBuilder<ProductsBloc, ProductsState>(
@@ -119,27 +151,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                       subtitle: 'Check back later for new items.',
                     );
                   }
-                  return GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.7,
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                    ),
-                    itemCount: state.topProducts.length,
-                    itemBuilder: (_, i) {
-                      final p = state.topProducts[i];
-                      return ProductCard(
-                        product: p,
-                        onTap: () => context.push(
-                          '/client/details-product/${p.id}',
-                        ),
-                      );
-                    },
-                  );
+                  return _ProductsGrid(products: state.topProducts);
                 },
               ),
               const SizedBox(height: 24),
@@ -157,6 +169,35 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       category: c.category,
     ));
     context.push('/client/search-category', extra: c);
+  }
+}
+
+class _ProductsGrid extends StatelessWidget {
+  final List products;
+  const _ProductsGrid({required this.products});
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 0.65,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+      ),
+      itemCount: products.length,
+      itemBuilder: (_, i) {
+        final p = products[i];
+        return ProductCard(
+          product: p,
+          onTap: () => context.push(
+            '/client/details-product/${p.id}',
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -289,6 +330,66 @@ class _SearchBar extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _AddressCard extends StatelessWidget {
+  final Address? address;
+  final VoidCallback onTap;
+  const _AddressCard({required this.address, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasAddress = address != null;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Row(
+        children: [
+          Container(
+            height: 50,
+            width: 50,
+            decoration: BoxDecoration(
+              color: ColorsFrave.primaryColor.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              hasAddress
+                  ? Icons.location_on
+                  : Icons.location_on_outlined,
+              size: 26,
+              color: ColorsFrave.primaryColor,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const TextCustom(
+                  'Deliver to',
+                  fontSize: 12,
+                  color: ColorsFrave.greyText,
+                ),
+                const SizedBox(height: 2),
+                TextCustom(
+                  hasAddress ? address!.street : 'Choose delivery address',
+                  color: ColorsFrave.primaryColor,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: ColorsFrave.greyText,
+          ),
+        ],
       ),
     );
   }

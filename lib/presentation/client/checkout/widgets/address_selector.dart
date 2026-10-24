@@ -32,17 +32,17 @@ class AddressSelector extends StatelessWidget {
         return InkWell(
           onTap: () => onSelect(a),
           child: Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(15),
             decoration: BoxDecoration(
               color: isSelected
                   ? ColorsFrave.primaryColor.withValues(alpha: 0.06)
                   : Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: isSelected
                     ? ColorsFrave.primaryColor
-                    : ColorsFrave.backgroundColor,
+                    : Colors.grey.shade200,
               ),
             ),
             child: Row(

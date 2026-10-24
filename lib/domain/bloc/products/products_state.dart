@@ -5,6 +5,7 @@ part of 'products_bloc.dart';
 class ProductsState {
   final List<Category> categories;
   final List<Productsdb> topProducts;
+  final List<Productsdb> allProducts;
   final List<Productsdb> searchResults;
   final Productsdb? currentProduct;
   final List<ImageProductdb> currentImages;
@@ -20,6 +21,7 @@ class ProductsState {
   const ProductsState({
     this.categories = const [],
     this.topProducts = const [],
+    this.allProducts = const [],
     this.searchResults = const [],
     this.currentProduct,
     this.currentImages = const [],
@@ -42,6 +44,7 @@ class ProductsState {
   ProductsState copyWith({
     List<Category>? categories,
     List<Productsdb>? topProducts,
+    List<Productsdb>? allProducts,
     List<Productsdb>? searchResults,
     Productsdb? currentProduct,
     bool clearCurrentProduct = false,
@@ -59,6 +62,7 @@ class ProductsState {
     return ProductsState(
       categories: categories ?? this.categories,
       topProducts: topProducts ?? this.topProducts,
+      allProducts: allProducts ?? this.allProducts,
       searchResults: searchResults ?? this.searchResults,
       currentProduct:
           clearCurrentProduct ? null : (currentProduct ?? this.currentProduct),

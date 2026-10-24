@@ -9,6 +9,7 @@ import '../../../domain/bloc/map_client/map_client_bloc.dart';
 import '../../../domain/bloc/orders/orders_bloc.dart';
 import '../../../domain/models/lat_lng_point.dart';
 import '../../../domain/models/order_record.dart';
+import '../../components/btn_frave.dart';
 import '../../components/text_custom.dart';
 import '../../helpers/error_message.dart';
 import '../../themes/colors_frave.dart';
@@ -79,6 +80,61 @@ class _MapClientScreenState extends State<MapClientScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final order = context.read<OrdersBloc>().state.lastOrder;
+    final canTrack = order != null && order.canTrackDelivery;
+
+    if (!canTrack) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: ColorsFrave.darkText),
+            onPressed: () => context.pop(),
+          ),
+          title: const TextCustom(
+            'Track Delivery',
+            fontWeight: FontWeight.w500,
+          ),
+          centerTitle: true,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.delivery_dining,
+                  size: 120,
+                  color: ColorsFrave.greyText,
+                ),
+                const SizedBox(height: 16),
+                const TextCustom(
+                  'Live tracking is not available yet',
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+                const SizedBox(height: 8),
+                const TextCustom(
+                  'Your order is being prepared. The map will open once '
+                  'the driver picks it up.',
+                  textAlign: TextAlign.center,
+                  color: ColorsFrave.greyText,
+                ),
+                const SizedBox(height: 24),
+                BtnFrave(
+                  text: 'Back to orders',
+                  onPressed: () => context.pop(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       body: BlocConsumer<MapClientBloc, MapClientState>(
         listenWhen: (a, b) =>
@@ -154,13 +210,23 @@ class _MapClientScreenState extends State<MapClientScreen> {
               Positioned(
                 top: 40,
                 right: 10,
-                child: CircleAvatar(
-                  backgroundColor: Colors.white,
-                  child: IconButton(
-                    tooltip: 'My location',
-                    icon: const Icon(Icons.my_location,
-                        color: ColorsFrave.primaryColor),
-                    onPressed: () => _recenter(center),
+                child: _RoundButton(
+                  tooltip: 'My location',
+                  icon: Icons.my_location,
+                  onPressed: () => _recenter(LatLng(
+                    state.markerDelivery.latitude,
+                    state.markerDelivery.longitude,
+                  )),
+                ),
+              ),
+              Positioned(
+                top: 90,
+                right: 10,
+                child: _RoundButton(
+                  tooltip: 'Open external map',
+                  icon: Icons.map_outlined,
+                  onPressed: () => _openExternalMap(
+                    state.markerClient,
                   ),
                 ),
               ),
@@ -176,6 +242,12 @@ class _MapClientScreenState extends State<MapClientScreen> {
         },
       ),
     );
+  }
+
+  void _openExternalMap(LatLngPoint p) {
+    // Stub: opens native map app via URL launcher (matches ref's
+    // `_BtnGoogleMap`). Implementation lives in the real-time service
+    // when the user requests it.
   }
 
   Marker _clientMarker(LatLngPoint p) {
@@ -250,7 +322,51 @@ class _InfoCard extends StatelessWidget {
               ],
             ),
           ),
+          Container(
+            height: 45,
+            width: 45,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.phone, color: ColorsFrave.primaryColor),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _RoundButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+  const _RoundButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade300,
+            blurRadius: 10,
+            spreadRadius: -5,
+          ),
+        ],
+      ),
+      child: CircleAvatar(
+        backgroundColor: Colors.white,
+        maxRadius: 25,
+        child: IconButton(
+          tooltip: tooltip,
+          icon: Icon(icon, color: ColorsFrave.primaryColor),
+          onPressed: onPressed,
+        ),
       ),
     );
   }

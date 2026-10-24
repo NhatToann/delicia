@@ -6,6 +6,7 @@ import '../../../domain/bloc/orders/orders_bloc.dart';
 import '../../components/btn_frave.dart';
 import '../../components/text_custom.dart';
 import '../../helpers/date_custom.dart';
+import '../../helpers/error_message.dart';
 import '../../themes/colors_frave.dart';
 
 /// ClientOrdersScreen — placeholder list of the current client's orders.
@@ -128,8 +129,19 @@ class ClientOrdersScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   BtnFrave(
-                    text: 'Track Delivery',
-                    onPressed: () => context.push('/client/map'),
+                    text: order.canTrackDelivery
+                        ? 'Track Delivery'
+                        : 'Awaiting Restaurant',
+                    color: order.canTrackDelivery
+                        ? ColorsFrave.primaryColor
+                        : ColorsFrave.greyText,
+                    onPressed: order.canTrackDelivery
+                        ? () => context.push('/client/map')
+                        : () => errorMessageSnack(
+                              context,
+                              'Your order has not been dispatched yet. '
+                              'Live tracking will open once it is on the way.',
+                            ),
                   ),
                 ],
               ),

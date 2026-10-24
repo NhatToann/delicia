@@ -26,6 +26,7 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
         super(const ProductsState()) {
     on<OnGetCategoriesEvent>(_onGetCategories);
     on<OnGetTopProductsEvent>(_onGetTopProducts);
+    on<OnGetAllProductsEvent>(_onGetAllProducts);
     on<OnGetDetailsProductEvent>(_onGetDetailsProduct);
     on<OnSearchProductEvent>(
       _onSearchProduct,
@@ -71,6 +72,36 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
     }
   }
 
+  Future<void> _onGetAllProducts(
+    OnGetAllProductsEvent event,
+    Emitter<ProductsState> emit,
+  ) async {
+    emit(state.copyWith(isLoadingSearch: true, error: null));
+    try {
+      final products = await _productsService.getAllProducts();
+      // Only seed the search results when the user hasn't typed
+      // anything yet. This way "show everything first, then filter as
+      // you type" works as expected.
+      if (state.searchQuery.trim().isEmpty) {
+        emit(state.copyWith(
+          allProducts: products,
+          searchResults: products,
+          isLoadingSearch: false,
+        ));
+      } else {
+        emit(state.copyWith(
+          allProducts: products,
+          isLoadingSearch: false,
+        ));
+      }
+    } catch (e) {
+      emit(state.copyWith(
+        isLoadingSearch: false,
+        error: e.toString(),
+      ));
+    }
+  }
+
   Future<void> _onGetDetailsProduct(
     OnGetDetailsProductEvent event,
     Emitter<ProductsState> emit,
@@ -111,13 +142,31 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
       error: null,
     ));
     try {
-      final results = query.trim().isEmpty && state.selectedCategoryId.isEmpty
-          ? await _productsService.getTopProducts()
-          : (state.selectedCategoryId.isEmpty
-              ? await _productsService.searchProducts(query)
-              : await _productsService.getProductsByCategory(
-                  state.selectedCategoryId,
-                ));
+      // "Show everything first, filter as the user types" rule:
+      //   - no query + no category  → all products
+      //   - no query + category     → products in that category
+      //   - query + no category     → full-text search
+      //   - query + category        → full-text search (backend filters
+      //     by name; we also filter by category client-side as a safety
+      //     net since the realtime database has no combined index)
+      List<Productsdb> results;
+      final q = query.trim();
+      if (q.isEmpty && state.selectedCategoryId.isEmpty) {
+        results = state.allProducts.isNotEmpty
+            ? state.allProducts
+            : await _productsService.getAllProducts();
+      } else if (q.isEmpty) {
+        results = await _productsService.getProductsByCategory(
+          state.selectedCategoryId,
+        );
+      } else {
+        results = await _productsService.searchProducts(q);
+        if (state.selectedCategoryId.isNotEmpty) {
+          results = results
+              .where((p) => p.categoryId == state.selectedCategoryId)
+              .toList();
+        }
+      }
       emit(state.copyWith(
         searchResults: results,
         isLoadingSearch: false,
