@@ -1,22 +1,28 @@
 import 'package:go_router/go_router.dart';
 
 import '../../domain/models/category.dart';
-import '../presentation/screens/intro/checking_login_screen.dart';
-import '../presentation/screens/intro/intro_screen.dart';
-import '../presentation/screens/login/check_email_screen.dart';
-import '../presentation/screens/login/forgot_password_screen.dart';
-import '../presentation/screens/login/login_screen.dart';
-import '../presentation/screens/login/register_client_screen.dart';
-import '../presentation/screens/home/select_role_screen.dart';
-import '../presentation/screens/home/home_placeholder.dart';
-import '../presentation/client/home/home_screen.dart';
-import '../presentation/client/search/search_for_category_screen.dart';
-import '../presentation/client/product_detail/product_detail_screen.dart';
-import '../presentation/client/cart/cart_screen.dart';
-import '../presentation/client/checkout/checkout_screen.dart';
-import '../presentation/client/map/map_client_screen.dart';
-import '../presentation/client/orders/orders_screen.dart';
-import '../presentation/delivery/map/map_delivery_screen.dart';
+import '../../domain/models/client_address.dart';
+import '../../domain/models/order_record.dart';
+import '../../presentation/screens/intro/checking_login_screen.dart';
+import '../../presentation/screens/intro/intro_screen.dart';
+import '../../presentation/screens/login/check_email_screen.dart';
+import '../../presentation/screens/login/forgot_password_screen.dart';
+import '../../presentation/screens/login/login_screen.dart';
+import '../../presentation/screens/login/register_client_screen.dart';
+import '../../presentation/screens/home/select_role_screen.dart';
+import '../../presentation/screens/home/home_placeholder.dart';
+import '../../presentation/client/home/home_screen.dart';
+import '../../presentation/client/search/search_for_category_screen.dart';
+import '../../presentation/client/product_detail/product_detail_screen.dart';
+import '../../presentation/client/cart/cart_screen.dart';
+import '../../presentation/client/checkout/checkout_screen.dart';
+import '../../presentation/client/map/map_client_screen.dart';
+import '../../presentation/client/orders/order_detail_screen.dart';
+import '../../presentation/client/orders/orders_list_screen.dart';
+import '../../presentation/client/profile/address_form_screen.dart';
+import '../../presentation/client/profile/address_list_screen.dart';
+import '../../presentation/client/profile/profile_screen.dart';
+import '../../presentation/delivery/map/map_delivery_screen.dart';
 
 /// App router (GoRouter). Wires the UC-01 auth flow plus the Leader's
 /// UC-02/03/04 client/delivery screens. Admin/delivery role homes stay
@@ -28,33 +34,30 @@ class AppRouter {
     initialLocation: '/splash',
     routes: [
       // ---- Auth flow (UC-01) ------------------------------------------------
-      GoRoute(
-        path: '/splash',
-        builder: (_, __) => const CheckingLoginScreen(),
-      ),
-      GoRoute(path: '/intro', builder: (_, __) => const IntroScreen()),
-      GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
+      GoRoute(path: '/splash', builder: (_, _) => const CheckingLoginScreen()),
+      GoRoute(path: '/intro', builder: (_, _) => const IntroScreen()),
+      GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
       GoRoute(
         path: '/register',
-        builder: (_, __) => const RegisterClientScreen(),
+        builder: (_, _) => const RegisterClientScreen(),
       ),
       GoRoute(
         path: '/forgot-password',
-        builder: (_, __) => const ForgotPasswordScreen(),
+        builder: (_, _) => const ForgotPasswordScreen(),
       ),
       GoRoute(
         path: '/check-email',
-        builder: (_, __) => const CheckEmailScreen(),
+        builder: (_, _) => const CheckEmailScreen(),
       ),
       GoRoute(
         path: '/select-role',
-        builder: (_, __) => const SelectRoleScreen(),
+        builder: (_, _) => const SelectRoleScreen(),
       ),
 
-      // ---- Client flow (UC-02 / UC-04 / UC-03) -----------------------------
+      // ---- Client flow (UC-02 / UC-03 / UC-04 / UC-05 / UC-06) -----------
       GoRoute(
         path: '/client/home',
-        builder: (_, __) => const ClientHomeScreen(),
+        builder: (_, _) => const ClientHomeScreen(),
       ),
       GoRoute(
         path: '/client/search-category',
@@ -67,43 +70,72 @@ class AppRouter {
       ),
       GoRoute(
         path: '/client/details-product/:id',
-        builder: (_, state) => ProductDetailScreen(
-          productId: state.pathParameters['id'] ?? '',
-        ),
+        builder: (_, state) =>
+            ProductDetailScreen(productId: state.pathParameters['id'] ?? ''),
       ),
-      GoRoute(
-        path: '/client/cart',
-        builder: (_, __) => const CartScreen(),
-      ),
+      GoRoute(path: '/client/cart', builder: (_, _) => const CartScreen()),
       GoRoute(
         path: '/client/checkout',
-        builder: (_, __) => const CheckoutScreen(),
+        builder: (_, _) => const CheckoutScreen(),
       ),
+      // UC-05 — orders list + detail (Member A). Kept under the same
+      // path the Leader wired up so existing navigation continues to
+      // work; the new screen reads the Orders / ClientOrders blocs.
       GoRoute(
         path: '/client/orders',
-        builder: (_, __) => const ClientOrdersScreen(),
+        builder: (_, _) => const OrdersListScreen(),
       ),
       GoRoute(
-        path: '/client/map',
-        builder: (_, __) => const MapClientScreen(),
+        path: '/client/orders/detail/:id',
+        builder: (_, state) {
+          final id = state.pathParameters['id'] ?? '';
+          final extra = state.extra;
+          return OrderDetailScreen(
+            orderId: id,
+            initialOrder: extra is OrderRecord ? extra : null,
+          );
+        },
+      ),
+      GoRoute(path: '/client/map', builder: (_, _) => const MapClientScreen()),
+
+      // UC-06 — profile + addresses.
+      GoRoute(
+        path: '/client/profile',
+        builder: (_, _) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: '/client/profile/addresses',
+        builder: (_, _) => const AddressListScreen(),
+      ),
+      GoRoute(
+        path: '/client/profile/addresses/new',
+        builder: (_, _) => const AddressFormScreen(),
+      ),
+      GoRoute(
+        path: '/client/profile/addresses/edit/:id',
+        builder: (_, state) {
+          final extra = state.extra;
+          return AddressFormScreen(
+            existingAddress: extra is ClientAddress ? extra : null,
+          );
+        },
       ),
 
       // ---- Delivery flow (UC-03) ------------------------------------------
       GoRoute(
         path: '/delivery/map/:orderId',
-        builder: (_, state) => MapDeliveryScreen(
-          orderId: state.pathParameters['orderId'] ?? '',
-        ),
+        builder: (_, state) =>
+            MapDeliveryScreen(orderId: state.pathParameters['orderId'] ?? ''),
       ),
 
       // ---- Placeholders (other members) -----------------------------------
       GoRoute(
         path: '/admin/home',
-        builder: (_, __) => const HomePlaceholder(label: 'Admin Home (UC-08)'),
+        builder: (_, _) => const HomePlaceholder(label: 'Admin Home (UC-08)'),
       ),
       GoRoute(
         path: '/delivery/home',
-        builder: (_, __) =>
+        builder: (_, _) =>
             const HomePlaceholder(label: 'Delivery Home (UC-10)'),
       ),
     ],

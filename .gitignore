@@ -79,3 +79,7 @@ GoogleService-Info.plist
 # KHÔNG push lên GitHub — bỏ comment nếu muốn share với team
 tasks/
 docs/internal/
+
+# E2E test artifacts (uiautomator dumps, screenshots) — local only
+.e2e/
+host

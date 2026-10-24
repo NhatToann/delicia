@@ -52,6 +52,11 @@ dependencies:
   permission_handler: ^11.3.1
   url_launcher: ^6.3.1
 
+  # Avatar picker used by the UC-06 profile screen. Added by Member A
+  # because the spec requires "avatar selection and upload using Firebase
+  # Storage" — we keep the rest of the dependency footprint unchanged.
+  image_picker: ^1.1.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
