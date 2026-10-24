@@ -26,9 +26,8 @@ part 'client_orders_state.dart';
 /// talks to its own [ClientOrdersService] contract so the Leader's
 /// interface (and every fake implementing it) is never modified.
 class ClientOrdersBloc extends Bloc<ClientOrdersEvent, ClientOrdersState> {
-  ClientOrdersBloc({required ClientOrdersService ordersService})
-    : _ordersService = ordersService,
-      super(const ClientOrdersState()) {
+  ClientOrdersBloc({required this._ordersService})
+    : super(const ClientOrdersState()) {
     on<OnLoadClientOrdersEvent>(_onLoad);
     on<OnSubscribeClientOrdersEvent>(_onSubscribe);
     on<OnCancelOrderEvent>(_onCancel);

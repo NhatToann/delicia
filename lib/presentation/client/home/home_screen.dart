@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -45,6 +46,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthBloc>().state;
     final cartCount = context.watch<CartBloc>().state.quantityCart;
+    if (kDebugMode) {
+      debugPrint('[ClientHome] user=${auth.user} image="${auth.user?.image}" '
+          'uid="${auth.user?.uid}"');
+    }
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -206,19 +211,21 @@ class _Header extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
+        // UC-05 entry point (Member A).  These sit side by side inside a
+        // Row — a Stack would overlap them because both buttons have the
+        // same default padding.
+        IconButton(
+          icon: const Icon(
+            Icons.receipt_long_outlined,
+            size: 26,
+            color: ColorsFrave.darkText,
+          ),
+          tooltip: 'My orders',
+          onPressed: () => context.push('/client/orders'),
+        ),
         Stack(
           clipBehavior: Clip.none,
           children: [
-            // UC-05 entry point (Member A).
-            IconButton(
-              icon: const Icon(
-                Icons.receipt_long_outlined,
-                size: 26,
-                color: ColorsFrave.darkText,
-              ),
-              tooltip: 'My orders',
-              onPressed: () => context.push('/client/orders'),
-            ),
             IconButton(
               icon: const Icon(
                 Icons.shopping_bag_outlined,

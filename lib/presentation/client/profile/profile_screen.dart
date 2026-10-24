@@ -1,6 +1,6 @@
 import 'dart:io';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -62,6 +62,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthBloc>().state;
     final uid = auth.user?.uid ?? '';
+    if (kDebugMode) {
+      debugPrint('[ProfileScreen] auth.user=${auth.user} uid="$uid" '
+          'rolId="${auth.rolId}"');
+    }
     if (uid.isNotEmpty && _loadedUid != uid) {
       _loadedUid = uid;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -357,7 +361,7 @@ class _AvatarSection extends StatelessWidget {
         width: 110,
         height: 110,
         gaplessPlayback: true,
-        errorBuilder: (_, __, ___) => _placeholderIcon(),
+        errorBuilder: (_, _, _) => _placeholderIcon(),
       );
     }
     if (imageUrl == null || imageUrl!.isEmpty) {

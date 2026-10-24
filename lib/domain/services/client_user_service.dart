@@ -101,6 +101,10 @@ class FirebaseClientUserService implements ClientUserService {
     try {
       final snap = await ref.once();
       final value = snap.snapshot.value;
+      if (kDebugMode) {
+        debugPrint('[ClientUserService] loadProfile $uid -> '
+            'exists=${value != null} type=${value.runtimeType}');
+      }
       if (value is! Map) {
         throw ClientUserServiceException(
           'Profile not found in database — please sign out and in again.',

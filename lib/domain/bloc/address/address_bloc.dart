@@ -13,9 +13,8 @@ part 'address_state.dart';
 /// (UC-06).  All operations are scoped to a single UID passed at runtime
 /// (typically `AuthBloc.state.user?.uid`).
 class AddressBloc extends Bloc<AddressEvent, AddressState> {
-  AddressBloc({required ClientAddressService addressService})
-    : _addressService = addressService,
-      super(const AddressState()) {
+  AddressBloc({required this._addressService})
+    : super(const AddressState()) {
     on<OnLoadAddressesEvent>(_onLoad);    on<OnWatchAddressesEvent>(_onWatch);
     on<OnAddAddressEvent>(_onAdd);
     on<OnUpdateAddressEvent>(_onUpdate);

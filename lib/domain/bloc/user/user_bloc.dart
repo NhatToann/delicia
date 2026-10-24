@@ -23,9 +23,8 @@ part 'user_state.dart';
 /// coordinate via the active Firebase user UID — that's the single
 /// source of truth between them.
 class UserBloc extends Bloc<UserEvent, UserState> {
-  UserBloc({required ClientUserService userService})
-    : _userService = userService,
-      super(const UserState()) {
+  UserBloc({required this._userService})
+    : super(const UserState()) {
     on<OnLoadUserProfileEvent>(_onLoad);
     on<OnWatchUserProfileEvent>(_onWatch);
     on<OnUpdateUserProfileEvent>(_onUpdate);
@@ -56,6 +55,11 @@ class UserBloc extends Bloc<UserEvent, UserState> {
     try {
       final user = await _userService.loadProfile(event.uid);
       final bytes = await _userService.loadAvatarBytes(event.uid);
+      if (kDebugMode) {
+        debugPrint('[UserBloc] loaded profile uid=${event.uid} '
+            'name="${user.firstName} ${user.lastName}" email=${user.email} '
+            'bytes=${bytes?.length}');
+      }
       emit(
         state.copyWith(
           isLoading: false,
@@ -66,8 +70,10 @@ class UserBloc extends Bloc<UserEvent, UserState> {
         ),
       );
     } on ClientUserServiceException catch (e) {
+      if (kDebugMode) debugPrint('[UserBloc] loadProfile failed: ${e.message}');
       emit(state.copyWith(isLoading: false, error: e.message));
     } catch (e) {
+      if (kDebugMode) debugPrint('[UserBloc] loadProfile crashed: $e');
       emit(
         state.copyWith(isLoading: false, error: 'Could not load profile: $e'),
       );
