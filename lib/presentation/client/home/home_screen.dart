@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../../domain/bloc/auth/auth_bloc.dart';
 import '../../../domain/bloc/cart/cart_bloc.dart';
 import '../../../domain/bloc/products/products_bloc.dart';
+import '../../../domain/bloc/user/user_bloc.dart';
 import '../../../domain/models/address.dart';
 import '../../../domain/models/category.dart';
 import '../../components/shimmer_frave.dart';
@@ -45,6 +48,12 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
       final bloc = context.read<ProductsBloc>();
       bloc.add(const OnGetCategoriesEvent());
       bloc.add(const OnGetTopProductsEvent());
+      // UC-06 — load the inline avatar bytes so the header shows the
+      // uploaded avatar even while the Storage bucket is unavailable.
+      final uid = context.read<AuthBloc>().state.user?.uid ?? '';
+      if (uid.isNotEmpty) {
+        context.read<UserBloc>().add(OnLoadUserProfileEvent(uid: uid));
+      }
     });
   }
 
@@ -85,6 +94,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
               const SizedBox(height: 12),
               _Header(
                 avatarUrl: auth.user?.image,
+                avatarBytes: context.select<UserBloc, Uint8List?>(
+                  (b) => b.state.avatarBytes,
+                ),
                 firstName: auth.user?.firstName ?? '',
                 cartCount: cartCount,
                 onCartPressed: () => context.push('/client/cart'),
@@ -203,12 +215,20 @@ class _ProductsGrid extends StatelessWidget {
 
 class _Header extends StatelessWidget {
   final String? avatarUrl;
+
+  /// Inline avatar bytes (UC-06 fallback).  The Firebase Storage bucket of
+  /// this project is not provisioned, so a freshly uploaded avatar is kept
+  /// base64-encoded in the Realtime Database.  When those bytes are present
+  /// they win over [avatarUrl] because there is no public URL to resolve.
+  final Uint8List? avatarBytes;
+
   final String firstName;
   final int cartCount;
   final VoidCallback onCartPressed;
 
   const _Header({
     required this.avatarUrl,
+    required this.avatarBytes,
     required this.firstName,
     required this.cartCount,
     required this.onCartPressed,
@@ -231,17 +251,7 @@ class _Header extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             clipBehavior: Clip.antiAlias,
-            child: (avatarUrl == null || avatarUrl!.isEmpty)
-                ? const Icon(
-                    Icons.person,
-                    color: ColorsFrave.primaryColor,
-                  )
-                : ImageResolver.resolveWidget(
-                    avatarUrl!,
-                    width: 44,
-                    height: 44,
-                    fit: BoxFit.cover,
-                  ),
+            child: _avatarContent(),
           ),
         ),
         const SizedBox(width: 12),
@@ -301,6 +311,37 @@ class _Header extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+
+  /// Renders the avatar: inline bytes first (Realtime Database fallback),
+  /// then the remote URL, then the default placeholder icon.
+  Widget _avatarContent() {
+    final bytes = avatarBytes;
+    if (bytes != null && bytes.isNotEmpty) {
+      return Image.memory(
+        bytes,
+        width: 44,
+        height: 44,
+        fit: BoxFit.cover,
+        gaplessPlayback: true,
+        errorBuilder: (_, _, _) => const Icon(
+          Icons.person,
+          color: ColorsFrave.primaryColor,
+        ),
+      );
+    }
+    if (avatarUrl == null || avatarUrl!.isEmpty) {
+      return const Icon(
+        Icons.person,
+        color: ColorsFrave.primaryColor,
+      );
+    }
+    return ImageResolver.resolveWidget(
+      avatarUrl!,
+      width: 44,
+      height: 44,
+      fit: BoxFit.cover,
     );
   }
 }
