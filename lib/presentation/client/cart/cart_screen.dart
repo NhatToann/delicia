@@ -64,9 +64,13 @@ class CartScreen extends StatelessWidget {
                       onIncrease: () => cartBloc.add(
                         OnIncreaseQuantityProductToCartEvent(i),
                       ),
-                      onDecrease: () => cartBloc.add(
-                        OnDecreaseProductQuantityToCartEvent(i),
-                      ),
+                      // Tapping "-" on the last remaining unit removes the
+                      // item from the cart entirely (UC-04).
+                      onDecrease: () => p.quantity > 1
+                          ? cartBloc.add(
+                              OnDecreaseProductQuantityToCartEvent(i),
+                            )
+                          : cartBloc.add(OnDeleteProductToCartEvent(i)),
                       onDelete: () =>
                           cartBloc.add(OnDeleteProductToCartEvent(i)),
                     );
@@ -199,7 +203,7 @@ class _CartItem extends StatelessWidget {
                 children: [
                   _circleBtn(
                     icon: Icons.remove,
-                    onTap: product.quantity > 1 ? onDecrease : null,
+                    onTap: onDecrease,
                   ),
                   const SizedBox(width: 10),
                   TextCustom(

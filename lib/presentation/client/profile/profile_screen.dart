@@ -81,7 +81,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: ColorsFrave.darkText),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/client/home');
+            }
+          },
         ),
         title: const TextCustom('My Profile', fontWeight: FontWeight.bold),
         centerTitle: true,

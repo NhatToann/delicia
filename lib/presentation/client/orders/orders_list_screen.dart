@@ -55,7 +55,17 @@ class _OrdersListScreenState extends State<OrdersListScreen>
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: ColorsFrave.darkText),
-          onPressed: () => context.pop(),
+          // After checkout the app navigates to this screen with `go()`,
+          // which replaces the whole stack — so there is nothing to pop
+          // and the back button would silently do nothing.  Fall back to
+          // the client home screen in that case.
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/client/home');
+            }
+          },
         ),
         title: const TextCustom('My Orders', fontWeight: FontWeight.bold),
         centerTitle: true,

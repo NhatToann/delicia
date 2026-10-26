@@ -48,7 +48,13 @@ class _AddressListScreenState extends State<AddressListScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: ColorsFrave.darkText),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/client/home');
+            }
+          },
         ),
         title: const TextCustom('My Addresses', fontWeight: FontWeight.bold),
         centerTitle: true,

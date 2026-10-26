@@ -67,7 +67,13 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: ColorsFrave.darkText),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/client/home');
+            }
+          },
         ),
         title: TextCustom(
           isEditing ? 'Edit address' : 'Add address',

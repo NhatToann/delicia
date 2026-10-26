@@ -7,7 +7,11 @@ Future<void> modalLoading(BuildContext context) {
     context: context,
     barrierDismissible: false,
     builder: (_) => PopScope(
-      canPop: false,
+      // The spinner must never trap the user: the hardware/gesture back
+      // button has to be able to dismiss it.  `canPop: false` used to leave
+      // an undismissable overlay on screen, which also blocked the back
+      // button of the page underneath.
+      canPop: true,
       child: const Center(
         child: CircularProgressIndicator(color: ColorsFrave.primaryColor),
       ),

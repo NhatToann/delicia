@@ -84,7 +84,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: ColorsFrave.darkText),
-          onPressed: () => context.pop(),
+          // Guard against being entered through a `go()` navigation (e.g.
+          // straight after checkout) where there is no previous page to pop.
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/client/orders');
+            }
+          },
         ),
         title: TextCustom(
           'Order #${widget.orderId.substring(0, widget.orderId.length.clamp(0, 8))}',
