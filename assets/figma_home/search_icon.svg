@@ -1,0 +1,6 @@
+<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Search magnifier">
+<circle id="Lens" cx="9" cy="9" r="5.2" stroke="#676767" stroke-width="1.6"/>
+<path id="Handle" d="M13.2 13.2L17 17" stroke="#676767" stroke-width="1.6" stroke-linecap="round"/>
+</g>
+</svg>
