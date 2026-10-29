@@ -79,3 +79,49 @@ GoogleService-Info.plist
 # KHÔNG push lên GitHub — bỏ comment nếu muốn share với team
 tasks/
 docs/internal/
+
+# ---------------------------------------------------------------------------
+# Agent-context hygiene
+# ---------------------------------------------------------------------------
+# The lines below exist to keep the agent's file index and `git status` small.
+# None of them affect the Flutter build — `assets/` is still bundled exactly
+# as before. They only stop ~45 MB of binary design payloads from being
+# listed on every turn, which is what made agent round-trips slow.
+
+# Visual-regression scratch output.
+# `test/goldens/` and the checked-in golden PNGs ARE tracked and must stay
+# visible to git. Everything below is an ad-hoc probe a developer dumps
+# while eyeballing a layout — throwaway.
+#
+# NOTE: the user does NOT want agent-generated probe tests. Do not create
+# files matching these patterns — verify with `flutter analyze` / the
+# existing real tests instead.
+test/_*.png
+test/_*.dart
+test/_*.py
+test/_*.json
+test/_*.xml
+test/_crops/
+test/failures/
+.tmpfig/
+scripts/_*.png
+scripts/_*.dart
+scripts/_*.py
+scripts/_*.ps1
+scripts/_*.json
+scripts/_*.xml
+scripts/search_*.png
+screenshots/
+tool/
+
+# The generated l10n classes are produced by `flutter gen-l10n` from
+# `lib/l10n/app_vi.arb`. The ARB file is the source of truth; the
+# generated Dart is a build artifact.
+lib/l10n/generated/
+
+# The Figma UI-kit reference PNGs (design reference only, ~45 MB).
+# They are read by humans looking at the original design, never by the app.
+assets/Food Delivery App UI Kit Food App Design Food Mobile App Delivery UI (Community)/
+assets/figma_raw/
+# Widget Preview related
+.widget_preview/

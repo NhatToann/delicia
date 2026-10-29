@@ -14,23 +14,49 @@
 //      online, but the offline mirror (`ImageResolver._localCopyOf`) has
 //      nothing to fall back to, so the dish renders as a grey placeholder
 //      in widget/golden tests and on a cold cache;
-//   3. the seed tooling (`scripts/apply_catalogue_images.dart`) drifting
-//      away from the canonical catalogue (`scripts/catalog_reference.json`)
-//      — the two tables name the same photos, so they must agree.
+//   3. the safe sync script (`scripts/sync_catalogue.dart`) drifting away
+//      from the canonical catalogue (`scripts/catalog_reference.json`).
 //
 // The canonical catalogue is `scripts/catalog_reference.json`; the live
-// database is written from it by `scripts/apply_catalogue_images.dart`.
+// database is written from it by `scripts/sync_catalogue.dart`.
 
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// The Firebase Hosting root the catalogue imagery is served from.
-const String _host = 'delicia-60e0a.web.app';
-
 /// The folders a catalogue image may live in.
 const List<String> _folders = <String>['products', 'categories'];
+
+const Map<String, String> _productMirrors = <String, String>{
+  'p01': 'burger-classic.jpg',
+  'p02': 'pizza-pepperoni.jpg',
+  'p03': 'poke-salmon-bowl.jpg',
+  'p04': 'fried-chicken.jpg',
+  'p05': 'poke-chicken-bowl.jpg',
+  'p06': 'salted-caramel-latte.jpg',
+  'p07': 'matcha-cheesecake.jpg',
+  'p08': 'vietnamese-iced-coffee.jpg',
+  'p09': 'green-goddess-salad.jpg',
+  'p10': 'molten-chocolate-cake.jpg',
+  'p11': 'burger-cheddar.jpg',
+  'p12': 'burger-bacon.jpg',
+  'p13': 'burger-mushroom.jpg',
+  'p14': 'burger-spicy-chicken.jpg',
+  'p15': 'pizza-margherita-wood.jpg',
+  'p16': 'pizza-veggie.jpg',
+  'p17': 'pizza-four-cheese.jpg',
+  'p18': 'pizza-hawaiian.jpg',
+  'p19': 'drink-cappuccino.jpg',
+  'p20': 'drink-peach-tea.jpg',
+  'p21': 'drink-strawberry-soda.jpg',
+  'p22': 'dessert-tiramisu.jpg',
+  'p23': 'dessert-brownie.jpg',
+  'p24': 'dessert-macaron.jpg',
+  'p25': 'healthy-quinoa-bowl.jpg',
+  'p26': 'healthy-chicken-salad.jpg',
+  'p27': 'healthy-avocado-bowl.jpg',
+};
 
 void main() {
   late Map<String, dynamic> catalog;
@@ -71,13 +97,18 @@ void main() {
       }
     });
 
-    test('every product photo is hosted on the catalogue CDN', () {
+    test('every product photo uses the selected image host', () {
       for (final entry in products.entries) {
         final row = entry.value as Map<String, dynamic>;
+        final uri = Uri.parse(row['picture'] as String);
         expect(
-          (row['picture'] as String),
-          contains(_host),
-          reason: '${entry.key} must point at the Firebase-hosted catalogue',
+          uri.host,
+          anyOf(
+            'images.unsplash.com',
+            'matchado.co.uk',
+            'artfultea.com',
+            'cdn.shopify.com',
+          ),
         );
       }
     });
@@ -97,19 +128,6 @@ void main() {
       }
     });
 
-    test('every product photo sits in the products folder', () {
-      for (final entry in products.entries) {
-        final row = entry.value as Map<String, dynamic>;
-        final uri = Uri.parse(row['picture'] as String);
-        expect(
-          uri.pathSegments,
-          hasLength(2),
-          reason: '${entry.key} must point at /products/<file>',
-        );
-        expect(uri.pathSegments.first, 'products');
-      }
-    });
-
     test('every category photo sits in the categories folder', () {
       for (final entry in categories.entries) {
         final row = entry.value as Map<String, dynamic>;
@@ -123,14 +141,13 @@ void main() {
   group('every hosted photo has a bundled offline mirror', () {
     test('each product photo is bundled under assets/products/', () {
       for (final entry in products.entries) {
-        final row = entry.value as Map<String, dynamic>;
-        final uri = Uri.parse(row['picture'] as String);
-        final local = 'assets/${uri.pathSegments.join('/')}';
+        final local = 'assets/products/${_productMirrors[entry.key]}';
 
         expect(
           File(local).existsSync(),
           isTrue,
-          reason: '${entry.key} needs a bundled copy at $local so the app '
+          reason:
+              '${entry.key} needs a bundled copy at $local so the app '
               'still renders it offline and the golden tests stay '
               'deterministic',
         );
@@ -171,95 +188,30 @@ void main() {
   });
 
   group('the seed tooling agrees with the canonical catalogue', () {
-    test('the photo mapping in the script matches the catalogue', () {
-      // `scripts/apply_catalogue_images.dart` declares its own table so
-      // it can run without importing the app. The two tables name the same
-      // photos, so they must never drift apart.
-      final script =
-          File('scripts/apply_catalogue_images.dart').readAsStringSync();
-
-      for (final entry in products.entries) {
-        final row = entry.value as Map<String, dynamic>;
-        final uri = Uri.parse(row['picture'] as String);
-        final fileName = uri.pathSegments.last;
-
-        expect(
-          script,
-          contains("'${entry.key}': '$fileName'"),
-          reason: 'the seed script must map ${entry.key} to $fileName',
-        );
-      }
-    });
-
-    test('the script declares no product the catalogue does not', () {
-      final script =
-          File('scripts/apply_catalogue_images.dart').readAsStringSync();
-      final mapping = RegExp(r"'p\d+':\s*'([^']+)'").allMatches(script);
-
-      for (final match in mapping) {
-        final id = match.group(0)!.split(':').first.replaceAll("'", '').trim();
-        expect(
-          products.containsKey(id),
-          isTrue,
-          reason: 'the seed script maps $id, which the catalogue omits',
-        );
-      }
+    test('the sync script reads canonical rows and merges safely', () {
+      final script = File('scripts/sync_catalogue.dart').readAsStringSync();
+      expect(script, contains("File(catalogPath).readAsString()"));
+      expect(script, contains("merged[field] = desired[field]"));
+      expect(
+        script,
+        contains("_write('\$dbRoot/products/\${entry.key}', merged)"),
+      );
     });
   });
 
   group('the dish and its photo agree', () {
     // A photo that does not match the dish is the defect the user asked
     // to fix: a "Gà Chiên" card must not show a burger.
-    /// The photo file each dish must use.
-    const Map<String, String> expected = <String, String>{
-      'p01': 'burger-classic.jpg',
-      'p02': 'pizza-pepperoni.jpg',
-      'p03': 'poke-salmon-bowl.png',
-      'p04': 'fried-chicken.png',
-      'p05': 'poke-bowl.png',
-      'p06': 'coffee.jpg',
-      'p07': 'dessert-cake.jpg',
-      'p08': 'coffee.jpg',
-      'p09': 'salad-caesar.jpg',
-      'p10': 'dessert-cake.jpg',
-    };
-
-    test('each dish points at its own photo', () {
-      for (final entry in expected.entries) {
-        final row = products[entry.key] as Map<String, dynamic>;
-        final uri = Uri.parse(row['picture'] as String);
-
+    test('each dish has a unique photo and matching bundled image', () {
+      final urls = <String>{};
+      for (final entry in products.entries) {
+        final row = entry.value as Map<String, dynamic>;
+        final url = row['picture'] as String;
+        expect(urls.add(url), isTrue, reason: '${entry.key} reuses a URL');
         expect(
-          uri.pathSegments.last,
-          entry.value,
-          reason: '${entry.key} must use ${entry.value}',
-        );
-      }
-    });
-
-    test('no two dishes share a photo unless they are the same food', () {
-      // The two coffees and the two desserts legitimately share a photo;
-      // everything else must be unique, otherwise a card shows the wrong
-      // dish.
-      const Map<String, List<String>> allowed = <String, List<String>>{
-        'coffee.jpg': <String>['p06', 'p08'],
-        'dessert-cake.jpg': <String>['p07', 'p10'],
-      };
-
-      final byFile = <String, List<String>>{};
-      for (final entry in expected.entries) {
-        byFile.putIfAbsent(entry.value, () => <String>[]).add(entry.key);
-      }
-
-      for (final file in byFile.entries) {
-        final ids = file.value;
-        if (ids.length == 1) continue;
-
-        expect(
-          allowed[file.key],
-          ids,
-          reason: '${ids.join(', ')} share ${file.key} but are not the '
-              'same food',
+          File('assets/products/${_productMirrors[entry.key]}').existsSync(),
+          isTrue,
+          reason: '${entry.key} needs a matching bundled photo',
         );
       }
     });

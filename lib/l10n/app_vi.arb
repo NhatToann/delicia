@@ -1,0 +1,659 @@
+{
+  "@@locale": "vi",
+
+  "appTitle": "Delicia",
+
+  "actionSignIn": "Đăng nhập",
+  "actionSignUp": "Đăng ký",
+  "actionSignOut": "Đăng xuất",
+  "actionLogOut": "Đăng xuất",
+  "actionCancel": "Huỷ",
+  "actionEdit": "Sửa",
+  "actionSave": "Lưu",
+  "actionConfirm": "Xác nhận",
+  "actionBack": "Quay lại",
+  "actionRetry": "Thử lại",
+  "actionClose": "Đóng",
+  "actionClear": "Xoá nội dung",
+  "actionApply": "Áp dụng",
+  "actionViewAll": "Xem tất cả",
+  "homeCollapseSection": "Thu gọn",
+  "actionSearch": "Tìm kiếm",
+  "actionFilter": "Lọc",
+  "actionPayNow": "Thanh toán ngay",
+  "actionAddToCart": "Thêm vào giỏ hàng",
+  "actionCancelOrder": "Huỷ đơn hàng",
+  "actionTrackDelivery": "Theo dõi giao hàng",
+  "actionTrackDriver": "Theo dõi tài xế",
+  "actionCallCourier": "Gọi tài xế",
+  "actionMessageCourier": "Nhắn tin tài xế",
+  "actionIncreaseQuantity": "Tăng số lượng",
+  "actionDecreaseQuantity": "Giảm số lượng",
+  "actionRemoveItem": "Xoá món",
+  "actionResendLink": "Gửi lại liên kết",
+  "actionSend": "Gửi",
+  "actionContinue": "Tiếp tục",
+  "authResendIn": "Gửi lại sau {seconds}s",
+  "@authResendIn": {
+    "placeholders": { "seconds": { "type": "int" } }
+  },
+  "actionUseThisAddress": "Dùng địa chỉ này",
+  "actionUseCurrentLocation": "Dùng vị trí hiện tại của tôi",
+
+  "loadingGeneric": "Đang tải...",
+  "loadingMenu": "Đang tải thực đơn...",
+  "loadingLabel": "Đang tải {label}...",
+  "@loadingLabel": {
+    "placeholders": { "label": { "type": "String" } }
+  },
+  "processing": "Đang xử lý...",
+  "actionDone": "Xong",
+  "actionCheckout": "Thanh toán",
+  "actionOk": "OK",
+
+  "navHome": "Trang chủ",
+  "navSearch": "Tìm kiếm",
+  "navCart": "Giỏ hàng",
+  "navOrders": "Đơn hàng",
+  "navProfile": "Hồ sơ",
+
+  "greetingMorning": "Chào buổi sáng",
+  "greetingAfternoon": "Chào buổi chiều",
+  "greetingEvening": "Chào buổi tối",
+  "greetingWithName": "{greeting}, {name}",
+  "timeJustNow": "Vừa xong",
+  "timeMinutesAgo": "{count} phút trước",
+  "timeHoursAgo": "{count} giờ trước",
+  "timeYesterday": "Hôm qua",
+  "timeDaysAgo": "{count} ngày trước",
+  "@timeMinutesAgo": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "@timeHoursAgo": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "@timeDaysAgo": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "@greetingWithName": {
+    "placeholders": {
+      "greeting": { "type": "String" },
+      "name": { "type": "String" }
+    }
+  },
+
+  "introTagline": "Món ngon yêu thích, giao nhanh tới nơi",
+  "introWelcome": "Chào mừng đến với Delicia!",
+  "introDescription": "Đặt món từ những nhà hàng ngon gần bạn và nhận giao trong vài phút.",
+  "introCreateAccount": "Tạo tài khoản",
+
+  "roleTitle": "Chọn cách bạn muốn sử dụng ứng dụng",
+  "roleCustomer": "Khách hàng",
+  "roleCustomerSubtitle": "Đặt món và theo dõi giao hàng",
+  "roleRestaurant": "Nhà hàng",
+  "roleRestaurantSubtitle": "Quản lý thực đơn, đơn hàng và giao hàng",
+  "roleDelivery": "Tài xế giao hàng",
+  "roleDeliverySubtitle": "Nhận và giao đơn hàng",
+
+  "authSignInTitle": "Đăng nhập",
+  "authSignUpTitle": "Đăng ký",
+  "authLoginSubtitle": "Đăng nhập vào tài khoản của bạn",
+  "authRegisterSubtitle": "Tạo tài khoản của bạn",
+  "authRegisterTagline": "Đăng ký để bắt đầu đặt món ngon",
+  "authEmailAddress": "Địa chỉ email",
+  "authEmail": "Email",
+  "authPassword": "Mật khẩu",
+  "authConfirmPassword": "Xác nhận mật khẩu",
+  "authFullName": "Họ và tên",
+  "authPhoneNumber": "Số điện thoại",
+  "authForgotPassword": "Quên mật khẩu?",
+  "authForgotPasswordTitle": "Quên mật khẩu",
+  "authResetPasswordSubtitle": "Đặt lại mật khẩu",
+  "authResetPasswordDescription": "Chúng tôi sẽ gửi cho bạn một liên kết để đặt lại mật khẩu.",
+  "authOrContinueWith": "Hoặc tiếp tục với",
+  "authNoAccount": "Chưa có tài khoản?",
+  "authHasAccount": "Đã có tài khoản?",
+  "authTermsAgreement": "Bằng việc tạo tài khoản, bạn đồng ý với Điều khoản dịch vụ và Chính sách bảo mật của chúng tôi",
+  "authCheckEmailTitle": "Kiểm tra email",
+  "authCheckEmailHeadline": "Chúng tôi đã gửi cho bạn một liên kết",
+  "authCheckEmailDescription": "Kiểm tra hộp thư và làm theo hướng dẫn để đặt lại mật khẩu.",
+  "authBackToLogin": "Quay lại đăng nhập",
+  "authFlowComplete": "Đăng nhập thành công!",
+  "authAccountCreated": "Tạo tài khoản thành công! Vui lòng đăng nhập.",
+
+  "validationEmailRequired": "Email là bắt buộc",
+  "validationEmailInvalid": "Nhập email hợp lệ",
+  "validationPasswordRequired": "Mật khẩu là bắt buộc",
+  "validationPasswordTooShort": "Mật khẩu phải có ít nhất 6 ký tự",
+  "validationPasswordsDoNotMatch": "Mật khẩu không khớp",
+  "validationConfirmPassword": "Vui lòng xác nhận mật khẩu",
+  "validationNameRequired": "Họ và tên là bắt buộc",
+  "validationPhoneRequired": "Số điện thoại là bắt buộc",
+  "validationPhoneInvalid": "Nhập số điện thoại hợp lệ",
+
+  "homeBadgeDiscount": "GIẢM 30%",
+  "homeTaglineNewDish": "Trải nghiệm món mới ngon lành của chúng tôi",
+  "homeBannerFresh": "TƯƠI MỚI & XANH",
+  "homeBannerBurger": "BURGER KHỔNG LỒ",
+  "homeBannerPizza": "PIZZA ĐÚNG VỊ",
+  "homeBannerWeekly": "ĐẶC BIỆT TRONG TUẦN",
+  "homeBannerFreshSubtitle": "Nguyên liệu tuyển chọn, phục vụ trong ngày",
+  "homeBannerBurgerSubtitle": "Hai miếng thịt, phô mai tan chảy, bánh mì tươi",
+  "homeBannerPizzaSubtitle": "Nướng đá lò với nhân tươi từ nông trại",
+  "homeBannerWeeklySubtitle": "Thử thực đơn đặc biệt theo mùa",
+  "homeAllDishes": "Tất cả món ăn",
+  "homeBestSeller": "Bán chạy",
+  "homeRecommend": "Gợi ý",
+  "homeMenu": "Thực đơn",
+  "homeRiseAndShine": "Tỉnh táo đi! Đã đến giờ ăn sáng",
+  "homeRecommendedSection": "Gợi ý",
+  "homeAllDishesSection": "Tất cả món ăn",
+  "homeSectionProducts": "Sản phẩm {title}",
+  "@homeSectionProducts": {
+    "placeholders": { "title": { "type": "String" } }
+  },
+  "homePromoDotLabel": "Tới banner {index}",
+  "@homePromoDotLabel": {
+    "placeholders": { "index": { "type": "int" } }
+  },
+  "homePullToRefreshRecommended": "Kéo để làm mới và tải các món gợi ý.",
+  "homeFilterByCategory": "Lọc theo danh mục",
+  "homeNotifications": "Thông báo",
+  "homeMenuSection": "Thực đơn",
+  "navTracking": "Theo dõi",
+  "navDiscover": "Khám phá",
+  "cartBadgeLabel": "Giỏ hàng, {count} món",
+  "@cartBadgeLabel": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "homePullToRefresh": "Kéo để làm mới và tải các món gợi ý.",
+  "homeNoBestSellers": "Chưa có món bán chạy — hãy kéo để làm mới sau khi dữ liệu tải xong.",
+  "homeCategoryProducts": "Sản phẩm {title}",
+  "@homeCategoryProducts": {
+    "placeholders": { "title": { "type": "String" } }
+  },
+  "homeItemCount": "{count} món",
+  "@homeItemCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "categorySnacks": "Món ăn vặt",
+  "categoryMeal": "Món chính",
+  "categoryVegan": "Món chay",
+  "categoryDessert": "Tráng miệng",
+  "categoryDrinks": "Đồ uống",
+  "discoverSortTitle": "Sắp xếp món ăn",
+  "discoverFilterTitle": "Lọc món ăn",
+  "discoverSortBy": "Sắp xếp:",
+  "discoverPopular": "Phổ biến",
+  "discoverPriceLowToHigh": "Giá thấp đến cao",
+  "discoverPriceHighToLow": "Giá cao đến thấp",
+  "discoverTopRated": "Đánh giá cao",
+  "discoverAllCategories": "Tất cả",
+  "discoverDiscountOnly": "Chỉ món đang giảm giá",
+  "discoverMinimumRating": "Đánh giá tối thiểu",
+  "discoverAnyRating": "Mọi mức",
+  "homeAddedToCart": "Đã thêm vào giỏ hàng",
+  "homeAddedProductToCart": "Đã thêm {product} vào giỏ hàng",
+  "@homeAddedProductToCart": {
+    "placeholders": { "product": { "type": "String" } }
+  },
+  "homeAddProductToCart": "Thêm {product} vào giỏ hàng",
+  "@homeAddProductToCart": {
+    "placeholders": { "product": { "type": "String" } }
+  },
+  "homeAddProductToFavourites": "Thêm {product} vào yêu thích",
+  "@homeAddProductToFavourites": {
+    "placeholders": { "product": { "type": "String" } }
+  },
+  "homeRemoveProductFromFavourites": "Bỏ {product} khỏi yêu thích",
+  "@homeRemoveProductFromFavourites": {
+    "placeholders": { "product": { "type": "String" } }
+  },
+  "homeProductSaved": "Đã lưu {product}",
+  "@homeProductSaved": {
+    "placeholders": { "product": { "type": "String" } }
+  },
+  "homeProductRemovedFromFavourites": "Đã bỏ {product} khỏi yêu thích",
+  "@homeProductRemovedFromFavourites": {
+    "placeholders": { "product": { "type": "String" } }
+  },
+
+  "profileTitle": "Hồ sơ",
+  "profileMyProfile": "Hồ sơ của tôi",
+  "profileFullName": "Họ và tên",
+  "profileDateOfBirth": "Ngày sinh",
+  "profileEmail": "Email",
+  "profilePhoneNumber": "Số điện thoại",
+  "profileUpdateButton": "Cập nhật hồ sơ",
+  "profileUpdated": "Cập nhật hồ sơ thành công.",
+  "profilePhoto": "Ảnh đại diện",
+  "profileChoosePhoto": "Chọn ảnh đại diện từ thư viện",
+  "profileNameRequired": "Vui lòng nhập họ và tên.",
+  "profileNameInvalid": "Họ tên không hợp lệ.",
+  "profileDateRequired": "Vui lòng chọn ngày sinh.",
+  "profileDateInvalid": "Ngày sinh không hợp lệ.",
+  "profileEmailInvalid": "Email trong hồ sơ không hợp lệ.",
+  "profilePhoneRequired": "Vui lòng nhập số điện thoại.",
+  "profilePhoneInvalid": "Số điện thoại không hợp lệ.",
+  "profileImageInvalid": "Ảnh không hợp lệ. Hãy chọn JPEG, PNG hoặc WebP.",
+  "profileImageTooLarge": "Ảnh hồ sơ phải nhỏ hơn 1 MB sau khi thu nhỏ.",
+  "profileImagePickFailed": "Không thể mở thư viện ảnh. Vui lòng thử lại.",
+  "profileImagePluginRestartRequired": "Plugin thư viện ảnh chưa được nạp. Hãy dừng hẳn ứng dụng, chạy lại rồi thử lại.",
+  "profileSignInRequired": "Vui lòng đăng nhập để cập nhật hồ sơ.",
+  "profilePaymentMethods": "Phương thức thanh toán",
+  "profileDeliveryAddress": "Địa chỉ giao hàng",
+  "profileContactUs": "Liên hệ",
+  "profileHelpFaqs": "Trợ giúp & Câu hỏi",
+  "profileSettings": "Cài đặt",
+  "profileNotSignedIn": "Chưa đăng nhập",
+  "profileGuest": "Khách",
+  "profileCloseMenu": "Đóng menu hồ sơ",
+  "profileNotImplemented": "Chức năng \"{label}\" chưa được triển khai",
+  "@profileNotImplemented": {
+    "placeholders": { "label": { "type": "String" } }
+  },
+  "profileSignOut": "Đăng xuất",
+
+  "cartTitle": "Giỏ hàng",
+  "cartEmpty": "Giỏ hàng của bạn đang trống",
+  "cartEmptyHeadline": "Bạn muốn thêm món gì?",
+  "cartEmptyPeriod": "Giỏ hàng của bạn đang trống.",
+  "cartEmptySubtitle": "Bạn muốn thêm món gì?",
+  "cartClose": "Đóng giỏ hàng",
+  "cartSummarySubtotal": "Tạm tính",
+  "cartSummaryTax": "Thuế & Phí",
+  "cartSummaryDelivery": "Phí giao hàng",
+  "cartSummaryTotal": "Tổng cộng",
+  "ordersLoadFailedTitle": "Không thể tải đơn hàng",
+  "ordersTryAgain": "Thử lại",
+  "ordersItemCount": "{count} món",
+  "@ordersItemCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "ordersFallbackTitle": "Đơn #{id}",
+  "@ordersFallbackTitle": {
+    "placeholders": { "id": { "type": "String" } }
+  },
+  "cartWithCount": "Giỏ hàng ({count} món)",
+  "@cartWithCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "cartItemsInCart": "Bạn có {count} món trong giỏ hàng",
+  "@cartItemsInCart": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "productQuantity": "Số lượng",
+  "productDescription": "Mô tả",
+  "productPopular": "Phổ biến",
+  "productAddedToCart": "Đã thêm vào giỏ hàng",
+  "productAddToCartWithPrice": "Thêm vào giỏ hàng {price}",
+  "@productAddToCartWithPrice": {
+    "placeholders": { "price": { "type": "String" } }
+  },
+
+  "productDetailTitle": "Chi tiết món",
+  "productDetailBack": "Quay lại",
+  "productDetailFavorite": "Yêu thích",
+  "productDetailUnfavorite": "Bỏ yêu thích",
+  "productDetailAddedToFavorites": "Đã thêm vào yêu thích",
+  "productDetailRemovedFromFavorites": "Đã bỏ khỏi yêu thích",
+  "productDetailAddToCart": "Thêm vào giỏ hàng",
+  "productDetailSelectSize": "Vui lòng chọn khẩu phần",
+  "productDetailNoOptions": "Món này không có lựa chọn khẩu phần",
+  "productDetailRating": "Đánh giá {rating}",
+  "@productDetailRating": {
+    "placeholders": { "rating": { "type": "String" } }
+  },
+  "productDetailDiscount": "Giảm {percent}",
+  "@productDetailDiscount": {
+    "placeholders": { "percent": { "type": "int" } }
+  },
+  "productDetailPriceUnavailable": "Giá không xác định",
+  "productDetailSold": "Đã bán {count}",
+  "@productDetailSold": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "productSizeTitle": "Khẩu phần",
+  "productSizeSelect": "Chọn khẩu phần {label}",
+  "@productSizeSelect": {
+    "placeholders": { "label": { "type": "String" } }
+  },
+  "productSizeInStock": "Còn món",
+  "productSizeOutOfStock": "Hết món",
+
+  "paymentTitle": "Thanh toán",
+  "paymentOrderSummary": "Tóm tắt đơn hàng",
+  "paymentMethod": "Phương thức thanh toán",
+  "paymentDeliveryTime": "Thời gian giao hàng",
+  "paymentShippingAddress": "Địa chỉ giao hàng",
+  "paymentEstimatedDelivery": "Giao hàng dự kiến",
+  "paymentEstimatedMinutes": "{count} phút",
+  "@paymentEstimatedMinutes": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "paymentPayWhenReceive": "Thanh toán khi nhận hàng",
+  "paymentOrderDescription": "Đơn hàng Delicia",
+  "paymentOrderPlacedSuccess": "Đặt món thành công!",
+  "paymentMethodCashLabel": "Thanh toán khi nhận hàng",
+  "paymentMethodCreditCard": "THẺ TÍN DỤNG",
+  "paymentMethodCash": "Tiền mặt",
+  "paymentMethodPayPal": "PAYPAL",
+  "paymentMethodGooglePay": "GOOGLE PAY",
+  "paymentMethodMercadoPago": "MERCADO PAGO",
+  "paymentMethodPayOs": "payOS",
+  "paymentPayOsUnavailable": "payOS chưa được cấu hình. Vui lòng chọn tiền mặt.",
+  "paymentVoucherTitle": "Mã giảm giá",
+  "paymentVoucherSelect": "Chọn voucher",
+  "paymentVoucherAvailable": "Voucher có sẵn",
+  "paymentVoucherHint": "Nhập mã voucher",
+  "paymentVoucherApply": "Áp dụng",
+  "paymentVoucherInvalid": "Mã voucher không hợp lệ.",
+  "paymentVoucherFreeShipping": "Miễn phí giao hàng",
+  "paymentVoucherPercentOff": "Giảm {percent}% tiền món",
+  "@paymentVoucherPercentOff": {
+    "placeholders": { "percent": { "type": "int" } }
+  },
+  "paymentVoucherApplied": "Đã áp dụng {code}",
+  "@paymentVoucherApplied": {
+    "placeholders": { "code": { "type": "String" } }
+  },
+  "paymentVoucherRemove": "Gỡ",
+  "paymentVoucherDiscount": "Giảm giá ({code})",
+  "@paymentVoucherDiscount": {
+    "placeholders": { "code": { "type": "String" } }
+  },
+
+  "ordersTitle": "Đơn hàng của tôi",
+  "ordersFilterActive": "Đang xử lý",
+  "ordersFilterCompleted": "Hoàn tất",
+  "ordersFilterCancelled": "Đã huỷ",
+  "ordersFilterLabelSuffix": "bộ lọc",
+  "ordersEmptyActiveTitle": "Không có đơn hàng đang xử lý",
+  "ordersEmptyCompletedTitle": "Không có đơn hàng hoàn tất",
+  "ordersEmptyCancelledTitle": "Không có đơn hàng đã huỷ",
+  "ordersEmptyActiveSubtitle": "Bạn hiện không có đơn hàng nào đang xử lý",
+  "ordersEmptyCompletedSubtitle": "Bạn hiện không có đơn hàng hoàn tất nào",
+  "ordersEmptyCancelledSubtitle": "Bạn hiện không có đơn hàng đã huỷ nào",
+  "ordersCancelUnavailable": "Tính năng huỷ đơn sẽ có sớm. Đơn #{id} hiện vẫn {status}.",
+  "@ordersCancelUnavailable": {
+    "placeholders": {
+      "id": { "type": "String" },
+      "status": { "type": "String" }
+    }
+  },
+  "ordersOrderNumber": "Đơn #{id}",
+  "@ordersOrderNumber": {
+    "placeholders": { "id": { "type": "String" } }
+  },
+  "ordersLoadFailed": "Không thể tải danh sách đơn hàng",
+
+  "stagePlaced": "Đã đặt hàng",
+  "stagePlacedDescription": "Đơn hàng đã được xác nhận",
+  "stagePreparing": "Đang chuẩn bị",
+  "stagePreparingDescription": "Nhà hàng đang chuẩn bị món ăn cho bạn",
+  "stageDispatched": "Đã gán tài xế",
+  "stageDispatchedDescription": "Tài xế đã nhận đơn",
+  "stageOnTheWay": "Đang trên đường",
+  "stageOnTheWayDescription": "Đang trên đường tới địa chỉ của bạn",
+  "stageDelivered": "Đã giao",
+  "stageDeliveredDescription": "Chúc bạn thưởng thức món ngon!",
+  "stageProgress": "Tiến trình đơn hàng",
+
+  "driverCourierTitle": "Tài xế giao hàng",
+  "driverCourierSubtitle": "Việc này chỉ mất chút thời gian",
+  "driverVehicleMotorbike": "Xe máy",
+  "driverVehicleCar": "Ô tô",
+  "driverVehicleBicycle": "Xe đạp",
+  "driverAssigning": "Đang chỉ định tài xế…",
+  "driverOnlyMoment": "Việc này chỉ mất chút thời gian",
+  "driverInfoLine": "{name} · {plate}",
+  "@driverInfoLine": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "plate": { "type": "String" }
+    }
+  },
+
+  "mapDeliverTo": "Giao đến",
+  "mapDeliveringToSavedAddress": "Đang giao tới địa chỉ đã lưu",
+  "mapSavedAddress": "Địa chỉ đã lưu",
+  "mapPreparingDescription": "Đơn hàng đang được chuẩn bị. Bản đồ sẽ mở khi tài xế nhận đơn.",
+  "mapNoActiveOrder": "Chưa có đơn hàng nào để theo dõi.",
+  "mapLiveTrackingUnavailable": "Tính năng theo dõi trực tiếp chưa khả dụng",
+  "mapBackToOrders": "Quay lại đơn hàng",
+  "mapDelivered": "Đã giao",
+  "mapUnavailable": "Bản đồ không khả dụng",
+  "mapAddressUnavailable": "Không có địa chỉ",
+  "mapSelectedOnMap": "Đã chọn trên bản đồ",
+  "mapSimulationStart": "Mô phỏng tuyến giao hàng",
+  "mapSimulationStop": "Dừng mô phỏng",
+  "mapCalculatingRoute": "Đang tính tuyến đường...",
+  "mapArrivingNow": "Sắp tới nơi",
+  "mapArrivesInMinutes": "Đến nơi sau {count} phút",
+  "@mapArrivesInMinutes": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "mapFindingCourier": "Đang tìm tài xế trên đường...",
+  "mapFitRoute": "Vừa khung tuyến đường",
+  "mapCurrentLocation": "Về vị trí hiện tại",
+  "mapDistanceAway": "cách {distance}",
+  "@mapDistanceAway": {
+    "placeholders": { "distance": { "type": "String" } }
+  },
+
+  "addressChoose": "Chọn địa chỉ giao hàng",
+  "addressSearchHint": "Tìm số nhà, tên đường, địa điểm",
+  "addressSearch": "Tìm địa điểm",
+  "addressSearchFailed": "Không tìm thấy địa điểm. Hãy thử tên đường hoặc quận gần đó.",
+  "addressSearchNoResults": "Không có kết quả phù hợp. Hãy thử thêm tên quận hoặc thành phố.",
+  "addressSearching": "Đang tìm địa điểm...",
+  "addressSearchTypeMore": "Nhập thêm ký tự để nhận gợi ý địa chỉ.",
+  "addressSearchTrySubmit": "Chưa có gợi ý. Nhấn nút tìm để tìm địa chỉ đầy đủ.",
+  "addressRecentPlaces": "Địa điểm gần đây",
+  "addressHistoryEmpty": "Chưa có địa điểm đã lưu",
+  "addressExactCoordinates": "Vị trí: {coordinates}",
+  "@addressExactCoordinates": {
+    "placeholders": { "coordinates": { "type": "String" } }
+  },
+  "addressPickLocation": "Chọn một vị trí",
+  "addressTapMap": "Chạm vào bản đồ để đặt điểm",
+  "addressLocating": "Đang định vị...",
+  "addressLocationFailed": "Không thể lấy vị trí của bạn. Vui lòng thử lại",
+  "addressPasteHint": "Bạn vẫn có thể dùng vị trí hiện tại, hoặc dán tên đường bên dưới.",
+  "addressUse": "Dùng",
+  "addressPermissionDenied": "Quyền truy cập vị trí bị từ chối",
+  "addressEnableGps": "Vui lòng bật GPS",
+  "addressEnableGpsForLocation": "Vui lòng bật GPS để dùng vị trí hiện tại",
+
+  "searchHint": "Tìm kiếm món ăn...",
+  "searchNoResults": "Không có kết quả cho \"{query}\"",
+  "@searchNoResults": {
+    "placeholders": { "query": { "type": "String" } }
+  },
+  "searchNoProducts": "Chưa có món ăn nào",
+  "searchTryDifferent": "Thử từ khoá khác",
+  "searchCheckBackLater": "Hãy quay lại sau để xem món mới",
+  "searchResultCount": "{count, plural, =0{Không có món nào} =1{1 món ăn} other{{count} món ăn}}",
+  "@searchResultCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "placeholderAdminHome": "Trang chủ Admin (UC-08)",
+  "placeholderDeliveryHome": "Trang chủ Tài xế giao hàng (UC-10)",
+
+  "errorGeneric": "Đã xảy ra lỗi. Vui lòng thử lại.",
+  "errorWithDetail": "Đã xảy ra lỗi: {detail}",
+  "@errorWithDetail": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorAuthInvalidCredentials": "Email hoặc mật khẩu không đúng.",
+  "errorAuthEmailInUse": "Email này đã được đăng ký. Hãy thử đăng nhập.",
+  "errorAuthWeakPassword": "Mật khẩu quá yếu. Hãy dùng ít nhất 6 ký tự.",
+  "errorAuthProviderDisabled": "Đăng nhập bằng email/mật khẩu chưa được bật. Hãy bật trong Firebase Console → Authentication → Sign-in method.",
+  "errorAuthAccountDisabled": "Tài khoản này đã bị vô hiệu hoá.",
+  "errorAuthTooManyRequests": "Quá nhiều lần thử. Vui lòng thử lại sau.",
+  "errorAuthInvalidEmail": "Địa chỉ email không hợp lệ.",
+  "errorAuthNetwork": "Lỗi mạng. Vui lòng kiểm tra kết nối.",
+  "errorAuthUnknown": "Lỗi xác thực ({code})",
+  "@errorAuthUnknown": {
+    "placeholders": { "code": { "type": "String" } }
+  },
+  "errorAuthLoginNoUser": "Đăng nhập thất bại: Firebase không trả về người dùng",
+  "errorAuthRegisterNoUser": "Đăng ký thất bại: Firebase không trả về người dùng",
+  "errorAuthProfileCreate": "Không thể tạo hồ sơ người dùng (lỗi vùng dữ liệu): {detail}",
+  "@errorAuthProfileCreate": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorAuthProfileUpdate": "Không thể cập nhật hồ sơ: {detail}",
+  "@errorAuthProfileUpdate": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorAuthUnexpectedLogin": "Lỗi đăng nhập không mong muốn: {detail}",
+  "@errorAuthUnexpectedLogin": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorAuthUnexpectedRegister": "Lỗi đăng ký không mong muốn: {detail}",
+  "@errorAuthUnexpectedRegister": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorAuthUnexpectedForgot": "Lỗi quên mật khẩu không mong muốn: {detail}",
+  "@errorAuthUnexpectedForgot": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorFirebaseNotInitialised": "Cơ sở dữ liệu Firebase chưa được khởi tạo.",
+  "errorFirebaseNotInitialisedHint": "Hãy gọi Firebase.initializeApp() trước.",
+  "errorProductsLoad": "Không thể tải danh phẩm: {detail}",
+  "@errorProductsLoad": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorProductsLoadByCategory": "Không thể tải danh phẩm theo danh mục: {detail}",
+  "@errorProductsLoadByCategory": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorProductLoad": "Không thể tải sản phẩm: {detail}",
+  "@errorProductLoad": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorProductsSearch": "Không thể tìm kiếm sản phẩm: {detail}",
+  "@errorProductsSearch": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorProductsTopLoad": "Không thể tải sản phẩm nổi bật: {detail}",
+  "@errorProductsTopLoad": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorProductsImagesLoad": "Không thể tải ảnh sản phẩm: {detail}",
+  "@errorProductsImagesLoad": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorCategoriesLoad": "Không thể tải danh mục: {detail}",
+  "@errorCategoriesLoad": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorCategoryAdd": "Không thể thêm danh mục: {detail}",
+  "@errorCategoryAdd": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorCategoryDelete": "Không thể xoá danh mục: {detail}",
+  "@errorCategoryDelete": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorProductAdd": "Không thể thêm sản phẩm: {detail}",
+  "@errorProductAdd": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorProductDelete": "Không thể xoá sản phẩm: {detail}",
+  "@errorProductDelete": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorProductStatusUpdate": "Không thể cập nhật trạng thái sản phẩm: {detail}",
+  "@errorProductStatusUpdate": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorOrdersLoad": "Không thể tải danh sách đơn hàng: {detail}",
+  "@errorOrdersLoad": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorOrderLoad": "Không thể tải đơn hàng: {detail}",
+  "@errorOrderLoad": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorOrderCreate": "Không thể tạo đơn hàng: {detail}",
+  "@errorOrderCreate": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorOrderEmpty": "Không thể tạo đơn hàng rỗng.",
+  "errorOrderIdGenerate": "Không thể tạo mã đơn hàng.",
+  "errorOrderCancel": "Không thể huỷ đơn hàng: {detail}",
+  "@errorOrderCancel": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorOrderWatch": "Không thể theo dõi đơn hàng: {detail}",
+  "@errorOrderWatch": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorPaymentStart": "Không thể bắt đầu thanh toán.",
+  "errorPaymentComplete": "Không thể hoàn tất thanh toán.",
+  "errorPaymentVerify": "Không thể xác minh thanh toán.",
+  "errorPaymentCancelled": "Thanh toán đã bị huỷ.",
+  "errorPaymentVerifyDetail": "Không thể xác minh thanh toán: {detail}",
+  "@errorPaymentVerifyDetail": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorPaymentStartDetail": "Không thể bắt đầu thanh toán: {detail}",
+  "@errorPaymentStartDetail": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorPaymentGatewayNotConfigured": "Cổng thanh toán payOS chưa được cấu hình cho bản build này.",
+  "errorPaymentGatewayNoLink": "payOS không trả về liên kết thanh toán.",
+  "errorPaymentGatewayRejected": "payOS đã từ chối yêu cầu.",
+  "errorPaymentGatewayFailed": "Yêu cầu payOS thất bại ({status}).",
+  "@errorPaymentGatewayFailed": {
+    "placeholders": { "status": { "type": "int" } }
+  },
+  "errorPaymentGatewayUnreadable": "payOS trả về phản hồi không đọc được ({status}).",
+  "@errorPaymentGatewayUnreadable": {
+    "placeholders": { "status": { "type": "int" } }
+  },
+  "errorRouteMalformed": "Dữ liệu tuyến đường không hợp lệ.",
+  "errorRouteMalformedDetail": "Dữ liệu tuyến đường không hợp lệ: {detail}",
+  "@errorRouteMalformedDetail": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorRouteNoGeometry": "Tuyến đường không có dữ liệu hình học.",
+  "errorRouteNoRoutes": "Máy chủ định tuyến không trả về tuyến nào.",
+  "errorRouteHttp": "Máy chủ định tuyến trả về HTTP {status}",
+  "@errorRouteHttp": {
+    "placeholders": { "status": { "type": "int" } }
+  },
+  "errorRouteRefused": "Máy chủ định tuyến từ chối yêu cầu: {detail}",
+  "@errorRouteRefused": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorRouteFailed": "Yêu cầu định tuyến thất bại: {detail}",
+  "@errorRouteFailed": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorRouteTimeout": "Yêu cầu định tuyến bị quá thời gian chờ: {detail}",
+  "@errorRouteTimeout": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorRealtimeSubscribe": "Không thể đăng ký theo dõi thời gian thực: {detail}",
+  "@errorRealtimeSubscribe": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorRealtimeListener": "Lỗi theo dõi thời gian thực: {detail}",
+  "@errorRealtimeListener": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorRealtimePublish": "Không thể gửi vị trí: {detail}",
+  "@errorRealtimePublish": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorTrackingStart": "Không thể bắt đầu theo dõi: {detail}",
+  "@errorTrackingStart": {
+    "placeholders": { "detail": { "type": "String" } }
+  }
+}

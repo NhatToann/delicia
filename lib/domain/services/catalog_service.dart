@@ -1,14 +1,16 @@
 import '../models/category.dart';
 import '../models/image_product.dart';
 import '../models/product.dart';
+import 'app_failure.dart';
 
 /// Errors thrown by [CategoryService] and [ProductsService]. Wrapping
 /// Firebase errors makes the BLoC layer simpler (single try/catch).
-class CatalogServiceException implements Exception {
-  final String message;
-  CatalogServiceException(this.message);
-  @override
-  String toString() => message;
+///
+/// The exception carries a stable failure *code* rather than a sentence —
+/// the translation happens in the presentation layer, so the wording can be
+/// changed without touching the service.
+class CatalogServiceException extends AppFailure {
+  CatalogServiceException(super.code, [super.detail]);
 }
 
 /// Abstract catalog service used by [ProductsBloc]. Two implementations

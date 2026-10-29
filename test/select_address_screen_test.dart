@@ -33,8 +33,8 @@ void main() {
     // because the map never stops animating in tests.
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('Choose delivery address'), findsOneWidget);
-    expect(find.text('Use my current location'), findsOneWidget);
-    expect(find.text('Tap on the map to drop a pin'), findsOneWidget);
+    expect(find.text('Chọn địa chỉ giao hàng'), findsOneWidget);
+    expect(find.text('Dùng vị trí hiện tại của tôi'), findsOneWidget);
+    expect(find.text('Chạm vào bản đồ để đặt điểm'), findsOneWidget);
   });
 }

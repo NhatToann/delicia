@@ -8,6 +8,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:delicia/domain/bloc/auth/auth_bloc.dart';
 import 'package:delicia/domain/models/user.dart';
+import 'package:delicia/domain/services/app_failure.dart';
 import 'package:delicia/domain/services/auth_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -19,7 +20,9 @@ class _FakeAuthService implements AuthService {
   @override
   Future<User> login(String email, String password) async {
     if (shouldThrow) {
-      throw AuthServiceException('Invalid email or password.');
+      throw const AuthServiceException(
+        AppFailureCodes.authInvalidCredentials,
+      );
     }
     return user ??
         User(
@@ -34,7 +37,7 @@ class _FakeAuthService implements AuthService {
   @override
   Future<void> forgotPassword(String email) async {
     if (shouldThrow) {
-      throw AuthServiceException('User not found.');
+      throw const AuthServiceException(AppFailureCodes.authLoginNoUser);
     }
   }
 
@@ -48,7 +51,7 @@ class _FakeAuthService implements AuthService {
     int rolId = 2,
   }) async {
     if (shouldThrow) {
-      throw AuthServiceException('Email already in use.');
+      throw const AuthServiceException(AppFailureCodes.authEmailInUse);
     }
     return User(
       uid: 'u-new',
@@ -95,7 +98,11 @@ void main() {
       act: (bloc) => bloc.add(LoginEvent('a@b.com', 'wrong')),
       expect: () => [
         isA<LoadingAuthState>(),
-        isA<FailureAuthState>().having((s) => s.error, 'error', contains('Invalid')),
+        isA<FailureAuthState>().having(
+          (s) => s.error.code,
+          'error code',
+          AppFailureCodes.authInvalidCredentials,
+        ),
       ],
     );
 
@@ -151,7 +158,11 @@ void main() {
           )),
       expect: () => [
         isA<LoadingAuthState>(),
-        isA<FailureAuthState>().having((s) => s.error, 'error', contains('Email')),
+        isA<FailureAuthState>().having(
+          (s) => s.error.code,
+          'error code',
+          AppFailureCodes.authEmailInUse,
+        ),
       ],
     );
   });

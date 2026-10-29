@@ -5,6 +5,7 @@ import '../../../data/env/environment.dart';
 import '../models/category.dart';
 import '../models/image_product.dart';
 import '../models/product.dart';
+import 'app_failure.dart';
 import 'catalog_service.dart';
 
 /// Firebase Realtime Database backed [CategoryService]. Production
@@ -37,14 +38,14 @@ class FirebaseCategoryService implements CategoryService {
     final ref = _ref;
     if (ref == null) {
       throw CatalogServiceException(
-        'Firebase Database not initialized. Call Firebase.initializeApp() first.',
+        AppFailureCodes.firebaseNotInitialised,
       );
     }
     try {
       final snap = await ref.once();
       return _parse(snap);
     } catch (e) {
-      throw CatalogServiceException('Failed to load categories: $e');
+      throw CatalogServiceException(AppFailureCodes.categoriesLoad, '$e');
     }
   }
 
@@ -52,13 +53,13 @@ class FirebaseCategoryService implements CategoryService {
   Future<void> addCategory(Category category) async {
     final ref = _ref;
     if (ref == null) {
-      throw CatalogServiceException('Firebase Database not initialized.');
+      throw CatalogServiceException(AppFailureCodes.firebaseNotInitialised);
     }
     try {
       final newRef = ref.push();
       await newRef.set(category.toMap());
     } catch (e) {
-      throw CatalogServiceException('Failed to add category: $e');
+      throw CatalogServiceException(AppFailureCodes.categoryAdd, '$e');
     }
   }
 
@@ -66,12 +67,12 @@ class FirebaseCategoryService implements CategoryService {
   Future<void> deleteCategory(String id) async {
     final ref = _ref;
     if (ref == null) {
-      throw CatalogServiceException('Firebase Database not initialized.');
+      throw CatalogServiceException(AppFailureCodes.firebaseNotInitialised);
     }
     try {
       await ref.child(id).remove();
     } catch (e) {
-      throw CatalogServiceException('Failed to delete category: $e');
+      throw CatalogServiceException(AppFailureCodes.categoryDelete, '$e');
     }
   }
 
@@ -119,7 +120,7 @@ class FirebaseProductsService implements ProductsService {
     final ref = _ref;
     if (ref == null) {
       throw CatalogServiceException(
-        'Firebase Database not initialized. Call Firebase.initializeApp() first.',
+        AppFailureCodes.firebaseNotInitialised,
       );
     }
     try {
@@ -130,7 +131,7 @@ class FirebaseProductsService implements ProductsService {
           .once();
       return _parse(snap);
     } catch (e) {
-      throw CatalogServiceException('Failed to load top products: $e');
+      throw CatalogServiceException(AppFailureCodes.productsTopLoad, '$e');
     }
   }
 
@@ -138,13 +139,13 @@ class FirebaseProductsService implements ProductsService {
   Future<List<Productsdb>> getAllProducts() async {
     final ref = _ref;
     if (ref == null) {
-      throw CatalogServiceException('Firebase Database not initialized.');
+      throw CatalogServiceException(AppFailureCodes.firebaseNotInitialised);
     }
     try {
       final snap = await ref.once();
       return _parse(snap);
     } catch (e) {
-      throw CatalogServiceException('Failed to load products: $e');
+      throw CatalogServiceException(AppFailureCodes.productsLoad, '$e');
     }
   }
 
@@ -152,7 +153,7 @@ class FirebaseProductsService implements ProductsService {
   Future<Productsdb?> getProduct(String id) async {
     final ref = _ref;
     if (ref == null) {
-      throw CatalogServiceException('Firebase Database not initialized.');
+      throw CatalogServiceException(AppFailureCodes.firebaseNotInitialised);
     }
     try {
       final snap = await ref.child(id).once();
@@ -160,7 +161,7 @@ class FirebaseProductsService implements ProductsService {
       if (value is! Map) return null;
       return Productsdb.fromMap(id, Map<dynamic, dynamic>.from(value));
     } catch (e) {
-      throw CatalogServiceException('Failed to load product: $e');
+      throw CatalogServiceException(AppFailureCodes.productsLoadOne, '$e');
     }
   }
 
@@ -168,7 +169,7 @@ class FirebaseProductsService implements ProductsService {
   Future<List<ImageProductdb>> getProductImages(String productId) async {
     final ref = _ref;
     if (ref == null) {
-      throw CatalogServiceException('Firebase Database not initialized.');
+      throw CatalogServiceException(AppFailureCodes.firebaseNotInitialised);
     }
     try {
       final snap = await ref
@@ -191,28 +192,35 @@ class FirebaseProductsService implements ProductsService {
           .whereType<ImageProductdb>()
           .toList();
     } catch (e) {
-      throw CatalogServiceException('Failed to load product images: $e');
+      throw CatalogServiceException(AppFailureCodes.productsImagesLoad, '$e');
     }
   }
 
+  /// Fetches the catalogue and filters it by [query].
+  ///
+  /// The bloc no longer calls this for the search screen — it searches the
+  /// catalogue it already holds locally, which avoids one network
+  /// round-trip per keystroke. The method stays for callers that need a
+  /// fresh server-side fetch (e.g. a future admin screen).
+  ///
+  /// The matching rules are shared with the client-side engine, so the two
+  /// paths cannot return different results for the same query.
   @override
   Future<List<Productsdb>> searchProducts(String query) async {
     final ref = _ref;
     if (ref == null) {
-      throw CatalogServiceException('Firebase Database not initialized.');
+      throw CatalogServiceException(AppFailureCodes.firebaseNotInitialised);
     }
     try {
       final snap = await ref.once();
       final all = _parse(snap);
       if (query.trim().isEmpty) return all;
-      final q = query.trim().toLowerCase();
-      return all
-          .where((p) =>
-              p.nameProduct.toLowerCase().contains(q) ||
-              p.description.toLowerCase().contains(q))
-          .toList();
+      // The catalogue is Vietnamese, but every row keeps its original
+      // English name in `nameProductEn` — so a customer who types
+      // "burger" still finds "Burger Nấm Truffle Đặc Trưng".
+      return all.where((p) => p.matchesQuery(query)).toList();
     } catch (e) {
-      throw CatalogServiceException('Failed to search products: $e');
+      throw CatalogServiceException(AppFailureCodes.productsSearch, '$e');
     }
   }
 
@@ -220,7 +228,7 @@ class FirebaseProductsService implements ProductsService {
   Future<List<Productsdb>> getProductsByCategory(String categoryId) async {
     final ref = _ref;
     if (ref == null) {
-      throw CatalogServiceException('Firebase Database not initialized.');
+      throw CatalogServiceException(AppFailureCodes.firebaseNotInitialised);
     }
     try {
       final snap = await ref
@@ -229,9 +237,7 @@ class FirebaseProductsService implements ProductsService {
           .once();
       return _parse(snap);
     } catch (e) {
-      throw CatalogServiceException(
-        'Failed to load products by category: $e',
-      );
+      throw CatalogServiceException(AppFailureCodes.productsLoadByCategory, '$e');
     }
   }
 
@@ -239,13 +245,13 @@ class FirebaseProductsService implements ProductsService {
   Future<void> addProduct(Productsdb product) async {
     final ref = _ref;
     if (ref == null) {
-      throw CatalogServiceException('Firebase Database not initialized.');
+      throw CatalogServiceException(AppFailureCodes.firebaseNotInitialised);
     }
     try {
       final newRef = ref.push();
       await newRef.set(product.toMap());
     } catch (e) {
-      throw CatalogServiceException('Failed to add product: $e');
+      throw CatalogServiceException(AppFailureCodes.productAdd, '$e');
     }
   }
 
@@ -253,12 +259,12 @@ class FirebaseProductsService implements ProductsService {
   Future<void> updateStatus(String id, int status) async {
     final ref = _ref;
     if (ref == null) {
-      throw CatalogServiceException('Firebase Database not initialized.');
+      throw CatalogServiceException(AppFailureCodes.firebaseNotInitialised);
     }
     try {
       await ref.child(id).child('status').set(status);
     } catch (e) {
-      throw CatalogServiceException('Failed to update status: $e');
+      throw CatalogServiceException(AppFailureCodes.productStatusUpdate, '$e');
     }
   }
 
@@ -266,12 +272,12 @@ class FirebaseProductsService implements ProductsService {
   Future<void> deleteProduct(String id) async {
     final ref = _ref;
     if (ref == null) {
-      throw CatalogServiceException('Firebase Database not initialized.');
+      throw CatalogServiceException(AppFailureCodes.firebaseNotInitialised);
     }
     try {
       await ref.child(id).remove();
     } catch (e) {
-      throw CatalogServiceException('Failed to delete product: $e');
+      throw CatalogServiceException(AppFailureCodes.productDelete, '$e');
     }
   }
 

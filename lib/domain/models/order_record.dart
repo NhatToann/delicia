@@ -40,12 +40,22 @@ class OrderRecord {
   static const String statusOnWay = 'ON WAY';
   static const String statusDelivered = 'DELIVERED';
 
+  /// Set when the client cancels the order before the restaurant accepts
+  /// it. Surfaces on the order history under the Cancelled filter.
+  static const String statusCancelled = 'CANCELLED';
+
   /// Whether the client is allowed to open the live tracking map. Live
   /// tracking is only useful once a driver has been assigned and is on
-  /// the way. Orders that are still PAID OUT or DELIVERED don't have a
-  /// moving courier, so the button is disabled.
+  /// the way. Orders that are still PAID OUT / DELIVERED / CANCELLED
+  /// don't have a moving courier, so the button is disabled.
   bool get canTrackDelivery =>
       status == statusOnWay || status == statusDispatched;
+
+  /// Whether the cancellation flow is still available (the order hasn't
+  /// reached the courier yet). Cancel UX lands in a later use-case; until
+  /// then the UI just uses this flag to disable the button.
+  bool get canCancel =>
+      status == statusPaidOut;
 
   Map<String, dynamic> toMap() => {
         'clientId': clientId,

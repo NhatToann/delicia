@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
 /// Skeleton placeholder used by screens while their data is loading.
-///
-/// Renders a stack of light/dark rectangles via [shimmer].  Pass any
-/// child widget (typically an empty grid) for the layout — shimmer will
-/// overlay it.
+/// Material Design 3 style.
 class ShimmerFrave extends StatelessWidget {
   final Widget child;
   final Color baseColor;
@@ -14,8 +11,8 @@ class ShimmerFrave extends StatelessWidget {
   const ShimmerFrave({
     super.key,
     required this.child,
-    this.baseColor = const Color(0xFFE0E0E0),
-    this.highlightColor = const Color(0xFFF5F5F5),
+    this.baseColor = const Color(0xFFE8E8E8),
+    this.highlightColor = const Color(0xFFF8F8F8),
   });
 
   @override
@@ -28,12 +25,18 @@ class ShimmerFrave extends StatelessWidget {
   }
 }
 
-/// Convenience helper that returns a square shimmer tile (used for the
-/// product grid skeleton).
+/// Convenience helper that returns a square shimmer tile.
 class ShimmerTile extends StatelessWidget {
   final double? width;
   final double? height;
-  const ShimmerTile({super.key, this.width, this.height});
+  final double borderRadius;
+
+  const ShimmerTile({
+    super.key,
+    this.width,
+    this.height,
+    this.borderRadius = 16,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -42,14 +45,13 @@ class ShimmerTile extends StatelessWidget {
       height: height,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(borderRadius),
       ),
     );
   }
 }
 
-/// Two-column product skeleton used by [ClientHomeScreen] while
-/// [ProductsState.isLoadingTopProducts] is `true`.
+/// Two-column product skeleton used while loading.
 class ShimmerProductsGrid extends StatelessWidget {
   final int itemCount;
   const ShimmerProductsGrid({super.key, this.itemCount = 6});
@@ -62,22 +64,63 @@ class ShimmerProductsGrid extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          childAspectRatio: 0.65,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
+          childAspectRatio: 0.68,
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
         ),
         itemCount: itemCount,
-        itemBuilder: (_, __) => const Padding(
-          padding: EdgeInsets.all(8),
-          child: ShimmerTile(),
+        itemBuilder: (_, __) => Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            children: [
+              Expanded(
+                flex: 5,
+                child: Container(
+                  margin: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Container(
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      Container(
+                        height: 12,
+                        width: 60,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// Horizontal pill skeleton used by [CategoryFilter] while
-/// [ProductsState.isLoadingCategories] is `true`.
+/// Horizontal category skeleton used while loading.
 class ShimmerCategories extends StatelessWidget {
   const ShimmerCategories({super.key});
 
@@ -85,14 +128,40 @@ class ShimmerCategories extends StatelessWidget {
   Widget build(BuildContext context) {
     return ShimmerFrave(
       child: SizedBox(
-        height: 96,
+        height: 130,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           itemCount: 5,
-          separatorBuilder: (_, __) => const SizedBox(width: 12),
-          itemBuilder: (_, __) => const Padding(
-            padding: EdgeInsets.all(8),
-            child: ShimmerTile(width: 80, height: 80),
+          separatorBuilder: (_, __) => const SizedBox(width: 14),
+          itemBuilder: (_, __) => Container(
+            width: 95,
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  height: 10,
+                  width: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -6,6 +6,7 @@ import '../models/address.dart';
 import '../models/order_item.dart';
 import '../models/order_record.dart';
 import '../models/product_cart.dart';
+import 'app_failure.dart';
 import 'orders_service.dart';
 
 /// Firebase Realtime Database backed [OrdersService] for UC-04.
@@ -38,19 +39,19 @@ class FirebaseOrdersService implements OrdersService {
     required double amount,
   }) async {
     if (products.isEmpty) {
-      throw OrdersServiceException('Cannot create an empty order.');
+      throw OrdersServiceException(AppFailureCodes.ordersEmpty);
     }
     final ref = _ref;
     if (ref == null) {
       throw OrdersServiceException(
-        'Firebase Database not initialized. Call Firebase.initializeApp() first.',
+        AppFailureCodes.firebaseNotInitialised,
       );
     }
     try {
       final newRef = ref.push();
       final id = newRef.key;
       if (id == null) {
-        throw OrdersServiceException('Failed to generate order id.');
+        throw OrdersServiceException(AppFailureCodes.ordersIdGenerate);
       }
       final items = products
           .map(
@@ -60,6 +61,7 @@ class FirebaseOrdersService implements OrdersService {
               picture: p.imageProduct,
               price: p.price,
               quantity: p.quantity,
+              optionLabel: p.optionLabel,
             ),
           )
           .toList();
@@ -81,7 +83,7 @@ class FirebaseOrdersService implements OrdersService {
       return record;
     } catch (e) {
       if (e is OrdersServiceException) rethrow;
-      throw OrdersServiceException('Failed to create order: $e');
+      throw OrdersServiceException(AppFailureCodes.ordersCreate, '$e');
     }
   }
 
@@ -89,7 +91,7 @@ class FirebaseOrdersService implements OrdersService {
   Future<OrderRecord?> getOrder(String id) async {
     final ref = _ref;
     if (ref == null) {
-      throw OrdersServiceException('Firebase Database not initialized.');
+      throw OrdersServiceException(AppFailureCodes.firebaseNotInitialised);
     }
     try {
       final snap = await ref.child(id).once();
@@ -97,7 +99,7 @@ class FirebaseOrdersService implements OrdersService {
       if (value is! Map) return null;
       return OrderRecord.fromMap(id, Map<dynamic, dynamic>.from(value));
     } catch (e) {
-      throw OrdersServiceException('Failed to load order: $e');
+      throw OrdersServiceException(AppFailureCodes.ordersLoadOne, '$e');
     }
   }
 
@@ -114,7 +116,58 @@ class FirebaseOrdersService implements OrdersService {
           return OrderRecord.fromMap(id, Map<dynamic, dynamic>.from(value));
         })
         .handleError((Object e) {
-      throw OrdersServiceException('Failed to watch order: $e');
+      throw OrdersServiceException(AppFailureCodes.ordersWatch, '$e');
     });
+  }
+
+  @override
+  Stream<List<OrderRecord>> watchMyOrders(String clientId) {
+    final ref = _ref;
+    if (ref == null) return Stream<List<OrderRecord>>.value(<OrderRecord>[]);
+    // `orderByChild + equalTo` lets the database hand us only the orders
+    // for this user — far cheaper than scanning every order on every
+    // change. The index is configured by the same code that writes to
+    // the orders node.
+    return ref
+        .orderByChild('clientId')
+        .equalTo(clientId)
+        .onValue
+        .map((event) {
+          final value = event.snapshot.value;
+          if (value is! Map) return const <OrderRecord>[];
+          final out = <OrderRecord>[];
+          value.forEach((key, entry) {
+            if (entry is Map) {
+              out.add(OrderRecord.fromMap(
+                key?.toString() ?? '',
+                Map<dynamic, dynamic>.from(entry),
+              ));
+            }
+          });
+          // Newest first — keeps the My Orders list visually chronological.
+          out.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return out;
+        })
+        .handleError((Object e) {
+      throw OrdersServiceException(AppFailureCodes.ordersLoad, '$e');
+    });
+  }
+
+  @override
+  Future<void> cancelOrder(String orderId, {String? reason}) async {
+    final ref = _ref;
+    if (ref == null) {
+      throw OrdersServiceException(AppFailureCodes.firebaseNotInitialised);
+    }
+    try {
+      final updates = <String, Object>{
+        'status': OrderRecord.statusCancelled,
+        if (reason case final String r) 'cancelReason': r,
+      };
+      await ref.child(orderId).update(updates);
+    } catch (e) {
+      if (e is OrdersServiceException) rethrow;
+      throw OrdersServiceException(AppFailureCodes.ordersCancel, '$e');
+    }
   }
 }
