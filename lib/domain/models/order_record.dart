@@ -18,6 +18,11 @@ class OrderRecord {
   final String status;
   final List<OrderItem> products;
   final DateTime createdAt;
+  final String? deliveryId;
+  final String? deliveryName;
+  final String? deliveryPhoto;
+  final String? receiverPhone;
+  final String? receiverName;
 
   const OrderRecord({
     required this.id,
@@ -32,6 +37,11 @@ class OrderRecord {
     required this.status,
     required this.products,
     required this.createdAt,
+    this.deliveryId,
+    this.deliveryName,
+    this.deliveryPhoto,
+    this.receiverPhone,
+    this.receiverName,
   });
 
   /// Default "PAID OUT" — the initial status set by the client at checkout.
@@ -39,6 +49,7 @@ class OrderRecord {
   static const String statusDispatched = 'DISPATCHED';
   static const String statusOnWay = 'ON WAY';
   static const String statusDelivered = 'DELIVERED';
+  static const String statusCancelled = 'CANCELLED';
 
   Map<String, dynamic> toMap() => {
         'clientId': clientId,
@@ -52,6 +63,11 @@ class OrderRecord {
         'status': status,
         'products': products.map((p) => p.toMap()).toList(),
         'createdAt': createdAt.millisecondsSinceEpoch,
+        if (deliveryId != null) 'deliveryId': deliveryId,
+        if (deliveryName != null) 'deliveryName': deliveryName,
+        if (deliveryPhoto != null) 'deliveryPhoto': deliveryPhoto,
+        if (receiverPhone != null) 'receiverPhone': receiverPhone,
+        if (receiverName != null) 'receiverName': receiverName,
       };
 
   factory OrderRecord.fromMap(String id, Map<dynamic, dynamic> map) {
@@ -81,6 +97,51 @@ class OrderRecord {
       createdAt: DateTime.fromMillisecondsSinceEpoch(
         int.tryParse((map['createdAt'] ?? 0).toString()) ?? 0,
       ),
+      deliveryId: map['deliveryId']?.toString(),
+      deliveryName: map['deliveryName']?.toString(),
+      deliveryPhoto: map['deliveryPhoto']?.toString(),
+      receiverPhone: map['receiverPhone']?.toString(),
+      receiverName: map['receiverName']?.toString(),
+    );
+  }
+
+  OrderRecord copyWith({
+    String? id,
+    String? clientId,
+    String? addressId,
+    String? street,
+    String? reference,
+    double? latitude,
+    double? longitude,
+    String? paymentMethod,
+    double? amount,
+    String? status,
+    List<OrderItem>? products,
+    DateTime? createdAt,
+    String? deliveryId,
+    String? deliveryName,
+    String? deliveryPhoto,
+    String? receiverPhone,
+    String? receiverName,
+  }) {
+    return OrderRecord(
+      id: id ?? this.id,
+      clientId: clientId ?? this.clientId,
+      addressId: addressId ?? this.addressId,
+      street: street ?? this.street,
+      reference: reference ?? this.reference,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      amount: amount ?? this.amount,
+      status: status ?? this.status,
+      products: products ?? this.products,
+      createdAt: createdAt ?? this.createdAt,
+      deliveryId: deliveryId ?? this.deliveryId,
+      deliveryName: deliveryName ?? this.deliveryName,
+      deliveryPhoto: deliveryPhoto ?? this.deliveryPhoto,
+      receiverPhone: receiverPhone ?? this.receiverPhone,
+      receiverName: receiverName ?? this.receiverName,
     );
   }
 }

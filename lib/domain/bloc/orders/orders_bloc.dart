@@ -23,6 +23,14 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
     on<OnAddNewOrdersEvent>(_onAddNewOrders);
     on<OnUpdateLastOrderStatusEvent>(_onUpdateLastOrderStatus);
     on<OnClearLastOrderEvent>(_onClearLastOrder);
+    on<OnSetCurrentOrderEvent>(_onSetCurrentOrder);
+  }
+
+  void _onSetCurrentOrder(
+    OnSetCurrentOrderEvent event,
+    Emitter<OrdersState> emit,
+  ) {
+    emit(state.copyWith(lastOrder: event.order));
   }
 
   final OrdersService _ordersService;

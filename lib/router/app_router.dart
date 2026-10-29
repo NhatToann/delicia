@@ -1,6 +1,10 @@
 import 'package:go_router/go_router.dart';
 
 import '../../domain/models/category.dart';
+import '../../domain/models/order_record.dart';
+import '../presentation/delivery/details/delivery_details_screen.dart';
+import '../presentation/delivery/home/delivery_home_screen.dart';
+import '../presentation/delivery/map/map_delivery_screen.dart';
 import '../presentation/screens/intro/checking_login_screen.dart';
 import '../presentation/screens/intro/intro_screen.dart';
 import '../presentation/screens/login/check_email_screen.dart';
@@ -16,7 +20,6 @@ import '../presentation/client/cart/cart_screen.dart';
 import '../presentation/client/checkout/checkout_screen.dart';
 import '../presentation/client/map/map_client_screen.dart';
 import '../presentation/client/orders/orders_screen.dart';
-import '../presentation/delivery/map/map_delivery_screen.dart';
 
 /// App router (GoRouter). Wires the UC-01 auth flow plus the Leader's
 /// UC-02/03/04 client/delivery screens. Admin/delivery role homes stay
@@ -88,7 +91,18 @@ class AppRouter {
         builder: (_, __) => const MapClientScreen(),
       ),
 
-      // ---- Delivery flow (UC-03) ------------------------------------------
+      // ---- Delivery flow (UC-03 / UC-10 / UC-11) --------------------------
+      GoRoute(
+        path: '/delivery/home',
+        builder: (_, __) => const DeliveryHomeScreen(),
+      ),
+      GoRoute(
+        path: '/delivery/details/:orderId',
+        builder: (_, state) => DeliveryDetailsScreen(
+          orderId: state.pathParameters['orderId'] ?? '',
+          order: state.extra is OrderRecord ? state.extra as OrderRecord : null,
+        ),
+      ),
       GoRoute(
         path: '/delivery/map/:orderId',
         builder: (_, state) => MapDeliveryScreen(
@@ -100,11 +114,6 @@ class AppRouter {
       GoRoute(
         path: '/admin/home',
         builder: (_, __) => const HomePlaceholder(label: 'Admin Home (UC-08)'),
-      ),
-      GoRoute(
-        path: '/delivery/home',
-        builder: (_, __) =>
-            const HomePlaceholder(label: 'Delivery Home (UC-10)'),
       ),
     ],
   );

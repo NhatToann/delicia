@@ -54,11 +54,12 @@ class ProductCard extends StatelessWidget {
             const SizedBox(height: 8),
             TextCustom(
               product.nameProduct,
+              fontSize: 15,
               fontWeight: FontWeight.w600,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 4),
+            const Spacer(),
             TextCustom(
               '\$${product.price.toStringAsFixed(2)}',
               color: ColorsFrave.primaryColor,

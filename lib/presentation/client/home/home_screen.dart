@@ -41,6 +41,38 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
     });
   }
 
+  void _confirmLogout(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const TextCustom('Log Out', fontWeight: FontWeight.bold),
+        content: const TextCustom(
+          'Are you sure you want to log out?',
+          color: ColorsFrave.greyText,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const TextCustom('Cancel', color: ColorsFrave.greyText),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ColorsFrave.primaryColor,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.read<AuthBloc>().add(LogOutEvent());
+              context.go('/login');
+            },
+            child: const TextCustom('Log Out', color: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthBloc>().state;
@@ -66,6 +98,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                 firstName: auth.user?.firstName ?? '',
                 cartCount: cartCount,
                 onCartPressed: () => context.push('/client/cart'),
+                onLogoutPressed: () => _confirmLogout(context),
+                onSwitchRolePressed: () => context.go('/select-role'),
               ),
               const SizedBox(height: 16),
               _SearchBar(
@@ -109,7 +143,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                     return const ShimmerProductsGrid();
                   }
                   if (state.topProducts.isEmpty) {
-                    return _EmptyState(
+                    return const _EmptyState(
                       title: 'No products yet',
                       subtitle: 'Check back later for new items.',
                     );
@@ -120,7 +154,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
-                      childAspectRatio: 0.7,
+                      childAspectRatio: 0.64,
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
                     ),
@@ -160,12 +194,16 @@ class _Header extends StatelessWidget {
   final String firstName;
   final int cartCount;
   final VoidCallback onCartPressed;
+  final VoidCallback onLogoutPressed;
+  final VoidCallback onSwitchRolePressed;
 
   const _Header({
     required this.avatarUrl,
     required this.firstName,
     required this.cartCount,
     required this.onCartPressed,
+    required this.onLogoutPressed,
+    required this.onSwitchRolePressed,
   });
 
   @override
@@ -198,43 +236,66 @@ class _Header extends StatelessWidget {
             '${DateCustom.getDateFrave()}, ${firstName.isEmpty ? 'there' : firstName}',
             fontSize: 16,
             fontWeight: FontWeight.w600,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
+        ),
+        IconButton(
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(
+            Icons.swap_horiz,
+            color: ColorsFrave.primaryColor,
+            size: 24,
+          ),
+          tooltip: 'Switch Role',
+          onPressed: onSwitchRolePressed,
         ),
         Stack(
           clipBehavior: Clip.none,
           children: [
             IconButton(
+              visualDensity: VisualDensity.compact,
               icon: const Icon(
                 Icons.shopping_bag_outlined,
-                size: 28,
+                size: 26,
                 color: ColorsFrave.darkText,
               ),
               onPressed: onCartPressed,
             ),
             if (cartCount > 0)
               Positioned(
-                top: 4,
-                right: 4,
+                top: 2,
+                right: 2,
                 child: Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                   decoration: const BoxDecoration(
                     color: ColorsFrave.primaryColor,
                     shape: BoxShape.circle,
                   ),
                   constraints: const BoxConstraints(
-                    minWidth: 18,
-                    minHeight: 18,
+                    minWidth: 16,
+                    minHeight: 16,
                   ),
                   child: TextCustom(
                     cartCount.toString(),
-                    fontSize: 11,
+                    fontSize: 10,
                     color: Colors.white,
                     textAlign: TextAlign.center,
                   ),
                 ),
               ),
           ],
+        ),
+        IconButton(
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(
+            Icons.logout_rounded,
+            color: ColorsFrave.greyText,
+            size: 24,
+          ),
+          tooltip: 'Log Out',
+          onPressed: onLogoutPressed,
         ),
       ],
     );

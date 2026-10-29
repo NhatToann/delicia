@@ -29,3 +29,8 @@ class OnUpdateLastOrderStatusEvent extends OrdersEvent {
 class OnClearLastOrderEvent extends OrdersEvent {
   const OnClearLastOrderEvent();
 }
+
+class OnSetCurrentOrderEvent extends OrdersEvent {
+  final OrderRecord order;
+  const OnSetCurrentOrderEvent(this.order);
+}

@@ -160,12 +160,63 @@ class _CartItem extends StatelessWidget {
                 TextCustom(product.quantity.toString()),
                 IconButton(
                   icon: const Icon(Icons.remove_circle_outline),
-                  onPressed: product.quantity > 1 ? onDecrease : null,
+                  onPressed: () => _handleDecrease(context),
                 ),
               ],
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _handleDecrease(BuildContext context) {
+    if (product.quantity > 1) {
+      onDecrease();
+    } else {
+      _showDeleteConfirmDialog(context);
+    }
+  }
+
+  Future<void> _showDeleteConfirmDialog(BuildContext context) {
+    return showDialog<void>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const TextCustom(
+          'Remove from Cart',
+          fontWeight: FontWeight.bold,
+          fontSize: 18,
+        ),
+        content: TextCustom(
+          'Do you want to remove "${product.nameProduct}" from your cart?',
+          fontSize: 15,
+          color: ColorsFrave.greyText,
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            child: const TextCustom(
+              'Cancel',
+              color: ColorsFrave.greyText,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(dialogCtx).pop();
+              onDelete();
+            },
+            child: const TextCustom(
+              'Remove',
+              color: ColorsFrave.errorColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }
