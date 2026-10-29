@@ -8,6 +8,8 @@ import 'package:delicia/domain/models/lat_lng_point.dart';
 import 'package:delicia/domain/services/realtime_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'helpers/fake_route_service.dart';
+
 class _FakeRealtime implements RealtimeService {
   final List<({String orderId, double latitude, double longitude})>
       published = [];
@@ -50,7 +52,10 @@ void main() {
 
     blocTest<MapDeliveryBloc, MapDeliveryState>(
       'OnMarkertsDeliveryEvent updates both markers',
-      build: () => MapDeliveryBloc(realtimeService: _FakeRealtime()),
+      build: () => MapDeliveryBloc(
+        realtimeService: _FakeRealtime(),
+        routeService: FakeRouteService(),
+      ),
       act: (bloc) => bloc.add(const OnMarkertsDeliveryEvent(
         LatLngPoint(latitude: 10, longitude: 20),
         LatLngPoint(latitude: 11, longitude: 21),
@@ -59,6 +64,10 @@ void main() {
         isA<MapDeliveryState>()
             .having((s) => s.markerClient.latitude, 'cl lat', 10)
             .having((s) => s.markerDelivery.longitude, 'dl lng', 21),
+        // Route fetched from FakeRouteService.
+        isA<MapDeliveryState>()
+            .having((s) => s.routePolyline.isNotEmpty, 'route', true)
+            .having((s) => s.routeDistanceMeters, 'distance', 1234.0),
       ],
     );
 

@@ -3,13 +3,22 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../domain/bloc/auth/auth_bloc.dart';
-import '../../components/btn_frave.dart';
-import '../../components/form_field_frave.dart';
-import '../../components/text_custom.dart';
+import '../../components/auth_text_field.dart';
+import '../../components/auth_widgets.dart';
 import '../../helpers/error_message.dart';
+import '../../helpers/l10n_extension.dart';
 import '../../helpers/modal_loading.dart';
+import '../../helpers/navigation_helper.dart';
 import '../../themes/colors_frave.dart';
 
+/// ForgotPasswordScreen — matches `2 - B - Log In.png` (variant B).
+///
+/// Flow contract:
+///   • Reached from `/login` ("Forgot Password?" link).
+///   • Submitting a valid email → AuthBloc `ForgotPasswordEvent` →
+///       success → /check-email
+///       failure → snackbar
+///   • Tap back → /login.
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
 
@@ -29,12 +38,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   void _submit() {
     if (!_keyForm.currentState!.validate()) return;
-    context.read<AuthBloc>().add(ForgotPasswordEvent(_email.text));
+    FocusScope.of(context).unfocus();
+    context.read<AuthBloc>().add(ForgotPasswordEvent(_email.text.trim()));
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
+    return BlocConsumer<AuthBloc, AuthState>(
+      listenWhen: (previous, current) =>
+          current is LoadingAuthState ||
+          current is FailureAuthState ||
+          current is ForgotPasswordSuccessState,
       listener: (context, state) {
         if (state is LoadingAuthState) {
           modalLoading(context);
@@ -43,48 +57,87 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           errorMessageSnack(context, state.error);
         } else if (state is ForgotPasswordSuccessState) {
           Navigator.of(context, rootNavigator: true).pop();
-          context.push('/check-email');
+          context.go('/check-email');
         }
       },
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: SafeArea(
-          child: Form(
-            key: _keyForm,
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+      builder: (context, state) {
+        final loading = state is LoadingAuthState;
+        return Scaffold(
+          backgroundColor: ColorsFrave.authBg,
+          body: SafeArea(
+            bottom: false,
+            child: Column(
               children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: () => context.pop(),
+                AuthHeader(
+                  title: context.l10n.authForgotPasswordTitle,
+                  onBack: () => goBack(context, fallback: '/login'),
                 ),
-                const SizedBox(height: 16),
-                const TextCustom(
-                  'Reset your password',
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+                    child: Form(
+                      key: _keyForm,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            context.l10n.authResetPasswordSubtitle,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              color: ColorsFrave.authInk,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            context.l10n.authResetPasswordDescription,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              height: 1.5,
+                              fontWeight: FontWeight.w400,
+                              color: ColorsFrave.authInkSoft,
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+                          FieldCaption(context.l10n.authEmailAddress),
+                          AuthTextField(
+                            controller: _email,
+                            label: context.l10n.authEmail,
+                            icon: Icons.alternate_email_rounded,
+                            keyboardType: TextInputType.emailAddress,
+                            validator: _emailValidator,
+                            onSubmitted: (_) => _submit(),
+                          ),
+                          const SizedBox(height: 28),
+                          AuthPrimaryButton(
+                            label: context.l10n.actionSend,
+                            icon: Icons.send_rounded,
+                            busy: loading,
+                            onPressed: _submit,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 8),
-                const TextCustom(
-                  'We will email you a link to reset your password.',
-                  color: ColorsFrave.greyText,
-                ),
-                const SizedBox(height: 24),
-                const TextCustom('Email'),
-                const SizedBox(height: 8),
-                FormFieldFrave(
-                  controller: _email,
-                  hintText: 'email@example.com',
-                  keyboardType: TextInputType.emailAddress,
-                  validator: validatedEmail,
-                ),
-                const SizedBox(height: 24),
-                BtnFrave(text: 'Send reset link', onPressed: _submit),
               ],
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
+  }
+
+  String? _emailValidator(String? value) {
+    final v = (value ?? '').trim();
+    if (v.isEmpty) return context.l10n.validationEmailRequired;
+    if (!v.contains('@') || !v.contains('.')) {
+      return context.l10n.validationEmailInvalid;
+    }
+    return null;
   }
 }

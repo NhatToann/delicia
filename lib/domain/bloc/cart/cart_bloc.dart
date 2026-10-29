@@ -26,7 +26,9 @@ class CartBloc extends Bloc<CartEvent, CartState> {
 
   void _onAdd(OnAddProductToCartEvent event, Emitter<CartState> emit) {
     final next = List<ProductCart>.from(state.products ?? const []);
-    final idx = next.indexWhere((p) => p.uidProduct == event.productCart.uidProduct);
+    // The same dish in two different sizes is two separate cart lines, so
+    // the lookup keys on the product *and* the selected option.
+    final idx = next.indexWhere((p) => p.lineKey == event.productCart.lineKey);
     if (idx == -1) {
       next.add(event.productCart);
     } else {
@@ -65,8 +67,14 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     final next = List<ProductCart>.from(state.products ?? const []);
     if (event.index < 0 || event.index >= next.length) return;
     final current = next[event.index];
-    if (current.quantity <= 1) return; // never below 1
-    next[event.index] = current.copyWith(quantity: current.quantity - 1);
+    if (current.quantity <= 0) return;
+    if (current.quantity == 1) {
+      // The last remaining unit is taken out of the cart: a line with a
+      // quantity of 0 is removed instead of being kept around.
+      next.removeAt(event.index);
+    } else {
+      next[event.index] = current.copyWith(quantity: current.quantity - 1);
+    }
     emit(state.copyWith(products: next));
   }
 

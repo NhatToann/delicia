@@ -12,12 +12,20 @@ class OrderItem {
   final double price;
   final int quantity;
 
+  /// The size / portion the customer picked on the product-detail screen.
+  ///
+  /// Snapshotted as plain text so the order history still shows what was
+  /// ordered even if the catalogue changes later. Null for orders placed
+  /// before sizes existed.
+  final String? optionLabel;
+
   const OrderItem({
     required this.productId,
     required this.nameProduct,
     required this.picture,
     required this.price,
     required this.quantity,
+    this.optionLabel,
   });
 
   double get total => price * quantity;
@@ -36,6 +44,7 @@ class OrderItem {
         'picture': picture,
         'price': price,
         'quantity': quantity,
+        if (optionLabel != null) 'optionLabel': optionLabel,
       };
 
   factory OrderItem.fromMap(Map<dynamic, dynamic> map) => OrderItem(
@@ -44,5 +53,6 @@ class OrderItem {
         picture: (map['picture'] ?? '').toString(),
         price: double.tryParse((map['price'] ?? 0).toString()) ?? 0.0,
         quantity: int.tryParse((map['quantity'] ?? 1).toString()) ?? 1,
+        optionLabel: map['optionLabel']?.toString(),
       );
 }

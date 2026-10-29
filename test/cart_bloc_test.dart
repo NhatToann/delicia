@@ -88,11 +88,13 @@ void main() {
     );
 
     blocTest<CartBloc, CartState>(
-      'decrement does not drop below 1',
+      'decrement at quantity 1 removes the line from the cart',
       build: () => CartBloc(),
       seed: () => const CartState(products: [_p1]),
       act: (bloc) => bloc.add(const OnDecreaseProductQuantityToCartEvent(0)),
-      expect: () => [],
+      expect: () => [
+        isA<CartState>().having((s) => s.products?.length, 'items', 0),
+      ],
     );
 
     blocTest<CartBloc, CartState>(

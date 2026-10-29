@@ -33,13 +33,17 @@ class _FakeCategoryService implements CategoryService {
 class _FakeProductsService implements ProductsService {
   _FakeProductsService({
     this.topProducts = const [],
-    this.searchResults = const [],
+    this.catalogue = const [],
     this.productById = const {},
     this.images = const [],
   });
 
   List<Productsdb> topProducts;
-  List<Productsdb> searchResults;
+
+  /// The full catalogue. The bloc searches this list locally, so a test
+  /// that wants a search hit has to put the product here — the old
+  /// `searchProducts()` network stub is no longer consulted.
+  List<Productsdb> catalogue;
   Map<String, Productsdb> productById;
   List<ImageProductdb> images;
 
@@ -49,7 +53,7 @@ class _FakeProductsService implements ProductsService {
   }
 
   @override
-  Future<List<Productsdb>> getAllProducts() async => topProducts;
+  Future<List<Productsdb>> getAllProducts() async => catalogue;
 
   @override
   Future<Productsdb?> getProduct(String id) async => productById[id];
@@ -61,15 +65,13 @@ class _FakeProductsService implements ProductsService {
 
   @override
   Future<List<Productsdb>> searchProducts(String query) async {
-    if (query.isEmpty) return topProducts;
-    return searchResults;
+    if (query.isEmpty) return catalogue;
+    return catalogue;
   }
 
   @override
   Future<List<Productsdb>> getProductsByCategory(String categoryId) async {
-    return searchResults
-        .where((p) => p.categoryId == categoryId)
-        .toList();
+    return catalogue.where((p) => p.categoryId == categoryId).toList();
   }
 
   @override
@@ -165,7 +167,10 @@ void main() {
       build: () => ProductsBloc(
         categoryService: _FakeCategoryService(),
         productsService: _FakeProductsService(
-          searchResults: [_p('1', 'Beef Burger')],
+          catalogue: [
+            _p('1', 'Beef Burger'),
+            _p('2', 'Pizza Margherita'),
+          ],
         ),
       ),
       act: (bloc) => bloc.add(const OnSearchProductEvent('beef')),
@@ -178,9 +183,28 @@ void main() {
         ),
         isA<ProductsState>()
             .having((s) => s.searchResults.length, 'results', 1)
+            .having((s) => s.searchResults.first.id, 'result id', '1')
             .having((s) => s.searchQuery, 'query', 'beef')
             .having((s) => s.isLoadingSearch, 'loading search', false),
       ],
+    );
+
+    blocTest<ProductsBloc, ProductsState>(
+      'search does not hit the network on every keystroke',
+      build: () => ProductsBloc(
+        categoryService: _FakeCategoryService(),
+        productsService: _FakeProductsService(
+          catalogue: [_p('1', 'Beef Burger')],
+        ),
+      ),
+      seed: () => const ProductsState(allProducts: []),
+      act: (bloc) => bloc.add(const OnSearchProductEvent('beef')),
+      wait: const Duration(milliseconds: 400),
+      verify: (bloc) {
+        // The catalogue is fetched once and then searched locally, so the
+        // search does not depend on a `searchProducts()` round-trip.
+        expect(bloc.state.searchResults.length, 1);
+      },
     );
 
     blocTest<ProductsBloc, ProductsState>(
@@ -188,7 +212,10 @@ void main() {
       build: () => ProductsBloc(
         categoryService: _FakeCategoryService(),
         productsService: _FakeProductsService(
-          searchResults: [_p('1', 'Pizza', categoryId: 'cat-pizza')],
+          catalogue: [
+            _p('1', 'Pizza Margherita', categoryId: 'cat-pizza'),
+            _p('2', 'Beef Burger', categoryId: 'cat-burger'),
+          ],
         ),
       ),
       act: (bloc) => bloc.add(const OnSelectCategoryEvent(
@@ -202,17 +229,53 @@ void main() {
             .having((s) => s.isLoadingSearch, 'loading search', true),
         isA<ProductsState>()
             .having((s) => s.searchResults.length, 'results', 1)
+            .having((s) => s.searchResults.first.id, 'result id', '1')
             .having((s) => s.isLoadingSearch, 'loading search', false),
       ],
     );
 
     blocTest<ProductsBloc, ProductsState>(
-      'clear search resets the filters',
+      'a query combined with a category only keeps rows of that category',
       build: () => ProductsBloc(
         categoryService: _FakeCategoryService(),
-        productsService: _FakeProductsService(),
+        productsService: _FakeProductsService(
+          catalogue: [
+            _p('1', 'Burger Phô Mai', categoryId: 'cat-burger'),
+            _p('2', 'Burger Gà', categoryId: 'cat-burger'),
+            _p('3', 'Burger Chay', categoryId: 'cat-vegan'),
+          ],
+        ),
+      ),
+      act: (bloc) => bloc
+        ..add(const OnSelectCategoryEvent(
+          idCategory: 'cat-burger',
+          category: 'Bánh Burger',
+        ))
+        ..add(const OnSearchProductEvent('burger')),
+      wait: const Duration(milliseconds: 400),
+      verify: (bloc) {
+        final results = bloc.state.searchResults;
+        // Both burgers stay, the vegan burger is dropped. The order is the
+        // relevance order ("Burger Gà" is shorter than "Burger Phô Mai",
+        // so it wins the tie) — this test is about the category filter.
+        expect(results.map((p) => p.id).toSet(), {'1', '2'});
+        expect(
+          results.every((p) => p.categoryId == 'cat-burger'),
+          isTrue,
+        );
+      },
+    );
+
+    blocTest<ProductsBloc, ProductsState>(
+      'clear search resets the filters and shows the whole catalogue',
+      build: () => ProductsBloc(
+        categoryService: _FakeCategoryService(),
+        productsService: _FakeProductsService(
+          catalogue: [_p('1', 'X'), _p('2', 'Y')],
+        ),
       ),
       seed: () => ProductsState(
+        allProducts: [_p('1', 'X'), _p('2', 'Y')],
         searchResults: [_p('1', 'X')],
         searchQuery: 'X',
         selectedCategoryId: 'cat-x',
@@ -220,10 +283,86 @@ void main() {
       act: (bloc) => bloc.add(const OnClearSearchEvent()),
       expect: () => [
         isA<ProductsState>()
-            .having((s) => s.searchResults, 'results', isEmpty)
+            .having((s) => s.searchResults.length, 'results', 2)
             .having((s) => s.searchQuery, 'query', '')
             .having((s) => s.selectedCategoryId, 'cat id', ''),
       ],
+    );
+
+    blocTest<ProductsBloc, ProductsState>(
+      'starting a search drops the category picked on the home screen',
+      build: () => ProductsBloc(
+        categoryService: _FakeCategoryService(),
+        productsService: _FakeProductsService(
+          catalogue: [
+            _p('1', 'Burger', categoryId: 'cat-burger'),
+            _p('2', 'Pizza', categoryId: 'cat-pizza'),
+          ],
+        ),
+      ),
+      seed: () => ProductsState(
+        allProducts: const [],
+        searchQuery: 'stale',
+        selectedCategoryId: 'cat-burger',
+        selectedCategoryName: 'Bánh Burger',
+      ),
+      act: (bloc) => bloc.add(const OnStartSearchEvent()),
+      verify: (bloc) {
+        expect(bloc.state.selectedCategoryId, '');
+        expect(bloc.state.selectedCategoryName, isNull);
+        expect(bloc.state.searchQuery, '');
+        // The whole catalogue is visible, not just the stale category.
+        expect(bloc.state.searchResults.length, 2);
+      },
+    );
+
+    blocTest<ProductsBloc, ProductsState>(
+      'starting a search can open scoped to a category',
+      build: () => ProductsBloc(
+        categoryService: _FakeCategoryService(),
+        productsService: _FakeProductsService(
+          catalogue: [
+            _p('1', 'Burger', categoryId: 'cat-burger'),
+            _p('2', 'Pizza', categoryId: 'cat-pizza'),
+          ],
+        ),
+      ),
+      act: (bloc) => bloc.add(const OnStartSearchEvent(
+        categoryId: 'cat-pizza',
+        categoryName: 'Pizza',
+      )),
+      verify: (bloc) {
+        expect(bloc.state.selectedCategoryId, 'cat-pizza');
+        expect(bloc.state.selectedCategoryName, 'Pizza');
+        expect(bloc.state.searchResults.map((p) => p.id), ['2']);
+      },
+    );
+
+    blocTest<ProductsBloc, ProductsState>(
+      'clearing the category keeps the query',
+      build: () => ProductsBloc(
+        categoryService: _FakeCategoryService(),
+        productsService: _FakeProductsService(
+          catalogue: [
+            _p('1', 'Burger', categoryId: 'cat-burger'),
+            _p('2', 'Burger Chay', categoryId: 'cat-vegan'),
+          ],
+        ),
+      ),
+      seed: () => ProductsState(
+        allProducts: const [],
+        searchQuery: 'burger',
+        selectedCategoryId: 'cat-burger',
+        selectedCategoryName: 'Bánh Burger',
+      ),
+      act: (bloc) => bloc.add(const OnClearCategoryEvent()),
+      verify: (bloc) {
+        expect(bloc.state.selectedCategoryId, '');
+        expect(bloc.state.selectedCategoryName, isNull);
+        // The query survives — the customer only asked to drop the filter.
+        expect(bloc.state.searchQuery, 'burger');
+        expect(bloc.state.searchResults.length, 2);
+      },
     );
   });
 

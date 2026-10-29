@@ -33,3 +33,21 @@ class RegisterEvent extends AuthEvent {
 }
 
 class LogOutEvent extends AuthEvent {}
+
+class UpdateProfileEvent extends AuthEvent {
+  UpdateProfileEvent({
+    required this.firstName,
+    required this.lastName,
+    required this.phone,
+    required this.dateOfBirth,
+    this.profileImageBytes,
+    this.profileImageContentType,
+  });
+
+  final String firstName;
+  final String lastName;
+  final String phone;
+  final String dateOfBirth;
+  final Uint8List? profileImageBytes;
+  final String? profileImageContentType;
+}

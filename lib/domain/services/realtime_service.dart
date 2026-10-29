@@ -4,14 +4,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 
 import '../../data/env/environment.dart';
+import 'app_failure.dart';
 
 /// Errors thrown by [RealtimeService] when the Firebase listener cannot
 /// be opened or when a read surfaces a low-level failure.
-class RealtimeServiceException implements Exception {
-  final String message;
-  RealtimeServiceException(this.message);
-  @override
-  String toString() => message;
+class RealtimeServiceException extends AppFailure {
+  RealtimeServiceException(super.code, [super.detail]);
 }
 
 /// Realtime position broadcast for the live order. Mirrors the legacy
@@ -124,9 +122,7 @@ class RealtimeService {
   }) async {
     final ref = _ordersRef;
     if (ref == null) {
-      throw RealtimeServiceException(
-        'Firebase Database not initialized. Call Firebase.initializeApp() first.',
-      );
+      throw RealtimeServiceException(AppFailureCodes.firebaseNotInitialised);
     }
     try {
       await ref.child(orderId).child('shipperLocation').set({
@@ -135,7 +131,7 @@ class RealtimeService {
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       });
     } catch (e) {
-      throw RealtimeServiceException('Failed to publish position: $e');
+      throw RealtimeServiceException(AppFailureCodes.realtimePublish, '$e');
     }
   }
 
