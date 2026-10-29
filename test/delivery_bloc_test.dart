@@ -78,6 +78,13 @@ class _MockOrdersService implements OrdersService {
 
   @override
   Stream<OrderRecord?> watchOrder(String id) => Stream.value(null);
+  @override
+  Stream<List<OrderRecord>> watchMyOrders(String clientId) =>
+      Stream.value(const []);
+
+  @override
+  Future<void> cancelOrder(String orderId, {String? reason}) async {}
+
 }
 
 void main() {
