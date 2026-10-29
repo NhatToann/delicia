@@ -49,7 +49,6 @@ class OrderRecord {
   static const String statusDispatched = 'DISPATCHED';
   static const String statusOnWay = 'ON WAY';
   static const String statusDelivered = 'DELIVERED';
-  static const String statusCancelled = 'CANCELLED';
 
   /// Set when the client cancels the order before the restaurant accepts
   /// it. Surfaces on the order history under the Cancelled filter.
