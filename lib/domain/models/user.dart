@@ -9,6 +9,7 @@ class User {
   final String lastName;
   final String? image;
   final String? phone;
+  final String? dateOfBirth;
   final int rolId; // 1=Admin, 2=Client, 3=Delivery
 
   const User({
@@ -18,10 +19,28 @@ class User {
     required this.lastName,
     this.image,
     this.phone,
+    this.dateOfBirth,
     required this.rolId,
   });
 
   String get fullName => '$firstName $lastName'.trim();
+
+  User copyWith({
+    String? firstName,
+    String? lastName,
+    String? image,
+    String? phone,
+    String? dateOfBirth,
+  }) => User(
+    uid: uid,
+    email: email,
+    firstName: firstName ?? this.firstName,
+    lastName: lastName ?? this.lastName,
+    image: image ?? this.image,
+    phone: phone ?? this.phone,
+    dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+    rolId: rolId,
+  );
 
   factory User.fromMap(Map<dynamic, dynamic> map) {
     return User(
@@ -31,6 +50,7 @@ class User {
       lastName: (map['lastName'] ?? '') as String,
       image: map['image'] as String?,
       phone: map['phone'] as String?,
+      dateOfBirth: map['dateOfBirth'] as String?,
       rolId: int.tryParse((map['rolId'] ?? '2').toString()) ?? 2,
     );
   }
@@ -42,6 +62,7 @@ class User {
         'lastName': lastName,
         'image': image,
         'phone': phone,
+        'dateOfBirth': dateOfBirth,
         'rolId': rolId,
       };
 }

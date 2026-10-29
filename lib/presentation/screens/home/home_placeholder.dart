@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../domain/bloc/auth/auth_bloc.dart';
 import '../../components/btn_frave.dart';
 import '../../components/text_custom.dart';
+import '../../helpers/l10n_extension.dart';
 import '../../themes/colors_frave.dart';
 
 /// Temporary screen used as the destination for `/client/home`, `/admin/home`
@@ -36,8 +37,8 @@ class HomePlaceholder extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const TextCustom(
-                  'Auth flow complete!',
+                TextCustom(
+                  context.l10n.authFlowComplete,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
@@ -45,7 +46,7 @@ class HomePlaceholder extends StatelessWidget {
                 TextCustom(label, fontSize: 16, color: ColorsFrave.greyText),
                 const SizedBox(height: 32),
                 BtnFrave(
-                  text: 'Sign out',
+                  text: context.l10n.actionSignOut,
                   onPressed: () {
                     // The BLoC fires `LogOutAuthState` which the listener
                     // above picks up to navigate.  This works correctly

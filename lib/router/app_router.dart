@@ -1,8 +1,8 @@
 import 'package:go_router/go_router.dart';
 
 import '../../domain/models/category.dart';
-import '../presentation/screens/intro/checking_login_screen.dart';
-import '../presentation/screens/intro/intro_screen.dart';
+import '../presentation/screens/intro/launch_first_screen.dart';
+import '../presentation/screens/intro/launch_welcome_screen.dart';
 import '../presentation/screens/login/check_email_screen.dart';
 import '../presentation/screens/login/forgot_password_screen.dart';
 import '../presentation/screens/login/login_screen.dart';
@@ -13,9 +13,11 @@ import '../presentation/client/home/home_screen.dart';
 import '../presentation/client/search/search_for_category_screen.dart';
 import '../presentation/client/product_detail/product_detail_screen.dart';
 import '../presentation/client/cart/cart_screen.dart';
-import '../presentation/client/checkout/checkout_screen.dart';
+import '../presentation/client/payment/payment_screen.dart';
 import '../presentation/client/map/map_client_screen.dart';
 import '../presentation/client/orders/orders_screen.dart';
+import '../presentation/client/address/select_address_screen.dart';
+import '../presentation/client/profile/my_profile_screen.dart';
 import '../presentation/delivery/map/map_delivery_screen.dart';
 
 /// App router (GoRouter). Wires the UC-01 auth flow plus the Leader's
@@ -27,12 +29,17 @@ class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/splash',
     routes: [
-      // ---- Auth flow (UC-01) ------------------------------------------------
+      // ---- Launch flow (UC-01) ---------------------------------------------
+      // Splash ("Launch First") always runs first, then resolves into either
+      // the role destination (session alive) or "Launch Welcome" (`/intro`).
       GoRoute(
         path: '/splash',
-        builder: (_, __) => const CheckingLoginScreen(),
+        builder: (_, __) => const LaunchFirstScreen(),
       ),
-      GoRoute(path: '/intro', builder: (_, __) => const IntroScreen()),
+      GoRoute(
+        path: '/intro',
+        builder: (_, __) => const LaunchWelcomeScreen(),
+      ),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(
         path: '/register',
@@ -76,12 +83,20 @@ class AppRouter {
         builder: (_, __) => const CartScreen(),
       ),
       GoRoute(
-        path: '/client/checkout',
-        builder: (_, __) => const CheckoutScreen(),
+        path: '/client/payment',
+        builder: (_, __) => const PaymentScreen(),
       ),
       GoRoute(
         path: '/client/orders',
-        builder: (_, __) => const ClientOrdersScreen(),
+        builder: (_, __) => const ClientOrdersView(),
+      ),
+      GoRoute(
+        path: '/client/profile',
+        builder: (_, __) => const MyProfileScreen(),
+      ),
+      GoRoute(
+        path: '/client/select-address',
+        builder: (_, __) => const SelectAddressScreen(),
       ),
       GoRoute(
         path: '/client/map',
