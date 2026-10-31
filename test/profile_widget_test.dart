@@ -123,6 +123,13 @@ void main() {
     );
     expect(find.text('Save changes'), findsOneWidget);
     expect(find.text('Manage addresses'), findsOneWidget);
+    // The sign-out button sits at the very bottom of the list — scroll it
+    // into view before asserting, otherwise it isn't built yet.
+    await tester.scrollUntilVisible(
+      find.text('Sign out'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Sign out'), findsOneWidget);
     // Field labels render (each also appears as the TextField's own label,
     // so match loosely rather than pinning an exact count).
