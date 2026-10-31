@@ -1,6 +1,8 @@
 import 'package:go_router/go_router.dart';
 
 import '../../domain/models/category.dart';
+import '../../domain/models/client_address.dart';
+import '../../domain/models/order_record.dart';
 import '../presentation/screens/intro/launch_first_screen.dart';
 import '../presentation/screens/intro/launch_welcome_screen.dart';
 import '../presentation/screens/login/check_email_screen.dart';
@@ -16,13 +18,19 @@ import '../presentation/client/cart/cart_screen.dart';
 import '../presentation/client/payment/payment_screen.dart';
 import '../presentation/client/map/map_client_screen.dart';
 import '../presentation/client/orders/orders_screen.dart';
+import '../presentation/client/orders/order_detail_screen.dart';
+import '../presentation/client/orders/orders_list_screen.dart';
 import '../presentation/client/address/select_address_screen.dart';
 import '../presentation/client/profile/my_profile_screen.dart';
+import '../presentation/client/profile/address_form_screen.dart';
+import '../presentation/client/profile/address_list_screen.dart';
+import '../presentation/client/profile/profile_screen.dart';
 import '../presentation/delivery/map/map_delivery_screen.dart';
 
 /// App router (GoRouter). Wires the UC-01 auth flow plus the Leader's
-/// UC-02/03/04 client/delivery screens. Admin/delivery role homes stay
-/// as placeholders until Member B/C merge their respective UCs.
+/// UC-02/03/04 client/delivery screens and the UC-05/06 client screens.
+/// Admin/delivery role homes stay as placeholders until Member B/C merge
+/// their respective UCs.
 class AppRouter {
   AppRouter._();
 
@@ -43,25 +51,25 @@ class AppRouter {
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(
         path: '/register',
-        builder: (_, __) => const RegisterClientScreen(),
+        builder: (_, _) => const RegisterClientScreen(),
       ),
       GoRoute(
         path: '/forgot-password',
-        builder: (_, __) => const ForgotPasswordScreen(),
+        builder: (_, _) => const ForgotPasswordScreen(),
       ),
       GoRoute(
         path: '/check-email',
-        builder: (_, __) => const CheckEmailScreen(),
+        builder: (_, _) => const CheckEmailScreen(),
       ),
       GoRoute(
         path: '/select-role',
-        builder: (_, __) => const SelectRoleScreen(),
+        builder: (_, _) => const SelectRoleScreen(),
       ),
 
-      // ---- Client flow (UC-02 / UC-04 / UC-03) -----------------------------
+      // ---- Client flow (UC-02 / UC-03 / UC-04 / UC-05 / UC-06) -----------
       GoRoute(
         path: '/client/home',
-        builder: (_, __) => const ClientHomeScreen(),
+        builder: (_, _) => const ClientHomeScreen(),
       ),
       GoRoute(
         path: '/client/search-category',
@@ -78,29 +86,71 @@ class AppRouter {
           productId: state.pathParameters['id'] ?? '',
         ),
       ),
-      GoRoute(
-        path: '/client/cart',
-        builder: (_, __) => const CartScreen(),
-      ),
+      GoRoute(path: '/client/cart', builder: (_, _) => const CartScreen()),
       GoRoute(
         path: '/client/payment',
         builder: (_, __) => const PaymentScreen(),
       ),
+
+      // UC-05 — orders list + detail (Member A).  The list shows the active
+      // orders and the full history, with a per-order detail screen that
+      // streams realtime updates.
       GoRoute(
         path: '/client/orders',
-        builder: (_, __) => const ClientOrdersView(),
+        builder: (_, _) => const OrdersListScreen(),
       ),
+      GoRoute(
+        path: '/client/orders/detail/:id',
+        builder: (_, state) {
+          final id = state.pathParameters['id'] ?? '';
+          final extra = state.extra;
+          return OrderDetailScreen(
+            orderId: id,
+            initialOrder: extra is OrderRecord ? extra : null,
+          );
+        },
+      ),
+      // The Leader's Figma-aligned order list stays reachable under its own
+      // path so it doesn't hijack the UC-05 list route.
+      GoRoute(
+        path: '/client/orders/list',
+        builder: (_, _) => const ClientOrdersView(),
+      ),
+
+      // UC-06 — profile + addresses.
       GoRoute(
         path: '/client/profile',
-        builder: (_, __) => const MyProfileScreen(),
+        builder: (_, _) => const ProfileScreen(),
       ),
       GoRoute(
+        path: '/client/profile/edit',
+        builder: (_, _) => const MyProfileScreen(),
+      ),
+      GoRoute(
+        path: '/client/profile/addresses',
+        builder: (_, _) => const AddressListScreen(),
+      ),
+      GoRoute(
+        path: '/client/profile/addresses/new',
+        builder: (_, _) => const AddressFormScreen(),
+      ),
+      GoRoute(
+        path: '/client/profile/addresses/edit/:id',
+        builder: (_, state) {
+          final extra = state.extra;
+          return AddressFormScreen(
+            existingAddress: extra is ClientAddress ? extra : null,
+          );
+        },
+      ),
+
+      GoRoute(
         path: '/client/select-address',
-        builder: (_, __) => const SelectAddressScreen(),
+        builder: (_, _) => const SelectAddressScreen(),
       ),
       GoRoute(
         path: '/client/map',
-        builder: (_, __) => const MapClientScreen(),
+        builder: (_, _) => const MapClientScreen(),
       ),
 
       // ---- Delivery flow (UC-03) ------------------------------------------
@@ -114,11 +164,11 @@ class AppRouter {
       // ---- Placeholders (other members) -----------------------------------
       GoRoute(
         path: '/admin/home',
-        builder: (_, __) => const HomePlaceholder(label: 'Admin Home (UC-08)'),
+        builder: (_, _) => const HomePlaceholder(label: 'Admin Home (UC-08)'),
       ),
       GoRoute(
         path: '/delivery/home',
-        builder: (_, __) =>
+        builder: (_, _) =>
             const HomePlaceholder(label: 'Delivery Home (UC-10)'),
       ),
     ],

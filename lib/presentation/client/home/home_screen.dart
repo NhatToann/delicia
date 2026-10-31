@@ -19,7 +19,6 @@ import '../../helpers/money.dart';
 import '../../themes/colors_frave.dart';
 import '../../themes/type_frave.dart';
 import '../cart/cart_screen.dart';
-import '../profile/my_profile_screen.dart';
 import 'widgets/profile_menu.dart';
 
 /// Signature of the clock that decides the time-of-day greeting.
@@ -183,12 +182,13 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
   }
 
   /// Tapping the person tile (action_3, Figma x332) opens the slide-out
-  /// profile menu. "My Orders" is wired to the real screen; the other rows
-  /// are still inert (per the brief: cancel / track land in a later
-  /// use-case).
+  /// profile menu. "My Orders" and "My Profile" / "Delivery Address" are
+  /// wired to the real screens (UC-05 / UC-06); the remaining rows are
+  /// still placeholders.
   void _openProfile() {
     final ordersLabel = context.l10n.navOrders;
     final myProfileLabel = context.l10n.profileMyProfile;
+    final addressLabel = context.l10n.profileDeliveryAddress;
     ProfileMenuOverlay.show(
       context,
       onItemTap: (label) {
@@ -197,11 +197,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
           return;
         }
         if (label == myProfileLabel) {
-          Navigator.of(context).push<void>(
-            MaterialPageRoute<void>(
-              builder: (_) => const MyProfileScreen(),
-            ),
-          );
+          context.push('/client/profile');
+          return;
+        }
+        if (label == addressLabel) {
+          context.push('/client/profile/addresses');
           return;
         }
         // Still a placeholder — show which row was tapped so the

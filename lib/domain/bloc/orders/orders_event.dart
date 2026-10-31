@@ -64,6 +64,17 @@ class OnCancelOrderEvent extends OrdersEvent {
   final String? reason;
 }
 
+/// UC-05 — hands an already-loaded order to the live-tracking map.
+///
+/// The checkout flow publishes its order through [OnAddNewOrdersEvent], but
+/// a client that opens the map from the *order history* has no such order in
+/// the bloc yet.  This event hands the already-loaded [OrderRecord] over so
+/// the map can centre on it.
+class OnTrackOrderEvent extends OrdersEvent {
+  const OnTrackOrderEvent(this.order);
+  final OrderRecord order;
+}
+
 /// Internal event — a batch arrived from the My Orders stream.
 ///
 /// The subscription outlives the handler that opened it, so the data

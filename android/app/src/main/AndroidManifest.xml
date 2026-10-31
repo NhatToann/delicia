@@ -6,6 +6,15 @@
          (see RealtimeService), not a socket server. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- UC-06: avatar selection via image_picker. On Android 13+ (API 33)
+         the photo picker needs READ_MEDIA_IMAGES; on older versions
+         READ_EXTERNAL_STORAGE is used instead. image_picker uses the
+         system photo picker, so no storage permission is actually required
+         on modern Android — these are declared for older devices. -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32"/>
     <application
         android:label="delicia"
         android:name="${applicationName}"

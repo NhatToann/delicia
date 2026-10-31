@@ -15,7 +15,6 @@ import '../../helpers/money.dart';
 import '../../themes/colors_frave.dart';
 import '../../themes/type_frave.dart';
 import '../cart/cart_screen.dart';
-import '../profile/my_profile_screen.dart';
 import '../home/widgets/profile_menu.dart';
 
 /// Discover tab styled after Figma 5.1-A. Home filters pass their selected
@@ -370,17 +369,16 @@ class _SearchForCategoryScreenState extends State<SearchForCategoryScreen> {
   void _openProfile() {
     final ordersLabel = context.l10n.navOrders;
     final myProfileLabel = context.l10n.profileMyProfile;
+    final addressLabel = context.l10n.profileDeliveryAddress;
     ProfileMenuOverlay.show(
       context,
       onItemTap: (label) {
         if (label == ordersLabel) {
           context.push('/client/orders');
         } else if (label == myProfileLabel) {
-          Navigator.of(context).push<void>(
-            MaterialPageRoute<void>(
-              builder: (_) => const MyProfileScreen(),
-            ),
-          );
+          context.push('/client/profile');
+        } else if (label == addressLabel) {
+          context.push('/client/profile/addresses');
         }
       },
     );

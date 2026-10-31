@@ -60,5 +60,9 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-database")
+    // UC-06: avatar upload (firebase_storage Dart plugin -> native SDK).
+    // The Flutter plugin already pulls the BoM, but declaring it here keeps
+    // the Storage SDK version aligned with the rest of the Firebase stack.
+    implementation("com.google.firebase:firebase-storage")
     // firebase_messaging sẽ thêm ở UC-12 (push notifications)
 }
