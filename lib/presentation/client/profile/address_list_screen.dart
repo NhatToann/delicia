@@ -5,14 +5,17 @@ import 'package:go_router/go_router.dart';
 import '../../../domain/bloc/address/address_bloc.dart';
 import '../../../domain/bloc/auth/auth_bloc.dart';
 import '../../../domain/models/client_address.dart';
-import '../../components/btn_frave.dart';
-import '../../components/shimmer_frave.dart';
-import '../../components/text_custom.dart';
+import '../../components/figma_header_band.dart';
 import '../../helpers/error_message.dart';
+import '../../helpers/l10n_extension.dart';
 import '../../themes/colors_frave.dart';
+import '../../themes/type_frave.dart';
 
 /// AddressListScreen — listing + CRUD entry points for the client's saved
 /// addresses (UC-06).
+///
+/// The screen reuses the My Orders header band so the two flows share the
+/// same yellow band, the same chevron and the same title treatment.
 class AddressListScreen extends StatefulWidget {
   const AddressListScreen({super.key});
 
@@ -22,13 +25,6 @@ class AddressListScreen extends StatefulWidget {
 
 class _AddressListScreenState extends State<AddressListScreen> {
   String? _loadedUid;
-
-  @override
-  void initState() {
-    super.initState();
-    // No fetch here — the build() method reacts to AuthBloc state changes
-    // and kicks off the load once the user is available.
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,183 +38,201 @@ class _AddressListScreenState extends State<AddressListScreen> {
       });
     }
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: ColorsFrave.darkText),
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/client/home');
-            }
-          },
-        ),
-        title: const TextCustom('My Addresses', fontWeight: FontWeight.bold),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add, color: ColorsFrave.primaryColor),
-            onPressed: uid.isEmpty
-                ? null
-                : () => context.push('/client/profile/addresses/new'),
+      backgroundColor: ColorsFrave.pageBg,
+      body: Column(
+        children: <Widget>[
+          FigmaHeaderBand(
+            title: context.l10n.addressListTitle,
+            onBack: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/client/home');
+              }
+            },
+            actions: <Widget>[
+              IconButton(
+                tooltip: context.l10n.addressAdd,
+                icon: const Icon(Icons.add, color: ColorsFrave.ink),
+                onPressed: uid.isEmpty
+                    ? null
+                    : () => context.push('/client/profile/addresses/new'),
+              ),
+            ],
+          ),
+          Expanded(
+            child: BlocConsumer<AddressBloc, AddressState>(
+              listenWhen: (a, b) => a.error != b.error,
+              listener: (_, state) {
+                if (state.error != null) {
+                  errorTextSnack(context, state.error!);
+                }
+              },
+              builder: (ctx, state) {
+                if (state.isLoading && state.addresses.isEmpty) {
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      color: ColorsFrave.navOrange,
+                    ),
+                  );
+                }
+                return RefreshIndicator(
+                  color: ColorsFrave.navOrange,
+                  onRefresh: () async {
+                    if (uid.isEmpty) return;
+                    context.read<AddressBloc>().add(
+                      OnLoadAddressesEvent(uid: uid),
+                    );
+                    await Future<void>.delayed(
+                      const Duration(milliseconds: 600),
+                    );
+                  },
+                  child: state.addresses.isEmpty
+                      ? _EmptyState()
+                      : ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(35, 24, 35, 32),
+                          itemCount: state.addresses.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 14),
+                          itemBuilder: (_, i) => _AddressCard(
+                            address: state.addresses[i],
+                          ),
+                        ),
+                );
+              },
+            ),
           ),
         ],
       ),
-      body: BlocConsumer<AddressBloc, AddressState>(
-        listenWhen: (a, b) => a.error != b.error,
-        listener: (_, state) {
-          if (state.error != null) {
-            errorTextSnack(context, state.error!);
-          }
-        },
-        builder: (ctx, state) {
-          if (state.isLoading && state.addresses.isEmpty) {
-            return const _LoadingShell();
-          }
-          return RefreshIndicator(
-            color: ColorsFrave.primaryColor,
-            onRefresh: () async {
-              if (uid.isEmpty) return;
-              context.read<AddressBloc>().add(OnLoadAddressesEvent(uid: uid));
-              await Future<void>.delayed(const Duration(milliseconds: 600));
-            },
-            child: state.addresses.isEmpty
-                ? const _EmptyState()
-                : ListView.separated(
-                    padding: const EdgeInsets.all(20),
-                    itemCount: state.addresses.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
-                    itemBuilder: (_, i) =>
-                        _AddressCard(address: state.addresses[i]),
-                  ),
-          );
-        },
-      ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: ColorsFrave.primaryColor,
-        foregroundColor: Colors.white,
+        backgroundColor: ColorsFrave.navOrange,
+        foregroundColor: ColorsFrave.onOrange,
         onPressed: uid.isEmpty
             ? null
             : () => context.push('/client/profile/addresses/new'),
         icon: const Icon(Icons.add_location_alt_outlined),
-        label: const Text('Add address'),
+        label: Text(
+          context.l10n.addressAdd,
+          style: FraveText.semiBold(14, color: ColorsFrave.onOrange),
+        ),
       ),
     );
   }
 }
 
+/// One saved address, with its default badge and its three actions.
 class _AddressCard extends StatelessWidget {
   final ClientAddress address;
+
   const _AddressCard({required this.address});
 
   @override
   Widget build(BuildContext context) {
     final uid = context.read<AuthBloc>().state.user?.uid ?? '';
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [BoxShadow(color: Color(0x14000000), blurRadius: 8)],
+        color: ColorsFrave.surfaceColor,
+        borderRadius: BorderRadius.circular(RadiusFrave.card),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(color: Color(0x14000000), blurRadius: 8),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        children: <Widget>[
           Row(
-            children: [
-              const Icon(
-                Icons.location_on_outlined,
-                color: ColorsFrave.primaryColor,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Container(
+                width: 40,
+                height: 40,
+                decoration: const BoxDecoration(
+                  color: ColorsFrave.orangeSoft,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: const Icon(
+                  Icons.location_on_outlined,
+                  color: ColorsFrave.navOrange,
+                  size: 20,
+                ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               Expanded(
-                child: TextCustom(address.street, fontWeight: FontWeight.bold),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      address.street,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: FraveText.medium(16, color: ColorsFrave.ink),
+                    ),
+                    if (address.reference.isNotEmpty) ...<Widget>[
+                      const SizedBox(height: 4),
+                      Text(
+                        address.reference,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: FraveText.regular(13, color: ColorsFrave.greyText),
+                      ),
+                    ],
+                  ],
+                ),
               ),
               if (address.isDefault == true)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
+                    horizontal: 12,
+                    vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: ColorsFrave.secondaryColor,
-                    borderRadius: BorderRadius.circular(20),
+                    color: ColorsFrave.pillYellow,
+                    borderRadius: BorderRadius.circular(100),
                   ),
-                  child: const TextCustom(
-                    'Default',
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                  child: Text(
+                    context.l10n.addressDefault,
+                    style: FraveText.medium(12, color: ColorsFrave.ink),
                   ),
                 ),
             ],
           ),
-          if (address.reference.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            TextCustom(
-              address.reference,
-              color: ColorsFrave.greyText,
-              fontSize: 13,
-            ),
-          ],
-          const SizedBox(height: 8),
-          TextCustom(
-            'Lat ${address.latitude.toStringAsFixed(4)}, '
-            'Lng ${address.longitude.toStringAsFixed(4)}',
-            color: ColorsFrave.greyText,
-            fontSize: 12,
+          const SizedBox(height: 14),
+          const Divider(
+            height: 1,
+            thickness: 1,
+            color: ColorsFrave.dividerOrange,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
               if (address.isDefault != true)
-                TextButton.icon(
-                  onPressed: () => context.read<AddressBloc>().add(
+                _Action(
+                  icon: Icons.star_outline,
+                  label: context.l10n.addressSetDefault,
+                  color: ColorsFrave.navOrange,
+                  onTap: () => context.read<AddressBloc>().add(
                     OnSetDefaultAddressEvent(uid: uid, addressId: address.id),
                   ),
-                  icon: const Icon(
-                    Icons.star_outline,
-                    size: 18,
-                    color: ColorsFrave.secondaryColor,
-                  ),
-                  label: const TextCustom(
-                    'Set default',
-                    color: ColorsFrave.secondaryColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              TextButton.icon(
-                onPressed: () => context.push(
+                )
+              else
+                const SizedBox.shrink(),
+              _Action(
+                icon: Icons.edit_outlined,
+                label: context.l10n.actionEdit,
+                color: ColorsFrave.navOrange,
+                onTap: () => context.push(
                   '/client/profile/addresses/edit/${address.id}',
                   extra: address,
                 ),
-                icon: const Icon(
-                  Icons.edit_outlined,
-                  size: 18,
-                  color: ColorsFrave.primaryColor,
-                ),
-                label: const TextCustom(
-                  'Edit',
-                  color: ColorsFrave.primaryColor,
-                  fontWeight: FontWeight.w600,
-                ),
               ),
-              TextButton.icon(
-                onPressed: () => _confirmDelete(context, uid, address),
-                icon: const Icon(
-                  Icons.delete_outline,
-                  size: 18,
-                  color: ColorsFrave.errorColor,
-                ),
-                label: const TextCustom(
-                  'Delete',
-                  color: ColorsFrave.errorColor,
-                  fontWeight: FontWeight.w600,
-                ),
+              _Action(
+                icon: Icons.delete_outline,
+                label: context.l10n.addressDelete,
+                color: ColorsFrave.errorColor,
+                onTap: () => _confirmDelete(context, uid, address),
               ),
             ],
           ),
@@ -234,24 +248,38 @@ class _AddressCard extends StatelessWidget {
   ) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const TextCustom('Delete address?', fontWeight: FontWeight.bold),
-        content: TextCustom(
-          '${address.street} will be removed.',
-          color: ColorsFrave.greyText,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: ColorsFrave.surfaceColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(RadiusFrave.sheet),
         ),
-        actions: [
+        title: Text(
+          context.l10n.addressDeleteTitle,
+          style: FraveText.bold(20, color: ColorsFrave.ink),
+        ),
+        content: Text(
+          context.l10n.addressDeleteBody(address.street),
+          style: FraveText.regular(14, color: ColorsFrave.greyText),
+        ),
+        actions: <Widget>[
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const TextCustom('Cancel', color: ColorsFrave.greyText),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ColorsFrave.errorColor,
-              foregroundColor: Colors.white,
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(
+              context.l10n.addressCancel,
+              style: FraveText.medium(14, color: ColorsFrave.greyText),
             ),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: ColorsFrave.errorColor,
+              foregroundColor: ColorsFrave.onOrange,
+              shape: const StadiumBorder(),
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(
+              context.l10n.addressDelete,
+              style: FraveText.medium(14, color: ColorsFrave.onOrange),
+            ),
           ),
         ],
       ),
@@ -264,63 +292,105 @@ class _AddressCard extends StatelessWidget {
   }
 }
 
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
+/// A small icon + label action.
+class _Action extends StatelessWidget {
+  const _Action({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(24),
-      children: [
-        const SizedBox(height: 40),
-        const Icon(
-          Icons.location_off_outlined,
-          size: 96,
-          color: ColorsFrave.greyText,
+    return Semantics(
+      button: true,
+      label: label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(icon, size: 17, color: color),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: FraveText.medium(13, color: color),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 12),
-        const TextCustom(
-          'No saved addresses yet',
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 8),
-        const TextCustom(
-          'Add your first delivery address to speed up checkout.',
-          color: ColorsFrave.greyText,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 18),
-        BtnFrave(
-          text: 'Add address',
-          onPressed: () => context.push('/client/profile/addresses/new'),
-        ),
-        const SizedBox(height: 40),
-      ],
+      ),
     );
   }
 }
 
-class _LoadingShell extends StatelessWidget {
-  const _LoadingShell();
-
+/// Shown when the customer has not saved a single address yet.
+class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return ShimmerFrave(
-      child: ListView.separated(
-        padding: const EdgeInsets.all(20),
-        itemCount: 3,
-        separatorBuilder: (_, _) => const SizedBox(height: 12),
-        itemBuilder: (_, _) => Container(
-          height: 110,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(35, 48, 35, 48),
+      children: <Widget>[
+        Center(
+          child: Container(
+            width: 120,
+            height: 120,
+            decoration: const BoxDecoration(
+              color: ColorsFrave.orangeSoft,
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: const Icon(
+              Icons.location_off_outlined,
+              size: 56,
+              color: ColorsFrave.navOrange,
+            ),
           ),
         ),
-      ),
+        const SizedBox(height: 20),
+        Text(
+          context.l10n.addressEmptyTitle,
+          textAlign: TextAlign.center,
+          style: FraveText.bold(20, color: ColorsFrave.ink),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          context.l10n.addressEmptyBody,
+          textAlign: TextAlign.center,
+          style: FraveText.regular(14, color: ColorsFrave.greyText),
+        ),
+        const SizedBox(height: 24),
+        SizedBox(
+          height: 46,
+          child: FilledButton.icon(
+            onPressed: () => context.push('/client/profile/addresses/new'),
+            style: FilledButton.styleFrom(
+              backgroundColor: ColorsFrave.navOrange,
+              foregroundColor: ColorsFrave.onOrange,
+              elevation: 0,
+              shape: const StadiumBorder(),
+            ),
+            icon: const Icon(Icons.add, size: 18),
+            label: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                context.l10n.addressAdd,
+                style: FraveText.semiBold(14, color: ColorsFrave.onOrange),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

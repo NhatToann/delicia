@@ -7,6 +7,7 @@ import '../../../helpers/l10n_extension.dart';
 import '../../../helpers/money.dart';
 import '../../../themes/colors_frave.dart';
 import '../../../themes/type_frave.dart';
+import 'order_status_timeline.dart';
 
 /// One order row for the My Orders list.
 ///
@@ -69,6 +70,7 @@ class OrderRow extends StatelessWidget {
 
     return Material(
       color: Colors.transparent,
+      key: ValueKey<String>('order-row-${order.id}'),
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -83,20 +85,33 @@ class OrderRow extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: SizedBox(
-                  // Figma: 71.68 x 108.
-                  width: 72,
-                  height: 108,
-                  child: thumb == null
-                      ? Container(color: ColorsFrave.orangeSoft)
-                      : ImageResolver.resolveWidget(
-                          thumb.picture,
-                          fit: BoxFit.cover,
-                          fallback: CategoryAssets.pool.first,
-                        ),
-                ),
+              // Figma: 71.68 x 108. The status badge is overlaid on the
+              // thumbnail's bottom edge so the row keeps the exact Figma
+              // geometry (the badge is not part of the mockup).
+              Stack(
+                children: <Widget>[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: SizedBox(
+                      // Figma: 71.68 x 108.
+                      width: 72,
+                      height: 108,
+                      child: thumb == null
+                          ? Container(color: ColorsFrave.orangeSoft)
+                          : ImageResolver.resolveWidget(
+                              thumb.picture,
+                              fit: BoxFit.cover,
+                              fallback: CategoryAssets.pool.first,
+                            ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: _StatusRibbon(status: order.status),
+                  ),
+                ],
               ),
               // Figma: the text column starts at x120.
               const SizedBox(width: 13),
@@ -175,6 +190,9 @@ class OrderRow extends StatelessWidget {
                         // is only as wide as its label.
                         Flexible(
                           child: _OrderActionButton(
+                            key: ValueKey<String>(
+                              'order-action-cancel-${order.id}',
+                            ),
                             label: context.l10n.actionCancelOrder,
                             background: ColorsFrave.navOrange,
                             foreground: ColorsFrave.onOrange,
@@ -227,11 +245,48 @@ class OrderRow extends StatelessWidget {
   }
 }
 
+/// The status ribbon overlaid on the bottom of an order's thumbnail.
+///
+/// The Figma mockup leaves that area empty, so the ribbon is our addition —
+/// a customer needs to know where the order is at a glance.  It is small
+/// enough not to disturb the 72 x 108 thumbnail geometry.
+class _StatusRibbon extends StatelessWidget {
+  const _StatusRibbon({required this.status});
+
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = orderStatusColors(status);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      decoration: BoxDecoration(
+        color: colors.background,
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+      ),
+      alignment: Alignment.center,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            orderStatusLabel(context, status),
+            maxLines: 1,
+            style: FraveText.medium(10, color: colors.foreground, height: 1.0),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Small pill button used for "Cancel Order" / "Track Driver".
 ///
 /// Figma: h26, r100, horizontal padding 12, League Spartan 15.
 class _OrderActionButton extends StatelessWidget {
   const _OrderActionButton({
+    super.key,
     required this.label,
     required this.background,
     required this.foreground,

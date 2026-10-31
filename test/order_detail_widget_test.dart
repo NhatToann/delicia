@@ -1,10 +1,14 @@
 // UC-05 — Widget tests for OrderDetailScreen.
+//
+// The screen renders its copy through `context.l10n`, so the assertions use
+// `viL10n` — the same Vietnamese table the production code resolves.
 
 import 'package:delicia/domain/bloc/auth/auth_bloc.dart';
 import 'package:delicia/domain/bloc/client_orders/client_orders_bloc.dart';
 import 'package:delicia/domain/models/order_record.dart';
 import 'package:delicia/domain/services/client_orders_service.dart';
 import 'package:delicia/presentation/client/orders/order_detail_screen.dart';
+import 'package:delicia/presentation/helpers/l10n_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -100,17 +104,17 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('PAID OUT'), findsWidgets);
-    expect(find.text('DISPATCHED'), findsWidgets);
-    expect(find.text('ON WAY'), findsWidgets);
-    expect(find.text('DELIVERED'), findsWidgets);
+    expect(find.text(viL10n.stagePlaced), findsWidgets);
+    expect(find.text(viL10n.stageDispatched), findsWidgets);
+    expect(find.text(viL10n.stageOnTheWay), findsWidgets);
+    expect(find.text(viL10n.stageDelivered), findsWidgets);
     // The tracking CTA lives below the fold of the detail ListView.
     await tester.scrollUntilVisible(
-      find.text('Open live tracking'),
+      find.text(viL10n.ordersDetailTrack),
       200,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.text('Open live tracking'), findsOneWidget);
+    expect(find.text(viL10n.ordersDetailTrack), findsOneWidget);
   });
 
   testWidgets('shows the cancel button only for cancellable orders', (
@@ -145,11 +149,11 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
-      find.text('Cancel this order'),
+      find.text(viL10n.ordersDetailCancel),
       200,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.text('Cancel this order'), findsOneWidget);
+    expect(find.text(viL10n.ordersDetailCancel), findsOneWidget);
   });
 
   testWidgets('does not show cancel for delivered orders', (tester) async {
@@ -183,6 +187,6 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Cancel this order'), findsNothing);
+    expect(find.text(viL10n.ordersDetailCancel), findsNothing);
   });
 }

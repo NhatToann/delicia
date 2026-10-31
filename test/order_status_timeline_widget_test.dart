@@ -1,6 +1,10 @@
 // UC-05 — Widget tests for the OrderStatusTimeline.
+//
+// The timeline renders the Vietnamese copy from the ARB file, so the
+// assertions use `viL10n` — the same table the production code resolves.
 
 import 'package:delicia/presentation/client/orders/widgets/order_status_timeline.dart';
+import 'package:delicia/presentation/helpers/l10n_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -14,10 +18,10 @@ void main() {
       host(const OrderStatusTimeline(status: 'PAID OUT')),
     );
     // Verify each canonical label renders.
-    expect(find.text('PAID OUT'), findsOneWidget);
-    expect(find.text('DISPATCHED'), findsOneWidget);
-    expect(find.text('ON WAY'), findsOneWidget);
-    expect(find.text('DELIVERED'), findsOneWidget);
+    expect(find.text(viL10n.stagePlaced), findsOneWidget);
+    expect(find.text(viL10n.stageDispatched), findsOneWidget);
+    expect(find.text(viL10n.stageOnTheWay), findsOneWidget);
+    expect(find.text(viL10n.stageDelivered), findsOneWidget);
   });
 
   testWidgets('marks every step before the current status as done', (
@@ -25,8 +29,8 @@ void main() {
   ) async {
     await tester.pumpWidget(host(const OrderStatusTimeline(status: 'ON WAY')));
     // Status badge colour depends on status; we only assert layout here.
-    expect(find.text('ON WAY'), findsOneWidget);
-    expect(find.text('DELIVERED'), findsOneWidget);
+    expect(find.text(viL10n.stageOnTheWay), findsOneWidget);
+    expect(find.text(viL10n.stageDelivered), findsOneWidget);
   });
 
   testWidgets('renders the cancelled step when status is CANCELLED', (
@@ -35,7 +39,7 @@ void main() {
     await tester.pumpWidget(
       host(const OrderStatusTimeline(status: 'CANCELLED')),
     );
-    expect(find.text('CANCELLED'), findsOneWidget);
+    expect(find.text(viL10n.ordersStatusCancelled), findsOneWidget);
   });
 
   testWidgets('falls back to the last timeline step when status is unknown', (
@@ -46,7 +50,7 @@ void main() {
     );
     expect(find.text('BOGUS STATUS'), findsNothing);
     // All canonical steps still render.
-    expect(find.text('PAID OUT'), findsOneWidget);
+    expect(find.text(viL10n.stagePlaced), findsOneWidget);
   });
 
   testWidgets('respects orderedStatuses override', (tester) async {

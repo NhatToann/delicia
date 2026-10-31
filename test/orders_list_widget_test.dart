@@ -1,10 +1,14 @@
 // UC-05 — Widget tests for OrdersListScreen.
+//
+// The screen renders its copy through `context.l10n`, so the assertions use
+// `viL10n` — the same Vietnamese table the production code resolves.
 
 import 'package:delicia/domain/bloc/auth/auth_bloc.dart';
 import 'package:delicia/domain/bloc/client_orders/client_orders_bloc.dart';
 import 'package:delicia/domain/models/order_record.dart';
 import 'package:delicia/domain/services/client_orders_service.dart';
 import 'package:delicia/presentation/client/orders/orders_list_screen.dart';
+import 'package:delicia/presentation/helpers/l10n_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -90,7 +94,7 @@ Widget _wrap({
 
 /// Drives [AuthBloc] to its authenticated state so the screens can resolve
 /// a uid. Two pump() calls are needed: the first lets the event resolve in the
-/// bloc, the second lets the BlocListener&lt;AuthBloc&gt; fire its post-frame
+/// bloc, the second lets the BlocListener<AuthBloc> fire its post-frame
 /// load.
 Future<void> seedAuth(WidgetTester tester, AuthBloc auth) async {
   auth.add(CheckLoginEvent());
@@ -129,12 +133,13 @@ void main() {
     // Async listOrdersByClient resolves + stream emits
     await settleMicrotasks(tester);
 
-    expect(find.text('Active'), findsOneWidget);
-    expect(find.text('History'), findsOneWidget);
-    expect(find.textContaining('Order #alpha'), findsOneWidget);
-    expect(find.textContaining('Order #beta'), findsOneWidget);
-    expect(find.text('ON WAY'), findsOneWidget);
-    expect(find.text('DISPATCHED'), findsOneWidget);
+    expect(find.text(viL10n.ordersFilterActive), findsOneWidget);
+    expect(find.text(viL10n.ordersFilterCompleted), findsOneWidget);
+    expect(find.text(viL10n.ordersFilterCancelled), findsOneWidget);
+    expect(find.textContaining(viL10n.ordersFallbackTitle('alpha')), findsOneWidget);
+    expect(find.textContaining(viL10n.ordersFallbackTitle('beta')), findsOneWidget);
+    expect(find.text(viL10n.stageOnTheWay), findsOneWidget);
+    expect(find.text(viL10n.stageDispatched), findsOneWidget);
   });
 
   testWidgets('shows the empty state when there are no orders', (tester) async {
@@ -150,8 +155,7 @@ void main() {
     await seedAuth(tester, auth);
     await settleMicrotasks(tester);
 
-    expect(find.text('No active orders'), findsOneWidget);
-    expect(find.text('Start Shopping'), findsOneWidget);
+    expect(find.text(viL10n.ordersEmptyActiveSubtitle), findsOneWidget);
   });
 
   testWidgets('switches to history tab and shows delivered/cancelled items', (
@@ -174,18 +178,39 @@ void main() {
     await seedAuth(tester, auth);
     await settleMicrotasks(tester);
 
-    await tester.tap(find.text('History'));
-    // PageView tab animation needs multiple animation frames.
+    await tester.tap(find.text(viL10n.ordersFilterCompleted));
+    // Filter switch is a plain setState — one frame is enough.
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
-    await tester.pump(const Duration(milliseconds: 100));
-    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(
+      find.textContaining(viL10n.ordersFallbackTitle('past1')),
+      findsOneWidget,
+    );
+    expect(find.text(viL10n.stageDelivered), findsOneWidget);
+    // The cancelled order lives under its own filter chip.
+    expect(
+      find.textContaining(viL10n.ordersFallbackTitle('past2')),
+      findsNothing,
+    );
+
+    await tester.tap(find.text(viL10n.ordersFilterCancelled));
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.textContaining('Order #past1'), findsOneWidget);
-    expect(find.textContaining('Order #past2'), findsOneWidget);
-    expect(find.text('DELIVERED'), findsOneWidget);
-    expect(find.text('CANCELLED'), findsOneWidget);
+    expect(
+      find.textContaining(viL10n.ordersFallbackTitle('past2')),
+      findsOneWidget,
+    );
+    // "Đã huỷ" is both the filter chip label and the status label, so the
+    // assertion is scoped to the ribbon inside the order row.
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey<String>('order-row-past2')),
+        matching: find.text(viL10n.ordersStatusCancelled),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('cancel button is shown for PAID OUT orders only', (
@@ -209,9 +234,41 @@ void main() {
     await seedAuth(tester, auth);
     await settleMicrotasks(tester);
 
-    // PAID OUT card has Cancel.
-    final cancelButton = find.text('Cancel');
-    expect(cancelButton, findsOneWidget);
+    // The active filter shows PAID OUT + ON WAY (DELIVERED belongs to the
+    // "completed" chip), so two cancel pills are rendered — but only the
+    // PAID OUT one is actionable.
+    expect(find.text(viL10n.actionCancelOrder), findsNWidgets(2));
+    expect(
+      find.byKey(const ValueKey<String>('order-action-cancel-a1')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('order-action-cancel-a3')),
+      findsNothing,
+    );
+    // The disabled pill is dimmed; the enabled one keeps full opacity.
+    final enabled = tester.widget<Opacity>(
+      find
+          .descendant(
+            of: find.byKey(
+              const ValueKey<String>('order-action-cancel-a1'),
+            ),
+            matching: find.byType(Opacity),
+          )
+          .first,
+    );
+    expect(enabled.opacity, 1);
+    final disabled = tester.widget<Opacity>(
+      find
+          .descendant(
+            of: find.byKey(
+              const ValueKey<String>('order-action-cancel-a2'),
+            ),
+            matching: find.byType(Opacity),
+          )
+          .first,
+    );
+    expect(disabled.opacity, lessThan(1));
   });
 
   // Regression: the screen used to kick off its initial load from a
@@ -242,7 +299,10 @@ void main() {
     );
     await settleMicrotasks(tester);
 
-    expect(find.textContaining('Order #pre1'), findsOneWidget);
-    expect(find.text('No active orders'), findsNothing);
+    expect(
+      find.textContaining(viL10n.ordersFallbackTitle('pre1')),
+      findsOneWidget,
+    );
+    expect(find.text(viL10n.ordersEmptyActiveSubtitle), findsNothing);
   });
 }

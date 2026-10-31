@@ -3,6 +3,9 @@
 // We avoid touching the platform image picker by stubbing the
 // ClientUserService in-memory and asserting the form / button text + state
 // behaviour.
+//
+// The screen renders its copy through `context.l10n`, so the assertions use
+// `viL10n` — the same Vietnamese table the production code resolves.
 
 import 'dart:typed_data';
 
@@ -11,6 +14,7 @@ import 'package:delicia/domain/bloc/user/user_bloc.dart';
 import 'package:delicia/domain/models/user.dart';
 import 'package:delicia/domain/services/client_user_service.dart';
 import 'package:delicia/presentation/client/profile/profile_screen.dart';
+import 'package:delicia/presentation/helpers/l10n_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -114,29 +118,29 @@ void main() {
     await seedAuth(tester, auth);
     await settleMicrotasks(tester);
 
-    expect(find.text('My Profile'), findsOneWidget);
+    expect(find.text(viL10n.profileMyProfile), findsOneWidget);
     // The save CTA lives below the fold of the profile ListView.
     await tester.scrollUntilVisible(
-      find.text('Save changes'),
+      find.text(viL10n.profileSaveChanges),
       200,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.text('Save changes'), findsOneWidget);
-    expect(find.text('Manage addresses'), findsOneWidget);
+    expect(find.text(viL10n.profileSaveChanges), findsOneWidget);
+    expect(find.text(viL10n.profileManageAddresses), findsOneWidget);
     // The sign-out button sits at the very bottom of the list — scroll it
     // into view before asserting, otherwise it isn't built yet.
     await tester.scrollUntilVisible(
-      find.text('Sign out'),
+      find.text(viL10n.profileSignOut),
       200,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.text('Sign out'), findsOneWidget);
-    // Field labels render (each also appears as the TextField's own label,
+    expect(find.text(viL10n.profileSignOut), findsOneWidget);
+    // Field labels render (each also appears as the TextField's own hint,
     // so match loosely rather than pinning an exact count).
-    expect(find.text('First name'), findsWidgets);
-    expect(find.text('Last name'), findsWidgets);
-    expect(find.text('Email'), findsWidgets);
-    expect(find.text('Phone number'), findsWidgets);
+    expect(find.text(viL10n.profileFirstName), findsWidgets);
+    expect(find.text(viL10n.profileLastName), findsWidgets);
+    expect(find.text(viL10n.profileEmail), findsWidgets);
+    expect(find.text(viL10n.profilePhoneNumber), findsWidgets);
   });
 
   testWidgets('Validation marks empty first name invalid', (tester) async {
@@ -169,15 +173,15 @@ void main() {
     await settleMicrotasks(tester);
 
     await tester.scrollUntilVisible(
-      find.text('Save changes'),
+      find.text(viL10n.profileSaveChanges),
       200,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.tap(find.text('Save changes'));
+    await tester.tap(find.text(viL10n.profileSaveChanges));
     await settleMicrotasks(tester);
 
-    expect(find.text('First name is required'), findsOneWidget);
-    expect(find.text('Last name is required'), findsOneWidget);
+    expect(find.text(viL10n.profileFirstNameRequired), findsOneWidget);
+    expect(find.text(viL10n.profileLastNameRequired), findsOneWidget);
   });
 
   testWidgets('Sign out confirms, dismisses the loader and leaves no dialog', (
@@ -212,25 +216,25 @@ void main() {
     await settleMicrotasks(tester);
 
     await tester.scrollUntilVisible(
-      find.text('Sign out'),
+      find.text(viL10n.profileSignOut),
       200,
       scrollable: find.byType(Scrollable).first,
     );
     // The sign-out button sits at the very bottom of the profile list; on a
     // short test viewport it can still be a few pixels outside the frame
     // even after scrolling, so pull it fully into view before tapping.
-    await tester.ensureVisible(find.text('Sign out'));
+    await tester.ensureVisible(find.text(viL10n.profileSignOut));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Sign out'));
+    await tester.tap(find.text(viL10n.profileSignOut));
     await settleMicrotasks(tester);
 
     // Confirmation dialog appears.
-    expect(find.text('Sign out?'), findsOneWidget);
+    expect(find.text(viL10n.profileSignOutTitle), findsOneWidget);
     // Tap the dialog's own "Sign out" action. The page behind the dialog
     // also renders a "Sign out" button, so scope the finder to the dialog.
     final confirmButton = find.descendant(
       of: find.byType(AlertDialog),
-      matching: find.widgetWithText(ElevatedButton, 'Sign out'),
+      matching: find.widgetWithText(FilledButton, viL10n.profileSignOut),
     );
     expect(confirmButton, findsOneWidget);
     await tester.tap(confirmButton);
@@ -246,6 +250,6 @@ void main() {
     // only completes once the dialog is popped.
     expect(find.byType(CircularProgressIndicator), findsNothing);
     // The confirm dialog is gone too.
-    expect(find.text('Sign out?'), findsNothing);
+    expect(find.text(viL10n.profileSignOutTitle), findsNothing);
   });
 }

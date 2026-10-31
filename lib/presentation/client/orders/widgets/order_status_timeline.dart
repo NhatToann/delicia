@@ -2,13 +2,18 @@ import 'package:flutter/material.dart';
 
 import '../../../../domain/models/order_record.dart';
 import '../../../../domain/services/client_orders_service.dart';
-import '../../../components/text_custom.dart';
+import '../../../helpers/l10n_extension.dart';
 import '../../../themes/colors_frave.dart';
+import '../../../themes/type_frave.dart';
 
 /// OrderStatusTimeline — visual representation of an order's delivery
 /// progress (UC-05).  Rendered as a vertical list of steps with an
 /// active / done indicator so the user can see how far the delivery has
 /// progressed at a glance.
+///
+/// The steps come from [ClientOrderStatuses.timeline] and are rendered with
+/// the Vietnamese copy from the ARB file, so the timeline never leaks the
+/// raw database status strings into the UI.
 class OrderStatusTimeline extends StatelessWidget {
   final String status;
 
@@ -45,7 +50,8 @@ class OrderStatusTimeline extends StatelessWidget {
       children: [
         for (int i = 0; i < steps.length; i++)
           _StepRow(
-            label: steps[i],
+            label: orderStatusLabel(context, steps[i]),
+            description: orderStatusDescription(context, steps[i]),
             isDone: !isCancelled && i < currentIndex,
             isActive: !isCancelled && i == currentIndex,
             isLast: i == steps.length - 1,
@@ -53,7 +59,8 @@ class OrderStatusTimeline extends StatelessWidget {
           ),
         if (isCancelled)
           _StepRow(
-            label: 'CANCELLED',
+            label: context.l10n.ordersStatusCancelled,
+            description: context.l10n.ordersCancelBody,
             isDone: false,
             isActive: true,
             isLast: true,
@@ -67,8 +74,46 @@ class OrderStatusTimeline extends StatelessWidget {
   static String _normalizeStatus(String s) => s.trim().toUpperCase();
 }
 
+/// The Vietnamese label of a raw order status.
+///
+/// The database stores machine strings (`PAID OUT`, `ON WAY`, …); the user
+/// only ever reads the Vietnamese wording.
+String orderStatusLabel(BuildContext context, String status) {
+  switch (status.trim().toUpperCase()) {
+    case OrderRecord.statusPaidOut:
+      return context.l10n.stagePlaced;
+    case OrderRecord.statusDispatched:
+      return context.l10n.stageDispatched;
+    case OrderRecord.statusOnWay:
+      return context.l10n.stageOnTheWay;
+    case OrderRecord.statusDelivered:
+      return context.l10n.stageDelivered;
+    case OrderRecord.statusCancelled:
+      return context.l10n.ordersStatusCancelled;
+    default:
+      return status;
+  }
+}
+
+/// The Vietnamese description of a raw order status.
+String orderStatusDescription(BuildContext context, String status) {
+  switch (status.trim().toUpperCase()) {
+    case OrderRecord.statusPaidOut:
+      return context.l10n.stagePlacedDescription;
+    case OrderRecord.statusDispatched:
+      return context.l10n.stageDispatchedDescription;
+    case OrderRecord.statusOnWay:
+      return context.l10n.stageOnTheWayDescription;
+    case OrderRecord.statusDelivered:
+      return context.l10n.stageDeliveredDescription;
+    default:
+      return '';
+  }
+}
+
 class _StepRow extends StatelessWidget {
   final String label;
+  final String description;
   final bool isDone;
   final bool isActive;
   final bool isLast;
@@ -77,6 +122,7 @@ class _StepRow extends StatelessWidget {
   const _StepRow({
     super.key,
     required this.label,
+    required this.description,
     required this.isDone,
     required this.isActive,
     required this.isLast,
@@ -87,19 +133,16 @@ class _StepRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = cancelled
         ? ColorsFrave.errorColor
-        : ColorsFrave.primaryColor;
+        : ColorsFrave.navOrange;
     final dot = isActive
         ? accent
         : isDone
         ? accent
-        : ColorsFrave.backgroundColor;
-    final border = isDone || isActive ? accent : ColorsFrave.backgroundColor;
+        : ColorsFrave.orangeSoft;
+    final border = isDone || isActive ? accent : ColorsFrave.orangeSoft;
     final textColor = isDone || isActive || cancelled
-        ? ColorsFrave.darkText
+        ? ColorsFrave.ink
         : ColorsFrave.greyText;
-    final fontWeight = isActive || cancelled
-        ? FontWeight.bold
-        : FontWeight.w500;
 
     return IntrinsicHeight(
       child: Row(
@@ -118,7 +161,7 @@ class _StepRow extends StatelessWidget {
                     border: Border.all(color: border, width: 2),
                   ),
                   child: isDone
-                      ? const Icon(Icons.check, size: 10, color: Colors.white)
+                      ? const Icon(Icons.check, size: 10, color: ColorsFrave.onOrange)
                       : null,
                 ),
                 if (!isLast)
@@ -126,8 +169,8 @@ class _StepRow extends StatelessWidget {
                     child: Container(
                       width: 2,
                       color: isDone
-                          ? ColorsFrave.primaryColor
-                          : ColorsFrave.backgroundColor,
+                          ? ColorsFrave.navOrange
+                          : ColorsFrave.orangeSoft,
                     ),
                   ),
               ],
@@ -136,7 +179,30 @@ class _StepRow extends StatelessWidget {
           const SizedBox(width: 12),
           Padding(
             padding: EdgeInsets.only(top: 0, bottom: isLast ? 0 : 12),
-            child: TextCustom(label, color: textColor, fontWeight: fontWeight),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: FraveText.medium(
+                    15,
+                    color: textColor,
+                    height: 1.2,
+                  ),
+                ),
+                if (description.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 2),
+                  Text(
+                    description,
+                    style: FraveText.light(
+                      12,
+                      color: ColorsFrave.greyText,
+                      height: 1.25,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ],
       ),
@@ -150,6 +216,42 @@ class _StepRow extends StatelessWidget {
 bool isOrderCancellable(String status) =>
     ClientOrderStatuses.cancellableStatuses.contains(status);
 
+/// The fill / foreground pair a status is rendered with.
+///
+/// Shared by the order-row ribbon and the [OrderStatusBadge] pill so both
+/// always agree on the colour of a status.
+({Color background, Color foreground}) orderStatusColors(String status) {
+  final normalized = status.trim().toUpperCase();
+  switch (normalized) {
+    case 'PAID OUT':
+      return (
+        background: ColorsFrave.navOrange,
+        foreground: ColorsFrave.onOrange,
+      );
+    case 'DISPATCHED':
+    case 'ON WAY':
+      return (
+        background: ColorsFrave.orangeSoft,
+        foreground: ColorsFrave.navOrange,
+      );
+    case 'DELIVERED':
+      return (
+        background: ColorsFrave.pillYellow,
+        foreground: ColorsFrave.ink,
+      );
+    case 'CANCELLED':
+      return (
+        background: ColorsFrave.errorColor,
+        foreground: ColorsFrave.onOrange,
+      );
+    default:
+      return (
+        background: ColorsFrave.orangeSoft,
+        foreground: ColorsFrave.navOrange,
+      );
+  }
+}
+
 /// Compact summary used by the order-list cards.  Reuses the canonical
 /// status strings so widget tests can assert against the same shape the
 /// production code uses.
@@ -159,42 +261,16 @@ class OrderStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final normalized = status.trim().toUpperCase();
-    Color bg;
-    Color fg;
-    switch (normalized) {
-      case 'PAID OUT':
-        bg = ColorsFrave.primaryColor;
-        fg = Colors.white;
-        break;
-      case 'DISPATCHED':
-      case 'ON WAY':
-        bg = ColorsFrave.secondaryColor;
-        fg = Colors.white;
-        break;
-      case 'DELIVERED':
-        bg = ColorsFrave.backgroundColor;
-        fg = ColorsFrave.darkText;
-        break;
-      case 'CANCELLED':
-        bg = ColorsFrave.errorColor;
-        fg = Colors.white;
-        break;
-      default:
-        bg = ColorsFrave.backgroundColor;
-        fg = ColorsFrave.darkText;
-    }
+    final colors = orderStatusColors(status);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
+        color: colors.background,
+        borderRadius: BorderRadius.circular(100),
       ),
-      child: TextCustom(
-        status.isEmpty ? 'UNKNOWN' : status,
-        color: fg,
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
+      child: Text(
+        orderStatusLabel(context, status),
+        style: FraveText.medium(12, color: colors.foreground, height: 1.0),
       ),
     );
   }

@@ -6,25 +6,30 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../data/local_secure/secure_storage.dart';
 import '../../../domain/bloc/auth/auth_bloc.dart';
 import '../../../domain/bloc/user/user_bloc.dart';
-import '../../../data/local_secure/secure_storage.dart';
-import '../../components/btn_frave.dart';
-import '../../components/form_field_frave.dart';
-import '../../components/text_custom.dart';
+import '../../components/figma_header_band.dart';
 import '../../helpers/error_message.dart';
 import '../../helpers/image_resolver.dart';
+import '../../helpers/l10n_extension.dart';
 import '../../themes/colors_frave.dart';
+import '../../themes/type_frave.dart';
 
 /// ProfileScreen — main entry point for the client's profile (UC-06).
 ///
-/// Shows the authenticated user's:
-///   - first / last name (editable)
-///   - email (read-only, sourced from AuthBloc)
-///   - phone (editable)
-///   - avatar (Firebase Storage backed)
+/// Figma node 133:380 ("4.1.1-I — My Profile"):
 ///
-/// Plus shortcuts to the address list and a logout button.
+///   header band   yellow #F5CB58, back chevron left, "Hồ sơ của tôi"
+///                 centred (League Spartan Bold 22 #F8F8F8)
+///   body          light surface #F8F8F8, rounded top corners r30
+///   avatar        120 x 120 circle + camera badge, centred
+///   fields        full name / date of birth / email / phone, each a
+///                 42 px pill in "Yellow 2" #F3E9B5
+///   CTA           "Cập nhật hồ sơ" — orange stadium button
+///
+/// The screen shows the authenticated user's name, email, phone and avatar,
+/// plus shortcuts to the address list and a sign-out button.
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -37,23 +42,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _firstName = TextEditingController();
   final _lastName = TextEditingController();
   final _phone = TextEditingController();
+  final _email = TextEditingController();
   final ImagePicker _picker = ImagePicker();
 
   bool _seeded = false;
   String? _loadedUid;
 
   @override
-  void initState() {
-    super.initState();
-    // No fetch here — the build() method reacts to AuthBloc state changes
-    // and kicks off the load once the user is available.
-  }
-
-  @override
   void dispose() {
     _firstName.dispose();
     _lastName.dispose();
     _phone.dispose();
+    _email.dispose();
     super.dispose();
   }
 
@@ -75,147 +75,170 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: ColorsFrave.darkText),
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/client/home');
-            }
-          },
-        ),
-        title: const TextCustom('My Profile', fontWeight: FontWeight.bold),
-        centerTitle: true,
-      ),
-      body: BlocConsumer<UserBloc, UserState>(
-        listenWhen: (a, b) =>
-            a.error != b.error ||
-            (a.lastSavedAt != b.lastSavedAt && b.lastSavedAt != null),
-        listener: (_, state) {
-          if (state.error != null) {
-            errorTextSnack(context, state.error!);
-          } else if (state.lastSavedAt != null) {
-            ScaffoldMessenger.of(context)
-              ..hideCurrentSnackBar()
-              ..showSnackBar(
-                const SnackBar(
-                  content: Text('Profile updated'),
-                  backgroundColor: ColorsFrave.successColor,
-                  duration: Duration(seconds: 2),
-                ),
-              );
-          }
-        },
-        builder: (context, state) {
-          if (!_seeded && state.user != null) {
-            _firstName.text = state.user!.firstName;
-            _lastName.text = state.user!.lastName;
-            _phone.text = state.user!.phone ?? '';
-            _seeded = true;
-          }
-          final user = state.user;
-          return ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
-              _AvatarSection(
-                imageUrl: user?.image,
-                avatarBytes: state.avatarBytes,
-                isUploading: state.isUploadingAvatar,
-                onChange: () => _pickAvatar(context, uid),
+      backgroundColor: ColorsFrave.headerYellow,
+      body: Column(
+        children: <Widget>[
+          FigmaHeaderBand(
+            title: context.l10n.profileMyProfile,
+            onBack: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/client/home');
+              }
+            },
+          ),
+          Expanded(
+            child: Container(
+              decoration: const BoxDecoration(
+                color: ColorsFrave.pageBg,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
               ),
-              const SizedBox(height: 20),
-              Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    const _LabelText('First name'),
-                    const SizedBox(height: 6),
-                    FormFieldFrave(
-                      controller: _firstName,
-                      hintText: 'First name',
-                      validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'First name is required'
-                          : null,
-                    ),
-                    const SizedBox(height: 14),
-                    const _LabelText('Last name'),
-                    const SizedBox(height: 6),
-                    FormFieldFrave(
-                      controller: _lastName,
-                      hintText: 'Last name',
-                      validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Last name is required'
-                          : null,
-                    ),
-                    const SizedBox(height: 14),
-                    const _LabelText('Email'),
-                    const SizedBox(height: 6),
-                    FormFieldFrave(
-                      controller:
-                          TextEditingController(
-                              text: auth.user?.email ?? user?.email ?? '',
-                            )
-                            ..selection = TextSelection.collapsed(
-                              offset: (auth.user?.email ?? user?.email ?? '')
-                                  .length,
+              clipBehavior: Clip.antiAlias,
+              child: BlocConsumer<UserBloc, UserState>(
+                listenWhen: (a, b) =>
+                    a.error != b.error ||
+                    (a.lastSavedAt != b.lastSavedAt && b.lastSavedAt != null),
+                listener: (_, state) {
+                  if (state.error != null) {
+                    errorTextSnack(context, state.error!);
+                  } else if (state.lastSavedAt != null) {
+                    ScaffoldMessenger.of(context)
+                      ..hideCurrentSnackBar()
+                      ..showSnackBar(
+                        SnackBar(
+                          content: Text(context.l10n.profileUpdated),
+                          backgroundColor: ColorsFrave.successColor,
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                  }
+                },
+                builder: (context, state) {
+                  final user = state.user;
+                  if (!_seeded && user != null) {
+                    _firstName.text = user.firstName;
+                    _lastName.text = user.lastName;
+                    _phone.text = user.phone ?? '';
+                    _email.text = auth.user?.email ?? user.email;
+                    _seeded = true;
+                  }
+                  return LayoutBuilder(
+                    builder: (context, constraints) => SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(32, 20, 32, 32),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: constraints.maxHeight - 52,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            _AvatarSection(
+                              imageUrl: user?.image,
+                              avatarBytes: state.avatarBytes,
+                              isUploading: state.isUploadingAvatar,
+                              onChange: () => _pickAvatar(context, uid),
                             ),
-                      hintText: 'email@example.com',
-                      readOnly: true,
+                            const SizedBox(height: 26),
+                            Form(
+                              key: _formKey,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: <Widget>[
+                                  _Field(
+                                    label: context.l10n.profileFirstName,
+                                    controller: _firstName,
+                                    hintText: context.l10n.profileFirstName,
+                                    validator: (v) =>
+                                        (v == null || v.trim().isEmpty)
+                                        ? context.l10n.profileFirstNameRequired
+                                        : null,
+                                  ),
+                                  const SizedBox(height: 14),
+                                  _Field(
+                                    label: context.l10n.profileLastName,
+                                    controller: _lastName,
+                                    hintText: context.l10n.profileLastName,
+                                    validator: (v) =>
+                                        (v == null || v.trim().isEmpty)
+                                        ? context.l10n.profileLastNameRequired
+                                        : null,
+                                  ),
+                                  const SizedBox(height: 14),
+                                  _Field(
+                                    label: context.l10n.profileEmail,
+                                    controller: _email,
+                                    hintText: 'email@example.com',
+                                    readOnly: true,
+                                    keyboardType: TextInputType.emailAddress,
+                                  ),
+                                  const SizedBox(height: 14),
+                                  _Field(
+                                    label: context.l10n.profilePhoneNumber,
+                                    controller: _phone,
+                                    hintText: '+84 912 345 678',
+                                    keyboardType: TextInputType.phone,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 28),
+                            _StadiumButton(
+                              label: state.isSaving
+                                  ? context.l10n.profileSaving
+                                  : context.l10n.profileSaveChanges,
+                              background: ColorsFrave.navOrange,
+                              foreground: ColorsFrave.onOrange,
+                              icon: Icons.check,
+                              onPressed: state.isSaving
+                                  ? null
+                                  : () => _save(context, uid),
+                            ),
+                            const SizedBox(height: 12),
+                            _StadiumButton(
+                              label: context.l10n.profileManageAddresses,
+                              background: ColorsFrave.pillYellow,
+                              foreground: ColorsFrave.ink,
+                              icon: Icons.location_on_outlined,
+                              onPressed: () =>
+                                  context.push('/client/profile/addresses'),
+                            ),
+                            const SizedBox(height: 12),
+                            _StadiumButton(
+                              label: context.l10n.profileFullProfileDetails,
+                              background: ColorsFrave.pillYellow,
+                              foreground: ColorsFrave.ink,
+                              icon: Icons.badge_outlined,
+                              onPressed: () =>
+                                  context.push('/client/profile/edit'),
+                            ),
+                            const SizedBox(height: 12),
+                            _StadiumButton(
+                              label: context.l10n.profileSignOut,
+                              background: ColorsFrave.errorColor,
+                              foreground: ColorsFrave.onOrange,
+                              icon: Icons.logout,
+                              onPressed: uid.isEmpty
+                                  ? null
+                                  : () => _logout(context),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: 14),
-                    const _LabelText('Phone number'),
-                    const SizedBox(height: 6),
-                    FormFieldFrave(
-                      controller: _phone,
-                      hintText: '+1 555 123 4567',
-                      keyboardType: TextInputType.phone,
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
-              const SizedBox(height: 20),
-              BtnFrave(
-                text: state.isSaving ? 'Saving…' : 'Save changes',
-                onPressed: state.isSaving ? null : () => _save(context, uid),
-              ),
-              const SizedBox(height: 14),
-              BtnFrave(
-                text: 'Manage addresses',
-                color: Colors.white,
-                textColor: ColorsFrave.primaryColor,
-                onPressed: () => context.push('/client/profile/addresses'),
-              ),
-              const SizedBox(height: 14),
-              // The Leader's Figma-aligned profile screen also carries the
-              // date-of-birth field, so it stays reachable from here.
-              BtnFrave(
-                text: 'Full profile details',
-                color: Colors.white,
-                textColor: ColorsFrave.primaryColor,
-                onPressed: () => context.push('/client/profile/edit'),
-              ),
-              const SizedBox(height: 14),
-              BtnFrave(
-                text: 'Sign out',
-                color: ColorsFrave.errorColor,
-                onPressed: uid.isEmpty ? null : () => _logout(context),
-              ),
-              const SizedBox(height: 24),
-            ],
-          );
-        },
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Future<void> _pickAvatar(BuildContext context, String uid) async {
     if (uid.isEmpty) {
-      errorTextSnack(context, 'Sign in to change your avatar.');
+      errorTextSnack(context, context.l10n.profileSignInRequired);
       return;
     }
     try {
@@ -230,23 +253,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     } catch (e) {
       if (context.mounted) {
-        errorTextSnack(context, 'Could not open gallery: $e');
+        errorTextSnack(context, context.l10n.profileImagePickFailed);
       }
     }
   }
 
   Future<void> _save(BuildContext context, String uid) async {
     if (uid.isEmpty) {
-      errorTextSnack(context, 'Sign in to update your profile.');
+      errorTextSnack(context, context.l10n.profileSignInRequired);
       return;
     }
     if (!_formKey.currentState!.validate()) return;
     context.read<UserBloc>().add(
       OnUpdateUserProfileEvent(
         uid: uid,
-        firstName: _firstName.text,
-        lastName: _lastName.text,
-        phone: _phone.text,
+        firstName: _firstName.text.trim(),
+        lastName: _lastName.text.trim(),
+        phone: _phone.text.trim(),
       ),
     );
   }
@@ -254,24 +277,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _logout(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const TextCustom('Sign out?', fontWeight: FontWeight.bold),
-        content: const TextCustom(
-          'You will need to sign in again to use the app.',
-          color: ColorsFrave.greyText,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: ColorsFrave.surfaceColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(RadiusFrave.sheet),
         ),
-        actions: [
+        title: Text(
+          context.l10n.profileSignOutTitle,
+          style: FraveText.bold(20, color: ColorsFrave.ink),
+        ),
+        content: Text(
+          context.l10n.profileSignOutBody,
+          style: FraveText.regular(14, color: ColorsFrave.greyText),
+        ),
+        actions: <Widget>[
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const TextCustom('Stay', color: ColorsFrave.greyText),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ColorsFrave.errorColor,
-              foregroundColor: Colors.white,
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(
+              context.l10n.profileStaySignedIn,
+              style: FraveText.medium(14, color: ColorsFrave.greyText),
             ),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Sign out'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: ColorsFrave.errorColor,
+              foregroundColor: ColorsFrave.onOrange,
+              shape: const StadiumBorder(),
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(
+              context.l10n.profileSignOut,
+              style: FraveText.medium(14, color: ColorsFrave.onOrange),
+            ),
           ),
         ],
       ),
@@ -293,6 +330,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
+/// The avatar with its camera badge — Figma: 120 x 120, r9 badge.
 class _AvatarSection extends StatelessWidget {
   final String? imageUrl;
   final Uint8List? avatarBytes;
@@ -310,57 +348,65 @@ class _AvatarSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Column(
-        children: [
+        children: <Widget>[
           Stack(
-            alignment: Alignment.bottomRight,
-            children: [
+            clipBehavior: Clip.none,
+            children: <Widget>[
               Container(
-                width: 110,
-                height: 110,
-                decoration: BoxDecoration(
-                  color: ColorsFrave.backgroundColor,
+                width: 120,
+                height: 120,
+                decoration: const BoxDecoration(
+                  color: ColorsFrave.orangeSoft,
                   shape: BoxShape.circle,
-                  boxShadow: const [
-                    BoxShadow(color: Color(0x14000000), blurRadius: 8),
-                  ],
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: _avatarImage(),
               ),
               Positioned(
-                child: InkWell(
-                  onTap: isUploading ? null : onChange,
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: const BoxDecoration(
-                      color: ColorsFrave.primaryColor,
-                      shape: BoxShape.circle,
-                    ),
-                    child: isUploading
-                        ? const Padding(
-                            padding: EdgeInsets.all(8),
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
+                right: -5,
+                bottom: -5,
+                child: Semantics(
+                  button: true,
+                  label: context.l10n.profileChoosePhoto,
+                  child: InkWell(
+                    onTap: isUploading ? null : onChange,
+                    borderRadius: BorderRadius.circular(9),
+                    child: Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: ColorsFrave.navOrange,
+                        borderRadius: BorderRadius.circular(9),
+                        border: Border.all(
+                          color: ColorsFrave.pageBg,
+                          width: 2,
+                        ),
+                      ),
+                      child: isUploading
+                          ? const Padding(
+                              padding: EdgeInsets.all(6),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: ColorsFrave.onOrange,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.camera_alt_outlined,
+                              color: ColorsFrave.onOrange,
+                              size: 15,
                             ),
-                          )
-                        : const Icon(
-                            Icons.camera_alt,
-                            color: Colors.white,
-                            size: 18,
-                          ),
+                    ),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          TextCustom(
-            isUploading ? 'Uploading…' : 'Tap to change avatar',
-            color: ColorsFrave.greyText,
-            fontSize: 13,
+          const SizedBox(height: 10),
+          Text(
+            isUploading
+                ? context.l10n.profileUploading
+                : context.l10n.profileAvatarHint,
+            style: FraveText.regular(13, color: ColorsFrave.greyText),
           ),
         ],
       ),
@@ -375,8 +421,8 @@ class _AvatarSection extends StatelessWidget {
       return Image.memory(
         bytes,
         fit: BoxFit.cover,
-        width: 110,
-        height: 110,
+        width: 120,
+        height: 120,
         gaplessPlayback: true,
         errorBuilder: (_, _, _) => _placeholderIcon(),
       );
@@ -387,27 +433,144 @@ class _AvatarSection extends StatelessWidget {
     return ImageResolver.resolveWidget(
       imageUrl!,
       fit: BoxFit.cover,
-      width: 110,
-      height: 110,
+      width: 120,
+      height: 120,
+      fallback: 'assets/figma_home/profile_avatar.png',
     );
   }
 
   Widget _placeholderIcon() => const Icon(
-        Icons.person,
-        size: 56,
-        color: ColorsFrave.primaryColor,
-      );
+    Icons.person,
+    size: 60,
+    color: ColorsFrave.navOrange,
+  );
 }
 
-class _LabelText extends StatelessWidget {
-  final String text;
-  const _LabelText(this.text);
+/// A labelled pill-shaped input — Figma: 42 px tall, r15, "Yellow 2" fill.
+class _Field extends StatelessWidget {
+  const _Field({
+    required this.label,
+    required this.controller,
+    required this.hintText,
+    this.readOnly = false,
+    this.keyboardType,
+    this.validator,
+  });
+
+  final String label;
+  final TextEditingController controller;
+  final String hintText;
+  final bool readOnly;
+  final TextInputType? keyboardType;
+  final String? Function(String?)? validator;
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: TextCustom(text, fontWeight: FontWeight.w600),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.only(left: 2, bottom: 7),
+          child: Text(
+            label,
+            style: FraveText.medium(14, color: ColorsFrave.ink),
+          ),
+        ),
+        SizedBox(
+          height: 42,
+          child: TextFormField(
+            controller: controller,
+            readOnly: readOnly,
+            keyboardType: keyboardType,
+            validator: validator,
+            style: FraveText.regular(14, color: ColorsFrave.ink),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: ColorsFrave.pillYellow,
+              hintText: hintText,
+              hintStyle: FraveText.regular(13, color: ColorsFrave.greyText),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 18,
+                vertical: 10,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: const BorderSide(
+                  color: ColorsFrave.navOrange,
+                  width: 1,
+                ),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: const BorderSide(
+                  color: ColorsFrave.errorColor,
+                  width: 1,
+                ),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: const BorderSide(
+                  color: ColorsFrave.errorColor,
+                  width: 1,
+                ),
+              ),
+              errorStyle: FraveText.regular(11, color: ColorsFrave.errorColor),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// A full-width stadium button used for the primary / secondary actions.
+class _StadiumButton extends StatelessWidget {
+  const _StadiumButton({
+    required this.label,
+    required this.background,
+    required this.foreground,
+    required this.icon,
+    this.onPressed,
+  });
+
+  final String label;
+  final Color background;
+  final Color foreground;
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 46,
+      child: FilledButton.icon(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: background,
+          foregroundColor: foreground,
+          disabledBackgroundColor: background.withValues(alpha: 0.45),
+          disabledForegroundColor: foreground.withValues(alpha: 0.8),
+          elevation: 0,
+          shape: const StadiumBorder(),
+        ),
+        icon: Icon(icon, size: 18),
+        label: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            label,
+            maxLines: 1,
+            style: FraveText.semiBold(14, color: foreground),
+          ),
+        ),
+      ),
     );
   }
 }

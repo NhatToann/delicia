@@ -4,22 +4,43 @@ import 'package:go_router/go_router.dart';
 
 import '../../../domain/bloc/auth/auth_bloc.dart';
 import '../../../domain/bloc/client_orders/client_orders_bloc.dart';
+import '../../../domain/bloc/orders/orders_bloc.dart'
+    show OrdersBloc, OnTrackOrderEvent;
+import '../../../domain/models/order_filter.dart';
 import '../../../domain/models/order_record.dart';
-import '../../components/btn_frave.dart';
-import '../../components/shimmer_frave.dart';
-import '../../components/text_custom.dart';
+import '../../components/app_bottom_nav.dart';
+import '../../components/app_nav_destination.dart';
+import '../../components/figma_header_band.dart';
 import '../../helpers/error_message.dart';
+import '../../helpers/l10n_extension.dart';
 import '../../themes/colors_frave.dart';
-import 'widgets/order_status_timeline.dart';
+import '../../themes/type_frave.dart';
+import 'widgets/order_filter_chips.dart';
+import 'widgets/order_row.dart';
+import 'widgets/orders_empty_state.dart';
 
 /// OrdersListScreen — the client's order history (UC-05).
 ///
-/// Shows two tabs:
-///   * **Active** — orders that aren't yet delivered / cancelled.
-///   * **History** — delivered + cancelled orders.
+/// Figma frames:
+///   147:2153 — "4.1.1 - B - My Orders"        (empty state)
+///   147:2106 — "4.1.1 - C - My Orders - Active" (one order)
 ///
-/// Tapping any card opens the order-detail screen, which subscribes to
-/// the order's realtime updates.
+/// Layout on a 393 x 852 frame:
+///
+///   status bar   h32, fill #F5CB58
+///   back arrow   x35  y81   8 x 13
+///   title        "My Orders" centred, League Spartan Bold 28 #F8F8F8
+///   filter chips y164  h28   Active / Completed / Cancelled
+///   content      y211+  (hairline dividers, 323 px wide)
+///
+/// The screen is driven by [ClientOrdersBloc], which
+///
+///   * loads and streams the client's orders in realtime,
+///   * slices them by the selected [OrderFilter],
+///   * cancels an order that is still cancellable.
+///
+/// Tapping a row opens the order-detail screen, which keeps streaming that
+/// single order's updates.
 class OrdersListScreen extends StatefulWidget {
   const OrdersListScreen({super.key});
 
@@ -27,384 +48,322 @@ class OrdersListScreen extends StatefulWidget {
   State<OrdersListScreen> createState() => _OrdersListScreenState();
 }
 
-class _OrdersListScreenState extends State<OrdersListScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
+class _OrdersListScreenState extends State<OrdersListScreen> {
+  /// The chip the user last tapped. Defaults to "Active".
+  OrderFilter _filter = OrderFilter.active;
+
+  /// The uid whose orders are currently displayed. Used to reload the list
+  /// when the account changes (sign-in / sign-out / account switch).
   String? _loadedUid;
 
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    // No data fetch here — the build() method reacts to AuthBloc state
-    // changes and kicks off the load once the user is available.
-  }
+  /// Guards against double-loading while the first frame is still settling.
+  bool _loading = false;
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _loading = false;
     super.dispose();
   }
 
+  /// Loads (and subscribes to) the orders of [uid].
+  void _loadFor(String uid) {
+    if (uid.isEmpty) return;
+    final bloc = context.read<ClientOrdersBloc>();
+    bloc.add(OnLoadClientOrdersEvent(clientId: uid));
+    bloc.add(OnSubscribeClientOrdersEvent(clientId: uid));
+  }
+
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthBloc>().state;
+    final uid = auth.user?.uid ?? '';
+
+    // React to the account: load once per uid, and wipe the list when the
+    // user signs out so the next account never sees the previous orders.
+    if (uid.isNotEmpty && _loadedUid != uid) {
+      _loadedUid = uid;
+      if (!_loading) {
+        _loading = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _loading = false;
+          _loadFor(uid);
+        });
+      }
+    } else if (uid.isEmpty && _loadedUid != null) {
+      _loadedUid = null;
+    }
+
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: ColorsFrave.darkText),
-          // After checkout the app navigates to this screen with `go()`,
-          // which replaces the whole stack — so there is nothing to pop
-          // and the back button would silently do nothing.  Fall back to
-          // the client home screen in that case.
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/client/home');
-            }
-          },
-        ),
-        title: const TextCustom('My Orders', fontWeight: FontWeight.bold),
-        centerTitle: true,
-        actions: [
-          BlocBuilder<ClientOrdersBloc, ClientOrdersState>(
-            buildWhen: (a, b) => a.realtimeActive != b.realtimeActive,
-            builder: (_, state) {
-              final uid = context.read<AuthBloc>().state.user?.uid ?? '';
-              return IconButton(
-                tooltip: state.realtimeActive ? 'Live updates on' : 'Refresh',
-                icon: Icon(
-                  state.realtimeActive ? Icons.wifi_tethering : Icons.refresh,
-                  color: ColorsFrave.primaryColor,
-                ),
-                onPressed: () {
-                  if (uid.isEmpty) {
-                    errorTextSnack(context, 'Sign in to refresh orders.');
-                    return;
-                  }
-                  context.read<ClientOrdersBloc>().add(
-                    OnRefreshClientOrdersEvent(clientId: uid),
+      backgroundColor: ColorsFrave.pageBg,
+      body: Column(
+        children: <Widget>[
+          FigmaHeaderBand(
+            title: context.l10n.ordersTitle,
+            onBack: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/client/home');
+              }
+            },
+            actions: <Widget>[
+              BlocBuilder<ClientOrdersBloc, ClientOrdersState>(
+                buildWhen: (a, b) =>
+                    a.realtimeActive != b.realtimeActive ||
+                    a.isLoading != b.isLoading,
+                builder: (context, state) {
+                  return IconButton(
+                    tooltip: state.realtimeActive
+                        ? context.l10n.ordersLiveUpdatesOn
+                        : context.l10n.ordersLiveUpdatesOff,
+                    icon: Icon(
+                      state.realtimeActive
+                          ? Icons.wifi_tethering
+                          : Icons.refresh,
+                      color: ColorsFrave.ink,
+                    ),
+                    onPressed: () {
+                      if (uid.isEmpty) {
+                        errorTextSnack(
+                          context,
+                          context.l10n.ordersSignInToRefresh,
+                        );
+                        return;
+                      }
+                      context.read<ClientOrdersBloc>().add(
+                        OnRefreshClientOrdersEvent(clientId: uid),
+                      );
+                    },
                   );
                 },
-              );
-            },
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: ColorsFrave.primaryColor,
-          unselectedLabelColor: ColorsFrave.greyText,
-          indicatorColor: ColorsFrave.primaryColor,
-          labelStyle: const TextStyle(fontWeight: FontWeight.w600),
-          tabs: const [
-            Tab(text: 'Active'),
-            Tab(text: 'History'),
-          ],
-        ),
-      ),
-      body: BlocBuilder<AuthBloc, AuthState>(
-        buildWhen: (a, b) => a.user?.uid != b.user?.uid,
-        builder: (authCtx, authState) {
-          final uid = authState.user?.uid ?? '';
-          if (uid.isNotEmpty && _loadedUid != uid) {
-            _loadedUid = uid;
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!mounted) return;
-              context.read<ClientOrdersBloc>().add(
-                OnLoadClientOrdersEvent(clientId: uid),
-              );
-              context.read<ClientOrdersBloc>().add(
-                OnSubscribeClientOrdersEvent(clientId: uid),
-              );
-            });
-          } else if (uid.isEmpty) {
-            _loadedUid = null;
-          }
-          return BlocConsumer<ClientOrdersBloc, ClientOrdersState>(
-            listenWhen: (a, b) =>
-                a.error != b.error || a.lastUpdatedOrder != b.lastUpdatedOrder,
-            listener: (ctx, state) {
-              if (state.error != null) {
-                errorTextSnack(context, state.error!);
-              } else if (state.lastUpdatedOrder != null) {
-                modalSuccessOrInfo(
-                  context,
-                  'Cancellation confirmed for '
-                  '#${state.lastUpdatedOrder!.id.substring(0, state.lastUpdatedOrder!.id.length.clamp(0, 8))}',
-                );
-              }
-            },
-            builder: (ctx, state) {
-              if (state.isLoading && state.orders.isEmpty) {
-                return const _LoadingShell();
-              }
-              return TabBarView(
-                controller: _tabController,
-                children: [
-                  _OrderList(orders: state.activeOrders, cancellable: true),
-                  _OrderList(orders: state.historyOrders, cancellable: false),
-                ],
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-}
-
-/// Compact inline confirmation helper used by the listener — sticks to
-/// a non-blocking snack so the user can keep scrolling.
-void modalSuccessOrInfo(BuildContext context, String message) {
-  ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: ColorsFrave.successColor,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-}
-
-class _OrderList extends StatelessWidget {
-  final List<OrderRecord> orders;
-  final bool cancellable;
-
-  const _OrderList({required this.orders, required this.cancellable});
-
-  @override
-  Widget build(BuildContext context) {
-    if (orders.isEmpty) {
-      return _EmptyState(isHistory: !cancellable);
-    }
-    return RefreshIndicator(
-      color: ColorsFrave.primaryColor,
-      onRefresh: () async {
-        final uid = context.read<AuthBloc>().state.user?.uid ?? '';
-        if (uid.isEmpty) return;
-        context.read<ClientOrdersBloc>().add(
-          OnRefreshClientOrdersEvent(clientId: uid),
-        );
-        await Future<void>.delayed(const Duration(milliseconds: 600));
-      },
-      child: ListView.separated(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(20),
-        itemCount: orders.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 12),
-        itemBuilder: (_, i) =>
-            _OrderCard(order: orders[i], cancellable: cancellable),
-      ),
-    );
-  }
-}
-
-class _OrderCard extends StatelessWidget {
-  final OrderRecord order;
-  final bool cancellable;
-
-  const _OrderCard({required this.order, required this.cancellable});
-
-  @override
-  Widget build(BuildContext context) {
-    final itemCount = order.products.fold<int>(0, (s, p) => s + p.quantity);
-    final canCancelNow = cancellable && isOrderCancellable(order.status);
-    final cancelling = context.select<ClientOrdersBloc, bool>(
-      (b) => b.state.cancellingOrderId == order.id,
-    );
-    final clientId = context.read<AuthBloc>().state.user?.uid ?? '';
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: () =>
-          context.push('/client/orders/detail/${order.id}', extra: order),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: const [BoxShadow(color: Color(0x14000000), blurRadius: 8)],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: TextCustom(
-                    'Order #${order.id.substring(0, order.id.length.clamp(0, 8))}',
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                OrderStatusBadge(status: order.status),
-              ],
-            ),
-            const SizedBox(height: 6),
-            TextCustom(
-              relativeOrderTime(order.createdAt),
-              color: ColorsFrave.greyText,
-              fontSize: 13,
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TextCustom(
-                  '$itemCount item${itemCount == 1 ? '' : 's'}',
-                  color: ColorsFrave.greyText,
-                  fontSize: 13,
-                ),
-                TextCustom(
-                  '\$${order.amount.toStringAsFixed(2)}',
-                  fontWeight: FontWeight.bold,
-                  color: ColorsFrave.primaryColor,
-                ),
-              ],
-            ),
-            if (canCancelNow) ...[
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  SizedBox(
-                    height: 38,
-                    child: cancelling
-                        ? const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 16),
-                            child: SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: ColorsFrave.primaryColor,
-                              ),
-                            ),
-                          )
-                        : TextButton.icon(
-                            onPressed: cancelling
-                                ? null
-                                : () => _confirmCancel(context, clientId),
-                            icon: const Icon(
-                              Icons.cancel_outlined,
-                              size: 18,
-                              color: ColorsFrave.errorColor,
-                            ),
-                            label: const TextCustom(
-                              'Cancel',
-                              color: ColorsFrave.errorColor,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                  ),
-                ],
               ),
             ],
-          ],
-        ),
+          ),
+          Expanded(
+            child: BlocConsumer<ClientOrdersBloc, ClientOrdersState>(
+              listenWhen: (a, b) =>
+                  a.error != b.error || a.lastUpdatedOrder != b.lastUpdatedOrder,
+              listener: (context, state) {
+                if (state.error != null) {
+                  errorTextSnack(context, state.error!);
+                } else if (state.lastUpdatedOrder != null) {
+                  final order = state.lastUpdatedOrder!;
+                  ScaffoldMessenger.of(context)
+                    ..hideCurrentSnackBar()
+                    ..showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          context.l10n.ordersCancelledToast(
+                            _shortId(order.id),
+                          ),
+                        ),
+                        backgroundColor: ColorsFrave.successColor,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                }
+              },
+              builder: (context, state) {
+                // Figma: the chip row starts at y164, the header band ends
+                // at y129 → 35 px of gap.
+                return Column(
+                  children: <Widget>[
+                    Padding(
+                      padding: const EdgeInsets.only(top: 35, bottom: 20),
+                      child: OrderFilterChips(
+                        selected: _filter,
+                        onSelected: (filter) =>
+                            setState(() => _filter = filter),
+                      ),
+                    ),
+                    Expanded(child: _OrdersBody(state: state, filter: _filter)),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: AppBottomNav(
+        currentIndex: AppNavDestination.orders,
+        onTap: (index) => AppNavDestination.go(context, index),
       ),
     );
   }
 
-  Future<void> _confirmCancel(BuildContext context, String clientId) async {
+  /// The short, human-readable order id shown in the UI.
+  static String _shortId(String id) => id.length <= 8 ? id : id.substring(0, 8);
+}
+
+/// The list of orders for the selected filter, or the empty state.
+class _OrdersBody extends StatelessWidget {
+  const _OrdersBody({required this.state, required this.filter});
+
+  final ClientOrdersState state;
+  final OrderFilter filter;
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.isLoading && state.orders.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(color: ColorsFrave.navOrange),
+      );
+    }
+
+    if (state.error != null && state.orders.isEmpty) {
+      return _ErrorState(message: state.error!);
+    }
+
+    final orders = state.orders.where(filter.accepts).toList(growable: false);
+    if (orders.isEmpty) {
+      return OrdersEmptyState(filter: filter);
+    }
+
+    return ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.only(bottom: 24),
+      itemCount: orders.length,
+      separatorBuilder: (_, _) => const Divider(
+        height: 1,
+        thickness: 1,
+        color: ColorsFrave.dividerOrange,
+      ),
+      itemBuilder: (context, i) {
+        final order = orders[i];
+        return OrderRow(
+          order: order,
+          onTap: () => context.push(
+            '/client/orders/detail/${order.id}',
+            extra: order,
+          ),
+          onCancel: () => _confirmCancel(context, order),
+          onTrack: () => _trackOrder(context, order),
+        );
+      },
+    );
+  }
+
+  /// Asks for confirmation, then hands the cancellation to the bloc.
+  ///
+  /// The bloc owns the rule ("only a PAID OUT order can be cancelled"), so
+  /// the dialog is purely a confirmation step — a stale list can never
+  /// cancel an order the server would refuse.
+  Future<void> _confirmCancel(BuildContext context, OrderRecord order) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const TextCustom(
-          'Cancel this order?',
-          fontWeight: FontWeight.bold,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: ColorsFrave.surfaceColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(RadiusFrave.sheet),
         ),
-        content: const TextCustom(
-          'Once cancelled, the order can no longer be reversed.',
-          color: ColorsFrave.greyText,
+        title: Text(
+          context.l10n.ordersCancelTitle,
+          style: FraveText.bold(20, color: ColorsFrave.ink),
         ),
-        actions: [
+        content: Text(
+          context.l10n.ordersCancelBody,
+          style: FraveText.regular(14, color: ColorsFrave.greyText),
+        ),
+        actions: <Widget>[
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const TextCustom('Keep order', color: ColorsFrave.greyText),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ColorsFrave.errorColor,
-              foregroundColor: Colors.white,
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(
+              context.l10n.ordersCancelKeep,
+              style: FraveText.medium(14, color: ColorsFrave.greyText),
             ),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Cancel order'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: ColorsFrave.navOrange,
+              foregroundColor: ColorsFrave.onOrange,
+              shape: const StadiumBorder(),
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(
+              context.l10n.ordersCancelConfirm,
+              style: FraveText.medium(14, color: ColorsFrave.onOrange),
+            ),
           ),
         ],
       ),
     );
-    if (confirmed == true && context.mounted) {
-      context.read<ClientOrdersBloc>().add(
-        OnCancelOrderEvent(clientId: clientId, orderId: order.id),
-      );
-    }
+    if (confirmed != true || !context.mounted) return;
+    final uid = context.read<AuthBloc>().state.user?.uid ?? '';
+    context.read<ClientOrdersBloc>().add(
+      OnCancelOrderEvent(clientId: uid, orderId: order.id),
+    );
+  }
+
+  /// Publishes the order to the shared [OrdersBloc] before opening the map,
+  /// so the live-tracking screen knows which order to follow.
+  void _trackOrder(BuildContext context, OrderRecord order) {
+    context.read<OrdersBloc>().add(OnTrackOrderEvent(order));
+    context.push('/client/map');
   }
 }
 
-class _EmptyState extends StatelessWidget {
-  final bool isHistory;
-  const _EmptyState({required this.isHistory});
+/// Shown when the orders could not be loaded and there is nothing to show.
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.message});
+
+  final String message;
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(horizontal: 35),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
             const Icon(
-              Icons.receipt_long_outlined,
-              size: 96,
-              color: ColorsFrave.greyText,
-            ),
-            const SizedBox(height: 12),
-            TextCustom(
-              isHistory ? 'No previous orders yet' : 'No active orders',
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-            const SizedBox(height: 6),
-            TextCustom(
-              isHistory
-                  ? 'Once an order is delivered or cancelled it will show up here.'
-                  : 'Place an order and it will show up here in real time.',
-              color: ColorsFrave.greyText,
-              textAlign: TextAlign.center,
+              Icons.cloud_off_rounded,
+              size: 56,
+              color: ColorsFrave.navOrange,
             ),
             const SizedBox(height: 16),
-            if (!isHistory)
-              BtnFrave(
-                text: 'Start Shopping',
-                onPressed: () => context.go('/client/home'),
+            Text(
+              context.l10n.ordersLoadFailedTitle,
+              textAlign: TextAlign.center,
+              style: FraveText.medium(20, color: ColorsFrave.ink),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: FraveText.regular(14, color: ColorsFrave.greyText),
+            ),
+            const SizedBox(height: 20),
+            OutlinedButton(
+              onPressed: () {
+                final uid = context.read<AuthBloc>().state.user?.uid ?? '';
+                if (uid.isEmpty) return;
+                context.read<ClientOrdersBloc>().add(
+                  OnRefreshClientOrdersEvent(clientId: uid),
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                foregroundColor: ColorsFrave.navOrange,
+                side: const BorderSide(
+                  color: ColorsFrave.navOrange,
+                  width: 1.5,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(100),
+                ),
               ),
+              child: Text(
+                context.l10n.ordersTryAgain,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+                style: FraveText.medium(14, color: ColorsFrave.navOrange),
+              ),
+            ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _LoadingShell extends StatelessWidget {
-  const _LoadingShell();
-
-  @override
-  Widget build(BuildContext context) {
-    return ShimmerFrave(
-      child: ListView.separated(
-        padding: const EdgeInsets.all(20),
-        itemCount: 4,
-        separatorBuilder: (_, _) => const SizedBox(height: 12),
-        itemBuilder: (_, _) => Container(
-          height: 120,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-          ),
         ),
       ),
     );

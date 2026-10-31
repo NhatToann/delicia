@@ -1,4 +1,8 @@
 // UC-06 — Widget tests for AddressListScreen and AddressFormScreen.
+//
+// The screens render their copy through `context.l10n`, so the assertions
+// below use `viL10n` — the same Vietnamese table the production code
+// resolves — instead of hard-coded literals.
 
 import 'package:delicia/domain/bloc/address/address_bloc.dart';
 import 'package:delicia/domain/bloc/auth/auth_bloc.dart';
@@ -6,6 +10,7 @@ import 'package:delicia/domain/models/client_address.dart';
 import 'package:delicia/domain/services/client_address_service.dart';
 import 'package:delicia/presentation/client/profile/address_form_screen.dart';
 import 'package:delicia/presentation/client/profile/address_list_screen.dart';
+import 'package:delicia/presentation/helpers/l10n_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -79,9 +84,9 @@ void main() {
     await seedAuth(tester, auth);
     await settleMicrotasks(tester);
 
-    expect(find.text('No saved addresses yet'), findsOneWidget);
+    expect(find.text(viL10n.addressEmptyTitle), findsOneWidget);
     // Rendered twice on purpose: the empty-state CTA and the app-bar action.
-    expect(find.text('Add address'), findsWidgets);
+    expect(find.text(viL10n.addressAdd), findsWidgets);
   });
 
   testWidgets('AddressListScreen shows existing addresses with default badge', (
@@ -127,10 +132,10 @@ void main() {
 
     expect(find.text('1 Lê Lợi'), findsOneWidget);
     expect(find.text('2 Nguyễn Huệ'), findsOneWidget);
-    expect(find.text('Default'), findsOneWidget);
-    expect(find.text('Set default'), findsOneWidget);
-    expect(find.text('Edit'), findsWidgets);
-    expect(find.text('Delete'), findsWidgets);
+    expect(find.text(viL10n.addressDefault), findsOneWidget);
+    expect(find.text(viL10n.addressSetDefault), findsOneWidget);
+    expect(find.text(viL10n.actionEdit), findsWidgets);
+    expect(find.text(viL10n.addressDelete), findsWidgets);
   });
 
   testWidgets('AddressFormScreen validates empty street + coordinates', (
@@ -159,14 +164,14 @@ void main() {
     // show errors. The submit CTA is inside the scroll view, hence the
     // explicit scroll before tapping.
     await tester.scrollUntilVisible(
-      find.text('Add address').first,
+      find.text(viL10n.addressSave).first,
       150,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.tap(find.text('Add address').first);
+    await tester.tap(find.text(viL10n.addressSave).first);
     await settleMicrotasks(tester);
-    expect(find.text('Street is required'), findsOneWidget);
-    expect(find.text('Required'), findsNWidgets(2));
+    expect(find.text(viL10n.addressStreetRequired), findsOneWidget);
+    expect(find.text(viL10n.addressCoordinateRequired), findsNWidgets(2));
   });
 
   testWidgets(
@@ -204,7 +209,7 @@ void main() {
 
       expect(find.text('Existing Street'), findsOneWidget);
       expect(find.text('ref'), findsOneWidget);
-      expect(find.text('Save changes'), findsOneWidget);
+      expect(find.text(viL10n.addressSaveChanges), findsOneWidget);
     },
   );
 }
