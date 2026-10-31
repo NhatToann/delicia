@@ -13,6 +13,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'helpers/fake_route_service.dart';
 
 class _NoopRealtime implements RealtimeService {
+  final List<({String orderId, double latitude, double longitude})>
+      clientPublished = [];
+
   @override
   Future<void> publishPosition({
     required String orderId,
@@ -21,7 +24,29 @@ class _NoopRealtime implements RealtimeService {
   }) async {}
 
   @override
+  Future<void> publishClientPosition({
+    required String orderId,
+    required double latitude,
+    required double longitude,
+  }) async {
+    clientPublished.add(
+      (orderId: orderId, latitude: latitude, longitude: longitude),
+    );
+  }
+
+  @override
   RealtimeSubscription subscribeOrder(String orderId) {
+    final controller = StreamController<RealtimePositionUpdate>.broadcast();
+    return RealtimeSubscription(
+      controller: controller,
+      cancelRaw: () async {
+        await controller.close();
+      },
+    );
+  }
+
+  @override
+  RealtimeSubscription subscribeClientLocation(String orderId) {
     final controller = StreamController<RealtimePositionUpdate>.broadcast();
     return RealtimeSubscription(
       controller: controller,
@@ -259,6 +284,35 @@ void main() {
       // suppressed by the 200 m movement threshold.
       expect(routes.requests, hasLength(1));
       await bloc.close();
+    });
+
+    blocTest<MapClientBloc, MapClientState>(
+      'OnUpdateClientPositionEvent moves the client marker',
+      build: () => MapClientBloc(realtimeService: _NoopRealtime()),
+      act: (bloc) => bloc.add(const OnUpdateClientPositionEvent(
+        LatLngPoint(latitude: 5.5, longitude: 6.6),
+      )),
+      expect: () => [
+        isA<MapClientState>()
+            .having((s) => s.markerClient.latitude, 'lat', 5.5)
+            .having((s) => s.markerClient.longitude, 'lng', 6.6),
+      ],
+    );
+
+    test('OnStartClientTrackingEvent publishes the client position',
+        () async {
+      final realtime = _NoopRealtime();
+      final bloc = MapClientBloc(realtimeService: realtime);
+      bloc.add(const OnUpdateClientPositionEvent(
+        LatLngPoint(latitude: 7.7, longitude: 8.8),
+      ));
+      bloc.add(const OnStartClientTrackingEvent('ord_client_1'));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await bloc.close();
+      expect(realtime.clientPublished, isNotEmpty);
+      expect(realtime.clientPublished.first.orderId, 'ord_client_1');
+      expect(realtime.clientPublished.first.latitude, 7.7);
+      expect(realtime.clientPublished.first.longitude, 8.8);
     });
   });
 }

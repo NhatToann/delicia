@@ -32,6 +32,30 @@ class OnInitSocketEvent extends MapClientEvent {
   const OnInitSocketEvent(this.orderId);
 }
 
+/// Publishes the client's **own** GPS position to the realtime backend
+/// so the delivery driver can see where the destination is.
+class OnUpdateClientPositionEvent extends MapClientEvent {
+  final LatLngPoint position;
+  const OnUpdateClientPositionEvent(this.position);
+}
+
+/// Starts the periodic publish of the client's position for [orderId].
+class OnStartClientTrackingEvent extends MapClientEvent {
+  final String orderId;
+  const OnStartClientTrackingEvent(this.orderId);
+}
+
+/// Stops the periodic publish of the client's position.
+class OnStopClientTrackingEvent extends MapClientEvent {
+  const OnStopClientTrackingEvent();
+}
+
+/// Publishing the client's position failed — surfaced as a state error.
+class OnClientPublishFailedEvent extends MapClientEvent {
+  final String reason;
+  const OnClientPublishFailedEvent(this.reason);
+}
+
 class OnClearSocketEvent extends MapClientEvent {
   const OnClearSocketEvent();
 }

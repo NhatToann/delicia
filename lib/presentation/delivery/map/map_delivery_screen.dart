@@ -5,7 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_animations/flutter_map_animations.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../data/env/environment.dart';
@@ -103,6 +102,10 @@ class _MapDeliveryScreenState extends State<MapDeliveryScreen>
       context.read<MapDeliveryBloc>().add(
         OnEmitLocationDeliveryEvent(widget.orderId),
       );
+      // Watch where the *client* is so the destination marker is live.
+      context.read<MapDeliveryBloc>().add(
+        OnWatchClientLocationEvent(widget.orderId),
+      );
     });
     _autoFitTimer = Timer.periodic(_autoFitInterval, (_) {
       if (!mounted || _sheetKey.currentState?.isExpanded == true) return;
@@ -196,6 +199,7 @@ class _MapDeliveryScreenState extends State<MapDeliveryScreen>
     _positionSub?.cancel();
     _mapDeliveryBloc?.add(const OnDisconnectDeliveryEvent());
     _mapController.dispose();
+    context.read<MapDeliveryBloc>().add(const OnUnwatchClientLocationEvent());
     super.dispose();
   }
 

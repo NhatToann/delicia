@@ -135,7 +135,37 @@ class RealtimeService {
     }
   }
 
-  /// Subscribes to driver position updates for [orderId]. The first
+  /// Publishes the **client's own** live position to
+  /// `/delicia/orders/{orderId}/clientLocation`.
+  ///
+  /// This is the mirror of [publishPosition]: while the driver publishes
+  /// where *they* are, the client publishes where *they* are so the
+  /// delivery side can render the destination on its own map.  Both
+  /// channels live under the same order document, so they are garbage
+  /// collected together when the order is removed.
+  Future<void> publishClientPosition({
+    required String orderId,
+    required double latitude,
+    required double longitude,
+  }) async {
+    final ref = _ordersRef;
+    if (ref == null) {
+      throw RealtimeServiceException(
+        'Firebase Database not initialized. Call Firebase.initializeApp() first.',
+      );
+    }
+    try {
+      await ref.child(orderId).child('clientLocation').set({
+        'latitude': latitude,
+        'longitude': longitude,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      });
+    } catch (e) {
+      throw RealtimeServiceException('Failed to publish client position: $e');
+    }
+  }
+
+  /// Subscribes to the driver's position updates for [orderId]. The first
   /// event is the current value (if any) — Firebase `onValue` always
   /// fires once on attach.
   RealtimeSubscription subscribeOrder(String orderId) {
@@ -153,6 +183,51 @@ class RealtimeService {
       );
     }
     final query = ref.child(orderId).child('shipperLocation');
+    final listener = query.onValue.listen(
+      (event) {
+        final value = event.snapshot.value;
+        if (value is! Map) return;
+        try {
+          controller.add(
+            RealtimePositionUpdate.fromMap(
+              orderId,
+              Map<dynamic, dynamic>.from(value),
+            ),
+          );
+        } catch (_) {
+          // Drop malformed payloads silently.
+        }
+      },
+      onError: controller.addError,
+      cancelOnError: false,
+    );
+    return RealtimeSubscription(
+      controller: controller,
+      cancelRaw: () async {
+        await listener.cancel();
+      },
+    );
+  }
+
+  /// Subscribes to the **client's** live position for [orderId].
+  ///
+  /// This is the counterpart of [subscribeOrder]: the delivery driver
+  /// listens here to render the destination marker, so the client has to
+  /// publish its own GPS coordinates to
+  /// `/delicia/orders/{orderId}/clientLocation`.
+  RealtimeSubscription subscribeClientLocation(String orderId) {
+    final ref = _ordersRef;
+    final controller = StreamController<RealtimePositionUpdate>.broadcast();
+    if (ref == null) {
+      Future.microtask(() {
+        if (!controller.isClosed) controller.close();
+      });
+      return RealtimeSubscription(
+        controller: controller,
+        cancelRaw: () async {},
+      );
+    }
+    final query = ref.child(orderId).child('clientLocation');
     final listener = query.onValue.listen(
       (event) {
         final value = event.snapshot.value;

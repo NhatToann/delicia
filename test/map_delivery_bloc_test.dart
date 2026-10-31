@@ -33,6 +33,24 @@ class _FakeRealtime implements RealtimeService {
       },
     );
   }
+
+  @override
+  Future<void> publishClientPosition({
+    required String orderId,
+    required double latitude,
+    required double longitude,
+  }) async {}
+
+  @override
+  RealtimeSubscription subscribeClientLocation(String orderId) {
+    final controller = StreamController<RealtimePositionUpdate>.broadcast();
+    return RealtimeSubscription(
+      controller: controller,
+      cancelRaw: () async {
+        await controller.close();
+      },
+    );
+  }
 }
 
 void main() {

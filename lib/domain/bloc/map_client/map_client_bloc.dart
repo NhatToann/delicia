@@ -44,6 +44,17 @@ class MapClientBloc extends Bloc<MapClientEvent, MapClientState> {
     on<OnRouteLoadedEvent>(_onRouteLoaded);
     on<OnRouteFailedEvent>(_onRouteFailed);
     on<OnRealtimeErrorEvent>(_onRealtimeError);
+    on<OnUpdateClientPositionEvent>(_onUpdateClientPosition);
+    on<OnStartClientTrackingEvent>(_onStartClientTracking);
+    on<OnStopClientTrackingEvent>(_onStopClientTracking);
+    on<OnClientPublishFailedEvent>(
+      (event, emit) => emit(state.copyWith(
+        error: AppFailure(
+          AppFailureCodes.realtimePublish,
+          'Client position publish failed: ${event.reason}',
+        ),
+      )),
+    );
   }
 
   final RealtimeService _realtimeService;
@@ -53,11 +64,21 @@ class MapClientBloc extends Bloc<MapClientEvent, MapClientState> {
   RealtimeSubscription? _realtimeSub;
   Timer? _routeTimer;
 
+  /// The order whose live location this bloc is currently following.
+  /// Kept so the client-position publisher knows where to write to.
+  String? _activeOrderId;
+
   /// Endpoints the currently displayed route was built from. Compared
   /// against the live markers to decide when a refetch is warranted.
   LatLngPoint? _routeOrigin;
   LatLngPoint? _routeDestination;
   bool _routeRequestInFlight = false;
+
+  /// Timer that periodically publishes the client's own position so the
+  /// delivery driver sees the destination move on their map.
+  Timer? _clientTrackingTimer;
+  LatLngPoint _clientLocation =
+      const LatLngPoint(latitude: 0, longitude: 0);
 
   void _onReadyMap(OnReadyMapClientEvent event, Emitter<MapClientState> emit) {
     emit(state.copyWith(isReadyMapClient: true));
@@ -233,6 +254,60 @@ class MapClientBloc extends Bloc<MapClientEvent, MapClientState> {
     }
   }
 
+  /// Stores the latest GPS fix of the client and mirrors it into the
+  /// state's `markerClient` so the map re-centres on the customer.
+  void _onUpdateClientPosition(
+    OnUpdateClientPositionEvent event,
+    Emitter<MapClientState> emit,
+  ) {
+    _clientLocation = event.position;
+    emit(state.copyWith(markerClient: event.position));
+  }
+
+  /// Starts publishing the client's position to
+  /// `/delicia/orders/{orderId}/clientLocation` every few seconds.
+  Future<void> _onStartClientTracking(
+    OnStartClientTrackingEvent event,
+    Emitter<MapClientState> emit,
+  ) async {
+    await _stopClientTracking();
+    _activeOrderId = event.orderId;
+    _clientTrackingTimer = Timer.periodic(
+      const Duration(seconds: 5),
+      (_) => _publishClientPosition(),
+    );
+    // Publish straight away so the driver doesn't have to wait a full tick.
+    await _publishClientPosition();
+  }
+
+  Future<void> _publishClientPosition() async {
+    final orderId = _activeOrderId ?? '';
+    if (orderId.isEmpty) return;
+    if (_clientLocation.latitude == 0 && _clientLocation.longitude == 0) return;
+    try {
+      await _realtimeService.publishClientPosition(
+        orderId: orderId,
+        latitude: _clientLocation.latitude,
+        longitude: _clientLocation.longitude,
+      );
+    } catch (e) {
+      // Never `emit` from outside a handler — re-dispatch instead.
+      add(OnClientPublishFailedEvent('$e'));
+    }
+  }
+
+  Future<void> _onStopClientTracking(
+    OnStopClientTrackingEvent event,
+    Emitter<MapClientState> emit,
+  ) async {
+    await _stopClientTracking();
+  }
+
+  Future<void> _stopClientTracking() async {
+    _clientTrackingTimer?.cancel();
+    _clientTrackingTimer = null;
+  }
+
   /// Public hook for the screen's `dispose()` — cancels the subscription
   /// and drops all listeners so memory doesn't leak when the user
   /// navigates away.
@@ -247,6 +322,7 @@ class MapClientBloc extends Bloc<MapClientEvent, MapClientState> {
 
   @override
   Future<void> close() async {
+    await _stopClientTracking();
     await _disconnectPrevious();
     _routeService.dispose();
     return super.close();

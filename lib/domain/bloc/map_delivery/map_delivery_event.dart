@@ -23,9 +23,33 @@ class OnEmitLocationDeliveryEvent extends MapDeliveryEvent {
   const OnEmitLocationDeliveryEvent(this.orderId);
 }
 
+/// Subscribes to the **client's** live position for [orderId] so the
+/// driver map can render the destination marker in real time.
+class OnWatchClientLocationEvent extends MapDeliveryEvent {
+  final String orderId;
+  const OnWatchClientLocationEvent(this.orderId);
+}
+
+/// Stops watching the client's live position.
+class OnUnwatchClientLocationEvent extends MapDeliveryEvent {
+  const OnUnwatchClientLocationEvent();
+}
+
 class OnUpdateCurrentLocationEvent extends MapDeliveryEvent {
   final DeliveryPositionUpdate position;
   const OnUpdateCurrentLocationEvent(this.position);
+}
+
+/// The client's live position arrived — move the destination marker.
+class OnUpdateClientLocationEvent extends MapDeliveryEvent {
+  final LatLngPoint position;
+  const OnUpdateClientLocationEvent(this.position);
+}
+
+/// The client-location listener failed — surfaced as a state error.
+class OnClientLocationWatchFailedEvent extends MapDeliveryEvent {
+  final String reason;
+  const OnClientLocationWatchFailedEvent(this.reason);
 }
 
 class OnDisconnectDeliveryEvent extends MapDeliveryEvent {
