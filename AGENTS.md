@@ -121,6 +121,7 @@ delicia-60e0a-default-rtdb.asia-southeast1.firebasedatabase.app
     │   └── images/{imageId}
     └── orders/{orderId}
         ├── clientId, addressId, street, reference
+        ├── clientName, clientEmail     ← tên/email khách, denormalise lúc checkout
         ├── latitude, longitude
         ├── paymentMethod, amount, status
         ├── products[]               ← snapshot array
@@ -227,7 +228,10 @@ Environment.payosVndRate = 25000
 | `/client/select-address` | `SelectAddressScreen` | UC-04/06 |
 | `/client/map` | `MapClientScreen` | UC-03 |
 | `/delivery/map/:orderId` | `MapDeliveryScreen` | UC-03 |
-| `/admin/home` · `/delivery/home` | `HomePlaceholder` | **placeholder** |
+| `/admin/home` | `AdminDashboardScreen` | UC-07 |
+| `/admin/orders/new` | `AdminNewOrdersScreen` | UC-07/09 |
+| `/admin/orders` · `/admin/orders/:id` | `AdminOrdersManagementScreen` · `AdminOrderDetailScreen` | UC-09 |
+| `/delivery/home` | `HomePlaceholder` | **placeholder** |
 
 ### Luồng chính
 
@@ -239,6 +243,9 @@ Splash → (session?) → Intro → Login → Select Role
 
 Client: Home → Product Detail → Cart (drawer) → Payment → Order confirmed → /client/orders
                                                                     └─ → /client/map (live track)
+
+Admin:  Dashboard → tile "Đơn hàng mới" → /admin/orders/new → /admin/orders/:id
+        └─ tile "Đơn hàng mới" / quick action "Đơn hàng" → /admin/orders → /admin/orders/:id
 ```
 
 > `/client/checkout` **đã bị xoá** — `PaymentScreen` (Figma 4.3-D) là superset của nó (địa chỉ + summary + phương thức + ETA + Pay Now).

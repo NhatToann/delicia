@@ -45,9 +45,16 @@ class ProfileMenu extends StatelessWidget {
     ProfileMenuItem(label: l10n.profileSettings, icon: 'assets/figma_home/menu_i7_settings.svg'),
   ];
 
-  /// `Log Out` sits in its own group near the bottom of the panel.
-  static ProfileMenuItem logoutItem(AppLocalizations l10n) => ProfileMenuItem(
-    label: l10n.profileSignOut,
+  /// The bottom-most row of the panel.
+  ///
+  /// It is a *session* row, not a plain menu entry: while somebody is
+  /// signed in it reads "Đăng xuất" and signs them out, and while nobody
+  /// is signed in it reads "Đăng nhập" and takes them to the login screen.
+  static ProfileMenuItem sessionItem(
+    AppLocalizations l10n, {
+    required bool isSignedIn,
+  }) => ProfileMenuItem(
+    label: isSignedIn ? l10n.profileSignOut : l10n.profileSignIn,
     icon: 'assets/figma_home/menu_i8_logout.svg',
   );
 
@@ -64,7 +71,12 @@ class ProfileMenu extends StatelessWidget {
         final user = state.user;
         final l10n = context.l10n;
         final menuItems = ProfileMenu.items(l10n);
-        final logout = ProfileMenu.logoutItem(l10n);
+        // The bottom row follows the session: "Đăng xuất" once signed in,
+        // "Đăng nhập" once signed out.
+        final session = ProfileMenu.sessionItem(
+          l10n,
+          isSignedIn: user != null,
+        );
         return Material(
           color: panelColour,
           // Only the two left corners are rounded; the panel is flush to the
@@ -120,8 +132,8 @@ class ProfileMenu extends StatelessWidget {
                         Padding(
                           padding: EdgeInsets.only(left: horizontalInset * 0.55),
                           child: _MenuRow(
-                            item: logout,
-                            onTap: () => onItemTap?.call(logout.label),
+                            item: session,
+                            onTap: () => onItemTap?.call(session.label),
                           ),
                         ),
                       ],

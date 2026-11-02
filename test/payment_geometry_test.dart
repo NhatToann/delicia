@@ -40,6 +40,8 @@ class _StubOrders implements OrdersService {
   @override
   Future<OrderRecord> addNewOrder({
     required String clientId,
+    required String clientName,
+    required String clientEmail,
     required Address address,
     required String paymentMethod,
     required List<ProductCart> products,

@@ -42,9 +42,12 @@ class AppFailureCodes {
   static const String categoriesLoad = 'categories.load';
   static const String categoryAdd = 'category.add';
   static const String categoryDelete = 'category.delete';
+  static const String categoryUpdate = 'category.update';
   static const String productAdd = 'product.add';
   static const String productDelete = 'product.delete';
   static const String productStatusUpdate = 'product.statusUpdate';
+  static const String productUpdate = 'product.update';
+  static const String imageUpload = 'image.upload';
 
   // ---- Orders --------------------------------------------------------------
   static const String ordersLoad = 'orders.load';
@@ -54,6 +57,10 @@ class AppFailureCodes {
   static const String ordersIdGenerate = 'orders.idGenerate';
   static const String ordersCancel = 'orders.cancel';
   static const String ordersWatch = 'orders.watch';
+  static const String ordersAssignDelivery = 'orders.assignDelivery';
+  static const String ordersUpdateStatus = 'orders.updateStatus';
+  static const String deliveryToggleEnabled = 'delivery.toggleEnabled';
+  static const String dashboardLoad = 'dashboard.load';
 
   // ---- Payment -------------------------------------------------------------
   static const String paymentStart = 'payment.start';

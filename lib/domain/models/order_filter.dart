@@ -38,6 +38,7 @@ enum OrderFilter {
       case OrderFilter.active:
         return const <String>{
           OrderRecord.statusPaidOut,
+          OrderRecord.statusPreparing,
           OrderRecord.statusDispatched,
           OrderRecord.statusOnWay,
         };

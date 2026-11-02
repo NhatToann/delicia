@@ -22,7 +22,7 @@ class HomePlaceholder extends StatelessWidget {
           // Push the user back to the auth flow after Firebase has signed
           // them out.  Using `go` replaces the current route — important
           // because the back-button must not return to the role home.
-          context.go('/intro');
+          context.go('/login');
         }
       },
       child: Scaffold(
@@ -45,14 +45,29 @@ class HomePlaceholder extends StatelessWidget {
                 const SizedBox(height: 12),
                 TextCustom(label, fontSize: 16, color: ColorsFrave.greyText),
                 const SizedBox(height: 32),
-                BtnFrave(
-                  text: context.l10n.actionSignOut,
-                  onPressed: () {
-                    // The BLoC fires `LogOutAuthState` which the listener
-                    // above picks up to navigate.  This works correctly
-                    // with GoRouter (unlike Navigator.popUntil which can't
-                    // pop GoRouter-managed routes).
-                    context.read<AuthBloc>().add(LogOutEvent());
+                Builder(
+                  builder: (context) {
+                    final signedIn = context.select<AuthBloc, bool>(
+                      (bloc) => bloc.state.user != null,
+                    );
+                    return BtnFrave(
+                      // While signed in the button signs out; once signed out
+                      // it takes the user back to the login form.
+                      text: signedIn
+                          ? context.l10n.actionSignOut
+                          : context.l10n.profileSignIn,
+                      onPressed: () {
+                        // The BLoC fires `LogOutAuthState` which the listener
+                        // above picks up to navigate.  This works correctly
+                        // with GoRouter (unlike Navigator.popUntil which
+                        // can't pop GoRouter-managed routes).
+                        if (signedIn) {
+                          context.read<AuthBloc>().add(LogOutEvent());
+                          return;
+                        }
+                        context.go('/login');
+                      },
+                    );
                   },
                 ),
               ],

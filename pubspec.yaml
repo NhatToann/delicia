@@ -74,6 +74,7 @@ dependencies:
   # on a Dart 2 SDK constraint (<3.0.0).
   flutter_map_animations: ^0.8.0
   crypto: ^3.0.7
+  fl_chart: ^1.3.0
 
 dev_dependencies:
   flutter_test:

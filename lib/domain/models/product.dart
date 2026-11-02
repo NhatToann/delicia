@@ -112,6 +112,19 @@ class Productsdb {
 
   bool get isActive => status == 1;
 
+  /// An empty placeholder used as the starting point of the admin
+  /// product form (UC-08).
+  static const Productsdb empty = Productsdb(
+    id: '',
+    nameProduct: '',
+    description: '',
+    price: 0,
+    status: 1,
+    picture: '',
+    category: '',
+    categoryId: '',
+  );
+
   /// Whether the row carries a usable price.
   ///
   /// A row can parse perfectly well and still carry no price at all —
@@ -123,7 +136,6 @@ class Productsdb {
   /// is broken", so the broken case can be surfaced instead of silently
   /// rendering a zero.
   bool get hasPrice => price > 0;
-
   /// True when the row carries enough signal to render a star badge.
   bool get hasRating => rating > 0;
 

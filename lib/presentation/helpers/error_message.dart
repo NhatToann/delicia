@@ -20,6 +20,23 @@ void errorTextSnack(BuildContext context, String message) {
   _show(context, message);
 }
 
+/// Shows a confirmation as a green snack bar.
+///
+/// Used for the small acknowledgements of the admin console — "the driver
+/// was assigned", "the category was deleted" — that do not deserve a
+/// blocking dialog.
+void successSnack(BuildContext context, String message) {
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green.shade600,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+}
+
 void _show(BuildContext context, String message) {
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()

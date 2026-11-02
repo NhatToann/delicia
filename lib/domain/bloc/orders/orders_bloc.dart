@@ -58,6 +58,8 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
     try {
       final order = await _ordersService.addNewOrder(
         clientId: event.clientId,
+        clientName: event.clientName,
+        clientEmail: event.clientEmail,
         address: event.address,
         paymentMethod: event.paymentMethod,
         products: event.products,

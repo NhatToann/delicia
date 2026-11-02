@@ -93,6 +93,41 @@ void main() {
       expect(find.text('lorem@email.com'), findsOneWidget);
     });
 
+    testWidgets('the session row reads "Đăng nhập" for a guest', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(_wrapWithAuthBloc(
+        _OpenBuilder(onTap: (ctx) =>
+            ProfileMenuOverlay.show(ctx, onItemTap: (_) {})),
+        _guestBloc(),
+      ));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle(const Duration(milliseconds: 500));
+
+      // A guest sees the sign-in call to action, not the sign-out one.
+      expect(find.text('Đăng nhập'), findsOneWidget);
+      expect(find.text('Đăng xuất'), findsNothing);
+    });
+
+    testWidgets('tapping the session row reports its label', (
+      WidgetTester tester,
+    ) async {
+      String? lastTapped;
+      await tester.pumpWidget(_wrapWithAuthBloc(
+        _OpenBuilder(onTap: (ctx) => ProfileMenuOverlay.show(
+          ctx,
+          onItemTap: (label) => lastTapped = label,
+        )),
+        _guestBloc(),
+      ));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle(const Duration(milliseconds: 500));
+      await tester.tap(find.text('Đăng nhập'));
+      await tester.pumpAndSettle();
+
+      expect(lastTapped, 'Đăng nhập');
+    });
+
     testWidgets('out-of-panel tap dismisses the drawer', (
       WidgetTester tester,
     ) async {
