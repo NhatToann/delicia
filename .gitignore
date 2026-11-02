@@ -79,7 +79,6 @@ GoogleService-Info.plist
 # KHÔNG push lên GitHub — bỏ comment nếu muốn share với team
 tasks/
 docs/internal/
-
 # ---------------------------------------------------------------------------
 # Agent-context hygiene
 # ---------------------------------------------------------------------------
@@ -125,3 +124,7 @@ assets/Food Delivery App UI Kit Food App Design Food Mobile App Delivery UI (Com
 assets/figma_raw/
 # Widget Preview related
 .widget_preview/
+
+# E2E test artifacts (uiautomator dumps, screenshots) — local only
+.e2e/
+host

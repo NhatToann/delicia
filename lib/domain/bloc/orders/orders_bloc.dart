@@ -45,6 +45,7 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
     on<OnCancelOrderEvent>(_onCancelOrder);
     on<_OnMyOrdersUpdatedEvent>(_onMyOrdersUpdated);
     on<_OnMyOrdersFailedEvent>(_onMyOrdersFailed);
+    on<OnTrackOrderEvent>(_onTrackOrder);
   }
 
   final OrdersService _ordersService;
@@ -230,6 +231,11 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
     await _myOrdersSub?.cancel();
     _myOrdersSub = null;
     return super.close();
+  }
+
+  /// UC-05 — publishes the order the live-tracking map should follow.
+  void _onTrackOrder(OnTrackOrderEvent event, Emitter<OrdersState> emit) {
+    emit(state.copyWith(lastOrder: event.order, error: null));
   }
 
   OrderRecord _replaceStatus(OrderRecord order, String status) {

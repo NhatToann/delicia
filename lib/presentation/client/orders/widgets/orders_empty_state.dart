@@ -33,9 +33,13 @@ String _emptySubtitle(BuildContext context, OrderFilter filter) {
 /// The copy is filter-aware: the Figma only documents the active
 /// wording, the other two follow the same shape.
 class OrdersEmptyState extends StatelessWidget {
-  const OrdersEmptyState({super.key, required this.filter});
+  const OrdersEmptyState({super.key, required this.filter, this.onAction});
 
   final OrderFilter filter;
+
+  /// Optional call-to-action shown under the copy. The Figma frame has no
+  /// button, so the caller decides whether to offer one.
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +81,26 @@ class OrdersEmptyState extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (onAction != null) ...<Widget>[
+                  const SizedBox(height: 28),
+                  FilledButton(
+                    onPressed: onAction,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: ColorsFrave.navOrange,
+                      foregroundColor: ColorsFrave.onOrange,
+                      shape: const StadiumBorder(),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 28,
+                        vertical: 12,
+                      ),
+                    ),
+                    child: Text(
+                      context.l10n.ordersEmptyActiveCta,
+                      maxLines: 1,
+                      style: FraveText.medium(15, color: ColorsFrave.onOrange),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 // Figma puts the illustration at y337 and the copy at
                 // y551 — the group sits above the vertical centre of the
