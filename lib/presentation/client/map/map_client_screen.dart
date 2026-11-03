@@ -13,6 +13,7 @@ import '../../../data/services/map_tile_cache.dart';
 import '../../../domain/bloc/auth/auth_bloc.dart';
 import '../../../domain/bloc/map_client/map_client_bloc.dart';
 import '../../../domain/bloc/orders/orders_bloc.dart';
+import '../../../domain/models/hcmc_location.dart';
 import '../../../domain/models/lat_lng_point.dart';
 import '../../../domain/models/order_record.dart';
 import '../../../domain/services/app_failure.dart';
@@ -161,10 +162,15 @@ class _MapClientScreenState extends State<MapClientScreen>
     if (!mounted || _trackedOrderId == order.id) return;
     _trackedOrderId = order.id;
     final bloc = context.read<MapClientBloc>();
+    final clientPos = HcmcLocation.sanitize(
+      order.latitude,
+      order.longitude,
+      fallback: HcmcLocation.defaultCenter,
+    );
     bloc.add(
       OnMarkerClientEvent(
-        const LatLngPoint(latitude: 0, longitude: 0),
-        LatLngPoint(latitude: order.latitude, longitude: order.longitude),
+        HcmcLocation.defaultDriverLocation,
+        clientPos,
       ),
     );
     bloc.add(OnInitSocketEvent(order.id));
@@ -183,8 +189,9 @@ class _MapClientScreenState extends State<MapClientScreen>
       }
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
-        if (mounted)
+        if (mounted) {
           errorTextSnack(context, context.l10n.addressPermissionDenied);
+        }
         return;
       }
       final last = await Geolocator.getLastKnownPosition();
@@ -219,6 +226,10 @@ class _MapClientScreenState extends State<MapClientScreen>
   }
 
   void _updateMyLocation(LatLng location) {
+    if (!HcmcLocation.isInHcmc(location.latitude, location.longitude)) {
+      // Ignore location if device/emulator GPS is outside HCMC.
+      return;
+    }
     final shouldCenter = _myLocation == null;
     setState(() {
       _myLocation = location;
@@ -336,13 +347,22 @@ class _MapClientScreenState extends State<MapClientScreen>
     // only when we actually have geometry — an empty list would make
     // `LatLngBounds.fromPoints` return nothing.
     final points = <LatLng>[
-      if (state.markerClient.latitude != 0 || state.markerClient.longitude != 0)
+      if (HcmcLocation.isInHcmc(
+        state.markerClient.latitude,
+        state.markerClient.longitude,
+      ))
         LatLng(state.markerClient.latitude, state.markerClient.longitude),
-      if (state.markerDelivery.latitude != 0 ||
-          state.markerDelivery.longitude != 0)
+      if (HcmcLocation.isInHcmc(
+        state.markerDelivery.latitude,
+        state.markerDelivery.longitude,
+      ))
         LatLng(state.markerDelivery.latitude, state.markerDelivery.longitude),
-      if (_myLocation != null) _myLocation!,
-      ...state.routePolyline.map((p) => LatLng(p.latitude, p.longitude)),
+      if (_myLocation != null &&
+          HcmcLocation.isInHcmc(_myLocation!.latitude, _myLocation!.longitude))
+        _myLocation!,
+      ...state.routePolyline
+          .where((p) => HcmcLocation.isInHcmc(p.latitude, p.longitude))
+          .map((p) => LatLng(p.latitude, p.longitude)),
     ];
     if (points.isEmpty) return;
 

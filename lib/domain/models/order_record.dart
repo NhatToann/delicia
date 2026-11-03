@@ -23,6 +23,7 @@ class OrderRecord {
   final String? deliveryPhoto;
   final String? receiverPhone;
   final String? receiverName;
+  final List<String> rejectedBy;
 
   const OrderRecord({
     required this.id,
@@ -42,6 +43,7 @@ class OrderRecord {
     this.deliveryPhoto,
     this.receiverPhone,
     this.receiverName,
+    this.rejectedBy = const [],
   });
 
   /// Default "PAID OUT" — the initial status set by the client at checkout.
@@ -84,6 +86,8 @@ class OrderRecord {
         if (deliveryPhoto != null) 'deliveryPhoto': deliveryPhoto,
         if (receiverPhone != null) 'receiverPhone': receiverPhone,
         if (receiverName != null) 'receiverName': receiverName,
+        if (rejectedBy.isNotEmpty)
+          'rejectedBy': {for (final uid in rejectedBy) uid: true},
       };
 
   factory OrderRecord.fromMap(String id, Map<dynamic, dynamic> map) {
@@ -94,6 +98,19 @@ class OrderRecord {
         if (entry is Map) {
           items.add(OrderItem.fromMap(Map<dynamic, dynamic>.from(entry)));
         }
+      }
+    }
+    final rawRejected = map['rejectedBy'];
+    final rejectedList = <String>[];
+    if (rawRejected is Map) {
+      for (final entry in rawRejected.entries) {
+        if (entry.value == true || entry.value == 1 || entry.value == 'true') {
+          rejectedList.add(entry.key.toString());
+        }
+      }
+    } else if (rawRejected is List) {
+      for (final item in rawRejected) {
+        if (item != null) rejectedList.add(item.toString());
       }
     }
     return OrderRecord(
@@ -107,7 +124,11 @@ class OrderRecord {
       longitude:
           double.tryParse((map['longitude'] ?? '0').toString()) ?? 0.0,
       paymentMethod: (map['paymentMethod'] ?? 'CASH PAYMENT').toString(),
-      amount: double.tryParse((map['amount'] ?? 0).toString()) ?? 0.0,
+      amount: (() {
+        var a = double.tryParse((map['amount'] ?? 0).toString()) ?? 0.0;
+        if (a >= 1000) a = a / 10000.0;
+        return a;
+      })(),
       status: (map['status'] ?? statusPaidOut).toString(),
       products: items,
       createdAt: DateTime.fromMillisecondsSinceEpoch(
@@ -118,6 +139,7 @@ class OrderRecord {
       deliveryPhoto: map['deliveryPhoto']?.toString(),
       receiverPhone: map['receiverPhone']?.toString(),
       receiverName: map['receiverName']?.toString(),
+      rejectedBy: rejectedList,
     );
   }
 
@@ -139,6 +161,7 @@ class OrderRecord {
     String? deliveryPhoto,
     String? receiverPhone,
     String? receiverName,
+    List<String>? rejectedBy,
   }) {
     return OrderRecord(
       id: id ?? this.id,
@@ -158,6 +181,7 @@ class OrderRecord {
       deliveryPhoto: deliveryPhoto ?? this.deliveryPhoto,
       receiverPhone: receiverPhone ?? this.receiverPhone,
       receiverName: receiverName ?? this.receiverName,
+      rejectedBy: rejectedBy ?? this.rejectedBy,
     );
   }
 }

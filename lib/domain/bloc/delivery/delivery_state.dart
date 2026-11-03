@@ -23,6 +23,23 @@ class DeliveryState {
     this.newOrderNotification,
   });
 
+  /// True when the driver currently has an active delivery in progress
+  /// (i.e. status is not delivered and not cancelled).
+  bool get hasActiveDelivery => assignedOrders.any((o) =>
+      o.status != OrderRecord.statusDelivered &&
+      o.status != OrderRecord.statusCancelled);
+
+  /// The active delivery order currently in progress, if any.
+  OrderRecord? get activeDeliveryOrder {
+    try {
+      return assignedOrders.firstWhere((o) =>
+          o.status != OrderRecord.statusDelivered &&
+          o.status != OrderRecord.statusCancelled);
+    } catch (_) {
+      return null;
+    }
+  }
+
   DeliveryState copyWith({
     bool? isLoading,
     bool? isSuccess,

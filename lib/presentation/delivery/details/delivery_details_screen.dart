@@ -11,8 +11,10 @@ import '../../../domain/bloc/orders/orders_bloc.dart';
 import '../../../domain/models/delivery_status.dart';
 import '../../../domain/models/order_record.dart';
 import '../../../domain/services/storage_service.dart';
+import '../../../domain/utils/driver_earnings.dart';
 import '../../components/text_custom.dart';
 import '../../helpers/image_resolver.dart';
+import '../../helpers/money.dart';
 import '../../themes/colors_frave.dart';
 import 'widgets/status_action_buttons.dart';
 
@@ -37,6 +39,49 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
   OrderRecord? _order;
   bool _isUploadingPhoto = false;
 
+  String get _driverId {
+    try {
+      final authState = context.read<AuthBloc>().state;
+      return authState.user?.uid ?? 'driver_demo';
+    } catch (_) {
+      return 'driver_demo';
+    }
+  }
+
+  void _confirmReject(OrderRecord order) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const TextCustom('Từ chối đơn hàng', fontWeight: FontWeight.bold),
+        content: TextCustom(
+          'Bạn có chắc chắn muốn từ chối Đơn hàng #${order.id.length > 8 ? order.id.substring(0, 8) : order.id}?',
+          color: ColorsFrave.greyText,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const TextCustom('Hủy', color: ColorsFrave.greyText),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ColorsFrave.errorColor,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.read<DeliveryBloc>().add(
+                    RejectOrderEvent(orderId: order.id, deliveryId: _driverId),
+                  );
+              context.pop();
+            },
+            child: const TextCustom('Từ chối', color: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -49,10 +94,10 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri);
       } else {
-        _showSnack('Could not launch phone call to $phoneNumber');
+        _showSnack('Không thể thực hiện cuộc gọi đến $phoneNumber');
       }
     } catch (e) {
-      _showSnack('Error launching phone app: $e');
+      _showSnack('Lỗi khi mở ứng dụng gọi điện: $e');
     }
   }
 
@@ -62,10 +107,10 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri);
       } else {
-        _showSnack('Could not launch messaging app to $phoneNumber');
+        _showSnack('Không thể mở ứng dụng tin nhắn đến $phoneNumber');
       }
     } catch (e) {
-      _showSnack('Error launching messaging app: $e');
+      _showSnack('Lỗi khi mở ứng dụng tin nhắn: $e');
     }
   }
 
@@ -93,13 +138,13 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const TextCustom(
-                'Proof of Delivery Photo',
+                'Ảnh xác nhận giao hàng',
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
               ),
               const SizedBox(height: 6),
               const TextCustom(
-                'Please take a photo of the delivered food at the customer location to complete delivery.',
+                'Vui lòng chụp ảnh món ăn đã giao tại vị trí của khách để hoàn tất đơn hàng.',
                 color: ColorsFrave.greyText,
                 fontSize: 13,
               ),
@@ -114,7 +159,7 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
                 ),
                 icon: const Icon(Icons.camera_alt, color: Colors.white),
                 label: const TextCustom(
-                  'Take Photo with Camera',
+                  'Chụp ảnh bằng Camera',
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
@@ -133,7 +178,7 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
                 ),
                 icon: const Icon(Icons.photo_library, color: ColorsFrave.darkText),
                 label: const TextCustom(
-                  'Choose from Gallery',
+                  'Chọn ảnh từ thư viện',
                   color: ColorsFrave.darkText,
                   fontWeight: FontWeight.bold,
                 ),
@@ -150,7 +195,7 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
                   _transitionStatus(order, DeliveryStatus.delivered, null);
                 },
                 child: const TextCustom(
-                  'Complete Without Photo',
+                  'Hoàn tất không cần ảnh',
                   color: ColorsFrave.greyText,
                   fontSize: 13,
                 ),
@@ -184,7 +229,7 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
       _transitionStatus(order, DeliveryStatus.delivered, photoUrl);
     } catch (e) {
       setState(() => _isUploadingPhoto = false);
-      _showSnack('Failed to upload proof photo: $e');
+      _showSnack('Tải ảnh xác nhận thất bại: $e');
     }
   }
 
@@ -196,7 +241,7 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
     final currentStatus = DeliveryStatus.fromString(order.status);
     if (targetStatus == DeliveryStatus.accepted) {
       String driverId = 'driver_demo';
-      String driverName = 'Delivery Partner';
+      String driverName = 'Tài xế Delicia';
       try {
         final authState = context.read<AuthBloc>().state;
         driverId = authState.user?.uid ?? driverId;
@@ -219,6 +264,11 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
             deliveryPhoto: deliveryPhoto,
           ),
         );
+    if (targetStatus == DeliveryStatus.delivered) {
+      context.read<OrdersBloc>().add(
+            const OnUpdateLastOrderStatusEvent(OrderRecord.statusDelivered),
+          );
+    }
   }
 
   @override
@@ -273,7 +323,7 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
 
         final status = DeliveryStatus.fromString(order.status);
         final shortId = order.id.length > 8 ? order.id.substring(0, 8) : order.id;
-        final dateFormat = DateFormat('MMMM dd, yyyy • HH:mm');
+        final dateFormat = DateFormat('dd/MM/yyyy • HH:mm');
         final customerPhone = order.receiverPhone ?? '0901234567';
 
         return Scaffold(
@@ -282,7 +332,7 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
             backgroundColor: Colors.white,
             elevation: 0,
             title: TextCustom(
-              'Order #$shortId Details',
+              'Chi tiết đơn hàng #$shortId',
               fontWeight: FontWeight.bold,
               fontSize: 18,
             ),
@@ -294,7 +344,7 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
             actions: [
               IconButton(
                 icon: const Icon(Icons.navigation, color: ColorsFrave.secondaryColor),
-                tooltip: 'Open Live Navigation Map',
+                tooltip: 'Mở bản đồ dẫn đường trực tiếp',
                 onPressed: () {
                   context.read<OrdersBloc>().add(OnSetCurrentOrderEvent(order));
                   context.push('/delivery/map/${order.id}');
@@ -343,7 +393,7 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             TextCustom(
-                              order.receiverName ?? 'Customer',
+                              order.receiverName ?? 'Khách hàng',
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
                             ),
@@ -362,7 +412,7 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
                           backgroundColor: ColorsFrave.successColor.withValues(alpha: 0.15),
                         ),
                         icon: const Icon(Icons.phone, color: ColorsFrave.successColor),
-                        tooltip: 'Call Customer',
+                        tooltip: 'Gọi khách hàng',
                         onPressed: () => _makePhoneCall(customerPhone),
                       ),
                       const SizedBox(width: 8),
@@ -372,7 +422,7 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
                           backgroundColor: ColorsFrave.primaryColor.withValues(alpha: 0.15),
                         ),
                         icon: const Icon(Icons.message, color: ColorsFrave.primaryColor),
-                        tooltip: 'Send SMS',
+                        tooltip: 'Gửi tin nhắn SMS',
                         onPressed: () => _sendSms(customerPhone),
                       ),
                     ],
@@ -402,7 +452,7 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const TextCustom(
-                            'Delivery Destination',
+                            'Địa chỉ giao hàng',
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
                           ),
@@ -416,7 +466,7 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
                                 Icon(Icons.map, size: 16, color: ColorsFrave.primaryColor),
                                 SizedBox(width: 4),
                                 TextCustom(
-                                  'Live Map',
+                                  'Bản đồ',
                                   color: ColorsFrave.primaryColor,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13,
@@ -437,14 +487,14 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 TextCustom(
-                                  order.street.isNotEmpty ? order.street : 'Address not specified',
+                                  order.street.isNotEmpty ? order.street : 'Chưa xác định địa chỉ',
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
                                 ),
                                 if (order.reference.isNotEmpty) ...[
                                   const SizedBox(height: 4),
                                   TextCustom(
-                                    'Note: ${order.reference}',
+                                    'Ghi chú: ${order.reference}',
                                     color: ColorsFrave.greyText,
                                     fontSize: 13,
                                   ),
@@ -456,7 +506,7 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
                       ),
                       const SizedBox(height: 8),
                       TextCustom(
-                        'Placed on: ${dateFormat.format(order.createdAt)}',
+                        'Thời gian đặt: ${dateFormat.format(order.createdAt)}',
                         color: ColorsFrave.greyText,
                         fontSize: 12,
                       ),
@@ -478,7 +528,7 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const TextCustom(
-                          'Delivery Proof Photo',
+                          'Ảnh xác nhận giao hàng',
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
                         ),
@@ -518,7 +568,7 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const TextCustom(
-                        'Ordered Items',
+                        'Danh sách món ăn',
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
                       ),
@@ -551,7 +601,7 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
                                       fontSize: 14,
                                     ),
                                     TextCustom(
-                                      '${p.quantity} x \$${p.price.toStringAsFixed(2)}',
+                                      '${p.quantity} x ${Money.format(p.price)}',
                                       color: ColorsFrave.greyText,
                                       fontSize: 12,
                                     ),
@@ -559,7 +609,7 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
                                 ),
                               ),
                               TextCustom(
-                                '\$${(p.quantity * p.price).toStringAsFixed(2)}',
+                                Money.format(p.quantity * p.price),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                               ),
@@ -572,7 +622,7 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const TextCustom(
-                            'Payment Method',
+                            'Phương thức thanh toán',
                             color: ColorsFrave.greyText,
                             fontSize: 13,
                           ),
@@ -588,17 +638,55 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const TextCustom(
-                            'Total Due',
+                            'Tổng tiền thu (COD)',
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                           ),
                           TextCustom(
-                            '\$${order.amount.toStringAsFixed(2)}',
+                            Money.format(order.amount),
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
                             color: ColorsFrave.primaryColor,
                           ),
                         ],
+                      ),
+                      const Divider(height: 20),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: ColorsFrave.successColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: ColorsFrave.successColor.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(
+                                  Icons.account_balance_wallet_outlined,
+                                  size: 18,
+                                  color: ColorsFrave.successColor,
+                                ),
+                                SizedBox(width: 8),
+                                TextCustom(
+                                  'Phần tiền nhận được',
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: ColorsFrave.successColor,
+                                ),
+                              ],
+                            ),
+                            TextCustom(
+                              Money.format(DriverEarnings.earningsUsdForOrder(order)),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: ColorsFrave.successColor,
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -621,6 +709,9 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
                     onUploadDeliveryPhoto: () {
                       _handleUploadDeliveryProof(order);
                     },
+                    onReject: status == DeliveryStatus.pending
+                        ? () => _confirmReject(order)
+                        : null,
                   ),
 
                 const SizedBox(height: 24),
@@ -641,10 +732,10 @@ class _DeliveryStepTracker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final steps = [
-      {'status': DeliveryStatus.accepted, 'label': 'Accepted'},
-      {'status': DeliveryStatus.pickedUp, 'label': 'Picked Up'},
-      {'status': DeliveryStatus.onTheWay, 'label': 'On Way'},
-      {'status': DeliveryStatus.delivered, 'label': 'Delivered'},
+      {'status': DeliveryStatus.accepted, 'label': 'Đã nhận đơn'},
+      {'status': DeliveryStatus.pickedUp, 'label': 'Đã lấy hàng'},
+      {'status': DeliveryStatus.onTheWay, 'label': 'Đang giao'},
+      {'status': DeliveryStatus.delivered, 'label': 'Đã giao'},
     ];
 
     int currentIndex = -1;
@@ -682,7 +773,7 @@ class _DeliveryStepTracker extends StatelessWidget {
             Icon(Icons.cancel, color: ColorsFrave.errorColor, size: 20),
             SizedBox(width: 8),
             TextCustom(
-              'Order Cancelled',
+              'Đơn hàng đã hủy',
               color: ColorsFrave.errorColor,
               fontWeight: FontWeight.bold,
             ),

@@ -10,6 +10,7 @@ class StatusActionButtons extends StatelessWidget {
   final bool isLoading;
   final ValueChanged<DeliveryStatus> onTransition;
   final VoidCallback onUploadDeliveryPhoto;
+  final VoidCallback? onReject;
 
   const StatusActionButtons({
     super.key,
@@ -17,6 +18,7 @@ class StatusActionButtons extends StatelessWidget {
     required this.isLoading,
     required this.onTransition,
     required this.onUploadDeliveryPhoto,
+    this.onReject,
   });
 
   @override
@@ -35,7 +37,7 @@ class StatusActionButtons extends StatelessWidget {
             Icon(Icons.check_circle, color: ColorsFrave.successColor, size: 24),
             SizedBox(width: 8),
             TextCustom(
-              'Order Successfully Delivered',
+              'Đơn hàng đã giao thành công',
               color: ColorsFrave.successColor,
               fontWeight: FontWeight.bold,
               fontSize: 15,
@@ -59,7 +61,7 @@ class StatusActionButtons extends StatelessWidget {
             Icon(Icons.cancel, color: ColorsFrave.errorColor, size: 24),
             SizedBox(width: 8),
             TextCustom(
-              'Order Cancelled',
+              'Đơn hàng đã bị hủy',
               color: ColorsFrave.errorColor,
               fontWeight: FontWeight.bold,
               fontSize: 15,
@@ -71,23 +73,63 @@ class StatusActionButtons extends StatelessWidget {
 
     // Happy-path next step
     final next = currentStatus.nextStep;
-    String buttonText = 'Update Status';
+
+    if (currentStatus == DeliveryStatus.pending) {
+      return Row(
+        children: [
+          if (onReject != null) ...[
+            Expanded(
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: ColorsFrave.errorColor),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: isLoading ? null : onReject,
+                child: const TextCustom(
+                  'Từ chối',
+                  color: ColorsFrave.errorColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+          ],
+          Expanded(
+            child: BtnFrave(
+              text: 'Nhận đơn',
+              color: ColorsFrave.primaryColor,
+              onPressed: isLoading
+                  ? null
+                  : () {
+                      if (next != null) onTransition(next);
+                    },
+            ),
+          ),
+        ],
+      );
+    }
+
+    String buttonText = 'Cập nhật trạng thái';
     Color buttonColor = ColorsFrave.primaryColor;
     switch (currentStatus) {
       case DeliveryStatus.pending:
-        buttonText = 'Accept Delivery';
+        buttonText = 'Nhận đơn';
         buttonColor = ColorsFrave.primaryColor;
         break;
       case DeliveryStatus.accepted:
-        buttonText = 'Confirm Picked Up at Restaurant';
+        buttonText = 'Xác nhận đã lấy hàng tại quán';
         buttonColor = Colors.indigo;
         break;
       case DeliveryStatus.pickedUp:
-        buttonText = 'Start Delivery (On The Way)';
+        buttonText = 'Bắt đầu giao hàng (Đang di chuyển)';
         buttonColor = Colors.amber.shade900;
         break;
       case DeliveryStatus.onTheWay:
-        buttonText = 'Complete Delivery (Take Proof Photo)';
+        buttonText = 'Hoàn thành giao hàng (Chụp ảnh xác nhận)';
         buttonColor = ColorsFrave.successColor;
         break;
       default:
@@ -117,7 +159,7 @@ class StatusActionButtons extends StatelessWidget {
           child: TextButton.icon(
             icon: const Icon(Icons.cancel_outlined, size: 16, color: ColorsFrave.errorColor),
             label: const TextCustom(
-              'Cancel / Emergency Issue',
+              'Hủy giao hàng / Báo sự cố',
               color: ColorsFrave.errorColor,
               fontSize: 13,
             ),
@@ -135,15 +177,15 @@ class StatusActionButtons extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const TextCustom('Cancel Delivery', fontWeight: FontWeight.bold),
+        title: const TextCustom('Hủy giao hàng', fontWeight: FontWeight.bold),
         content: const TextCustom(
-          'Are you sure you want to cancel this order delivery?',
+          'Bạn có chắc chắn muốn hủy giao đơn hàng này không?',
           color: ColorsFrave.greyText,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const TextCustom('No, Keep Order', color: ColorsFrave.greyText),
+            child: const TextCustom('Không, tiếp tục giao', color: ColorsFrave.greyText),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -154,7 +196,7 @@ class StatusActionButtons extends StatelessWidget {
               Navigator.pop(ctx);
               onTransition(DeliveryStatus.cancelled);
             },
-            child: const TextCustom('Yes, Cancel', color: Colors.white),
+            child: const TextCustom('Đồng ý hủy', color: Colors.white),
           ),
         ],
       ),

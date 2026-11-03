@@ -4,6 +4,7 @@ import 'package:delicia/domain/models/order_item.dart';
 import 'package:delicia/domain/models/order_record.dart';
 import 'package:delicia/domain/services/orders_service.dart';
 import 'package:delicia/presentation/delivery/details/delivery_details_screen.dart';
+import 'package:delicia/presentation/helpers/money.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -68,7 +69,7 @@ void main() {
     );
   }
 
-  testWidgets('DeliveryDetailsScreen displays customer contact, address, items, and action button',
+  testWidgets('DeliveryDetailsScreen displays customer contact, address, items, and action button in Vietnamese with VND',
       (tester) async {
     await tester.pumpWidget(createWidgetUnderTest());
     await tester.pumpAndSettle();
@@ -81,15 +82,16 @@ void main() {
 
     // Verify Address
     expect(find.text('55 Nguyen Hue Blvd, D1'), findsOneWidget);
-    expect(find.text('Note: Floor 12, Unit 1205'), findsOneWidget);
-    expect(find.text('Live Map'), findsOneWidget);
+    expect(find.text('Ghi chú: Floor 12, Unit 1205'), findsOneWidget);
+    expect(find.text('Bản đồ'), findsOneWidget);
 
-    // Verify Ordered Item
+    // Verify Ordered Item with VND formatting
     expect(find.text('Crispy Fried Chicken'), findsOneWidget);
-    expect(find.text('2 x \$9.25'), findsOneWidget);
-    expect(find.text('\$18.50'), findsNWidgets(2)); // Item subtotal + Total due
+    expect(find.text('2 x ${Money.format(9.25)}'), findsOneWidget);
+    expect(find.text(Money.format(18.50)), findsNWidgets(2)); // Item subtotal + Total due
+    expect(find.text('Phần tiền nhận được'), findsOneWidget);
 
-    // Verify Action Button for Accepted status: next step is Confirm Picked Up
-    expect(find.text('Confirm Picked Up at Restaurant'), findsOneWidget);
+    // Verify Action Button for Accepted status: next step is Confirm Picked Up in Vietnamese
+    expect(find.text('Xác nhận đã lấy hàng tại quán'), findsOneWidget);
   });
 }

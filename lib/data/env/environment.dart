@@ -62,6 +62,10 @@ class Environment {
   /// "Delivery fee" line item until the backend returns it dynamically.
   static const double defaultDeliveryFee = 2.5;
 
+  /// The restaurant / store location coordinates (Bếp Delicia, Quận 1, TP. Hồ Chí Minh).
+  static const double restaurantLatitude = 10.7769;
+  static const double restaurantLongitude = 106.7009;
+
   // ---- Delivery estimate --------------------------------------------------
   /// Minutes shown as "Estimated Delivery" on the Payment screen
   /// (Figma 4.3 - D draws "25 mins"). The courier's real ETA is only
@@ -123,6 +127,42 @@ class CartPricing {
   static double taxOf(double subtotal) => subtotal * taxRate;
 
   /// Grand total = subtotal + tax + delivery.
-  static double totalOf(double subtotal) =>
-      subtotal + taxOf(subtotal) + deliveryFee;
+  static double totalOf(double subtotal, {double? delivery}) =>
+      subtotal + taxOf(subtotal) + (delivery ?? deliveryFee);
+
+  /// Computes shipping fee in VND based on shortest road distance:
+  /// - Under 1km (< 1.0 km): 0 VND (free)
+  /// - From 1-3km (1.0 <= km <= 3.0): 5,000 VND / km
+  /// - From 3-8km (3.0 < km <= 8.0): 8,000 VND / km
+  /// - Above 8km (> 8.0 km): 10,000 VND / km
+  static double deliveryFeeVnd(double distanceKm) {
+    if (distanceKm < 1.0) {
+      return 0.0;
+    } else if (distanceKm <= 3.0) {
+      return distanceKm * 5000.0;
+    } else if (distanceKm <= 8.0) {
+      return distanceKm * 8000.0;
+    } else {
+      return distanceKm * 10000.0;
+    }
+  }
+
+  /// Converts shipping fee to USD for database and internal calculations.
+  static double deliveryFeeUsd(double distanceKm) {
+    return deliveryFeeVnd(distanceKm) / Environment.payosVndRate;
+  }
+
+  /// Computes driver earnings in VND:
+  /// - Under 1km: 5,000 VND (minimum base pay so driver doesn't deliver for free).
+  /// - Above 1km: 90% of distance-based delivery fee.
+  static double driverEarningsVnd(double distanceKm) {
+    if (distanceKm < 1.0) {
+      return 5000.0;
+    }
+    return deliveryFeeVnd(distanceKm) * 0.90;
+  }
+
+  /// Computes driver earnings in USD (for internal usage / Money.format).
+  static double driverEarningsUsd(double distanceKm) =>
+      driverEarningsVnd(distanceKm) / Environment.payosVndRate;
 }

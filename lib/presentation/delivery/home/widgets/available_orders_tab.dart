@@ -8,16 +8,20 @@ import 'order_card_delivery.dart';
 class AvailableOrdersTab extends StatelessWidget {
   final List<OrderRecord> orders;
   final bool isLoading;
+  final bool hasActiveDelivery;
   final Future<void> Function() onRefresh;
   final ValueChanged<OrderRecord> onAccept;
+  final ValueChanged<OrderRecord>? onReject;
   final ValueChanged<OrderRecord> onTap;
 
   const AvailableOrdersTab({
     super.key,
     required this.orders,
     required this.isLoading,
+    this.hasActiveDelivery = false,
     required this.onRefresh,
     required this.onAccept,
+    this.onReject,
     required this.onTap,
   });
 
@@ -38,26 +42,37 @@ class AvailableOrdersTab extends StatelessWidget {
           child: Container(
             height: MediaQuery.of(context).size.height * 0.6,
             alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  Icons.storefront_outlined,
+                  hasActiveDelivery
+                      ? Icons.delivery_dining_rounded
+                      : Icons.storefront_outlined,
                   size: 64,
-                  color: Colors.grey.shade400,
+                  color: hasActiveDelivery
+                      ? ColorsFrave.primaryColor.withValues(alpha: 0.7)
+                      : Colors.grey.shade400,
                 ),
-                const SizedBox(height: 12),
-                const TextCustom(
-                  'No available orders at the moment',
+                const SizedBox(height: 16),
+                TextCustom(
+                  hasActiveDelivery
+                      ? 'Đang có đơn hàng cần giao'
+                      : 'Hiện không có đơn hàng khả dụng',
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                   color: ColorsFrave.darkText,
+                  textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 4),
-                const TextCustom(
-                  'Pull down to refresh or check back soon!',
+                const SizedBox(height: 6),
+                TextCustom(
+                  hasActiveDelivery
+                      ? 'Vui lòng hoàn thành đơn hàng hiện tại để tiếp tục nhận đơn mới.'
+                      : 'Kéo xuống để làm mới hoặc quay lại sau!',
                   fontSize: 13,
                   color: ColorsFrave.greyText,
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -80,6 +95,7 @@ class AvailableOrdersTab extends StatelessWidget {
             isAvailableTab: true,
             onTap: () => onTap(order),
             onAccept: () => onAccept(order),
+            onReject: onReject != null ? () => onReject!(order) : null,
           );
         },
       ),

@@ -84,7 +84,6 @@ class _MockOrdersService implements OrdersService {
 
   @override
   Future<void> cancelOrder(String orderId, {String? reason}) async {}
-
 }
 
 void main() {
@@ -136,9 +135,10 @@ void main() {
     });
 
     blocTest<DeliveryBloc, DeliveryState>(
-      'LoadDeliveryHomeEvent emits loading and populates assigned and available orders',
+      'LoadDeliveryHomeEvent populates assigned and available orders when no active delivery',
       setUp: () {
-        mockService.assignedOrders = [testOrder1];
+        // testOrder1 delivered -> no active delivery
+        mockService.assignedOrders = [testOrder1.copyWith(status: 'DELIVERED')];
         mockService.availableOrders = [testOrder2];
       },
       build: () => DeliveryBloc(ordersService: mockService),
@@ -153,7 +153,24 @@ void main() {
     );
 
     blocTest<DeliveryBloc, DeliveryState>(
-      'AcceptOrderEvent assigns order to driver and moves it to assigned list',
+      'LoadDeliveryHomeEvent hides available orders when driver has an active order',
+      setUp: () {
+        mockService.assignedOrders = [testOrder1]; // status is DISPATCHED (active)
+        mockService.availableOrders = [testOrder2];
+      },
+      build: () => DeliveryBloc(ordersService: mockService),
+      act: (bloc) => bloc.add(const LoadDeliveryHomeEvent('driver-1')),
+      expect: () => [
+        isA<DeliveryState>().having((s) => s.isLoading, 'isLoading', true),
+        isA<DeliveryState>()
+            .having((s) => s.isLoading, 'isLoading', false)
+            .having((s) => s.assignedOrders.length, 'assignedCount', 1)
+            .having((s) => s.availableOrders.length, 'availableCount', 0),
+      ],
+    );
+
+    blocTest<DeliveryBloc, DeliveryState>(
+      'AcceptOrderEvent assigns order to driver and hides remaining available orders',
       setUp: () {
         mockService.availableOrders = [testOrder2];
         mockService.assignedOrders = [];
@@ -176,12 +193,12 @@ void main() {
     );
 
     blocTest<DeliveryBloc, DeliveryState>(
-      'RejectOrderEvent removes order from assigned list',
+      'RejectOrderEvent removes order from assigned list and restores available orders if no other active',
       setUp: () {
         mockService.assignedOrders = [testOrder1];
       },
       build: () => DeliveryBloc(ordersService: mockService),
-      seed: () => DeliveryState(assignedOrders: [testOrder1]),
+      seed: () => DeliveryState(assignedOrders: [testOrder1], availableOrders: []),
       act: (bloc) => bloc.add(const RejectOrderEvent(
         orderId: 'order-101',
         deliveryId: 'driver-1',
@@ -192,6 +209,58 @@ void main() {
             .having((s) => s.isLoading, 'isLoading', false)
             .having((s) => s.isSuccess, 'isSuccess', true)
             .having((s) => s.assignedOrders, 'assignedOrders', isEmpty),
+      ],
+    );
+
+    blocTest<DeliveryBloc, DeliveryState>(
+      'RejectOrderEvent removes order from available list',
+      setUp: () {
+        mockService.availableOrders = [testOrder2];
+      },
+      build: () => DeliveryBloc(ordersService: mockService),
+      seed: () => DeliveryState(availableOrders: [testOrder2]),
+      act: (bloc) => bloc.add(const RejectOrderEvent(
+        orderId: 'order-102',
+        deliveryId: 'driver-1',
+      )),
+      expect: () => [
+        isA<DeliveryState>().having((s) => s.isLoading, 'isLoading', true),
+        isA<DeliveryState>()
+            .having((s) => s.isLoading, 'isLoading', false)
+            .having((s) => s.isSuccess, 'isSuccess', true)
+            .having((s) => s.availableOrders, 'availableOrders', isEmpty),
+      ],
+    );
+
+    blocTest<DeliveryBloc, DeliveryState>(
+      'LoadDeliveryHomeEvent filters out orders rejected by this driver',
+      setUp: () {
+        final rejectedOrder = testOrder2.copyWith(rejectedBy: ['driver-1']);
+        mockService.availableOrders = [rejectedOrder];
+      },
+      build: () => DeliveryBloc(ordersService: mockService),
+      act: (bloc) => bloc.add(const LoadDeliveryHomeEvent('driver-1')),
+      expect: () => [
+        isA<DeliveryState>().having((s) => s.isLoading, 'isLoading', true),
+        isA<DeliveryState>()
+            .having((s) => s.isLoading, 'isLoading', false)
+            .having((s) => s.availableOrders, 'availableOrders', isEmpty),
+      ],
+    );
+
+    blocTest<DeliveryBloc, DeliveryState>(
+      'LoadDeliveryHomeEvent keeps order visible for other drivers who have not rejected it',
+      setUp: () {
+        final rejectedOrder = testOrder2.copyWith(rejectedBy: ['driver-1']);
+        mockService.availableOrders = [rejectedOrder];
+      },
+      build: () => DeliveryBloc(ordersService: mockService),
+      act: (bloc) => bloc.add(const LoadDeliveryHomeEvent('driver-2')),
+      expect: () => [
+        isA<DeliveryState>().having((s) => s.isLoading, 'isLoading', true),
+        isA<DeliveryState>()
+            .having((s) => s.isLoading, 'isLoading', false)
+            .having((s) => s.availableOrders.length, 'availableOrders', 1),
       ],
     );
 
@@ -217,6 +286,38 @@ void main() {
     );
 
     blocTest<DeliveryBloc, DeliveryState>(
+      'UpdateOrderStatusEvent to delivered restores available orders',
+      setUp: () {
+        mockService.assignedOrders = [testOrder1.copyWith(status: 'ON WAY')];
+        mockService.availableOrders = [testOrder2];
+      },
+      build: () => DeliveryBloc(ordersService: mockService),
+      seed: () => DeliveryState(
+        assignedOrders: [testOrder1.copyWith(status: 'ON WAY')],
+        availableOrders: const [],
+      ),
+      act: (bloc) async {
+        // Pre-cache available orders via load event
+        bloc.add(const LoadDeliveryHomeEvent('driver-1'));
+        await Future<void>.delayed(Duration.zero);
+        bloc.add(UpdateOrderStatusEvent(
+          orderId: 'order-101',
+          currentStatus: DeliveryStatus.onTheWay,
+          targetStatus: DeliveryStatus.delivered,
+        ));
+      },
+      skip: 2, // Skip initial LoadDeliveryHomeEvent emissions
+      expect: () => [
+        isA<DeliveryState>().having((s) => s.isLoading, 'isLoading', true),
+        isA<DeliveryState>()
+            .having((s) => s.isLoading, 'isLoading', false)
+            .having((s) => s.isSuccess, 'isSuccess', true)
+            .having((s) => s.assignedOrders.first.status, 'status', 'DELIVERED')
+            .having((s) => s.availableOrders.length, 'availableOrders', 1),
+      ],
+    );
+
+    blocTest<DeliveryBloc, DeliveryState>(
       'UpdateOrderStatusEvent with invalid transition (pending -> delivered) emits error and does not call service',
       build: () => DeliveryBloc(ordersService: mockService),
       act: (bloc) => bloc.add(const UpdateOrderStatusEvent(
@@ -228,7 +329,7 @@ void main() {
         isA<DeliveryState>().having(
           (s) => s.error,
           'error',
-          contains('Invalid state transition'),
+          contains('Không thể chuyển trạng thái'),
         ),
       ],
     );

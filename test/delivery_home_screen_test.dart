@@ -8,6 +8,7 @@ import 'package:delicia/domain/models/user.dart';
 import 'package:delicia/domain/services/auth_service.dart';
 import 'package:delicia/domain/services/orders_service.dart';
 import 'package:delicia/presentation/delivery/home/delivery_home_screen.dart';
+import 'package:delicia/presentation/helpers/money.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -66,7 +67,6 @@ class _FakeOrdersService implements OrdersService {
 
   @override
   Future<void> cancelOrder(String orderId, {String? reason}) async {}
-
 }
 
 void main() {
@@ -110,7 +110,17 @@ void main() {
       ..availableOrders = [sampleAvailableOrder];
   });
 
-  Widget createWidgetUnderTest({OrderRecord? notification}) {
+  Widget createWidgetUnderTest({
+    List<OrderRecord>? assignedOrders,
+    List<OrderRecord>? availableOrders,
+    OrderRecord? notification,
+  }) {
+    if (assignedOrders != null) {
+      fakeOrdersService.assignedOrders = assignedOrders;
+    }
+    if (availableOrders != null) {
+      fakeOrdersService.availableOrders = availableOrders;
+    }
     final authBloc = AuthBloc(authService: _FakeAuthService());
     authBloc.emit(const AuthState(
       user: User(
@@ -124,8 +134,8 @@ void main() {
 
     final deliveryBloc = DeliveryBloc(ordersService: fakeOrdersService);
     deliveryBloc.emit(DeliveryState(
-      assignedOrders: [sampleAssignedOrder],
-      availableOrders: [sampleAvailableOrder],
+      assignedOrders: assignedOrders ?? [sampleAssignedOrder],
+      availableOrders: availableOrders ?? [sampleAvailableOrder],
       newOrderNotification: notification,
     ));
 
@@ -143,43 +153,148 @@ void main() {
     );
   }
 
-  testWidgets('DeliveryHomeScreen renders tabs and assigned orders', (tester) async {
+  testWidgets('DeliveryHomeScreen renders tabs and assigned orders in Vietnamese with VND', (tester) async {
     await tester.pumpWidget(createWidgetUnderTest());
     await tester.pumpAndSettle();
 
     // Verify Tab headers
-    expect(find.text('My Deliveries'), findsOneWidget);
-    expect(find.text('Available Orders'), findsOneWidget);
+    expect(find.text('Đơn đang giao'), findsOneWidget);
+    expect(find.text('Đơn chờ nhận'), findsOneWidget);
+    expect(find.text('Thu nhập'), findsOneWidget);
 
     // Verify Driver Name & Online Status
     expect(find.text('Alex Driver'), findsOneWidget);
-    expect(find.text('Online & Ready'), findsOneWidget);
+    expect(find.text('Online & Sẵn sàng'), findsOneWidget);
 
-    // Verify assigned order card is visible
+    // Verify assigned order card is visible with VND
     expect(find.text('789 Elm Street'), findsOneWidget);
-    expect(find.text('\$19.99'), findsOneWidget);
-    expect(find.text('Accepted'), findsOneWidget); // DISPATCHED maps to Accepted
+    expect(find.text(Money.format(19.99)), findsOneWidget);
+    expect(find.text('Đã nhận đơn'), findsOneWidget); // DISPATCHED maps to Đã nhận đơn
+    expect(find.text('Bản đồ'), findsOneWidget);
+    expect(find.text('Đã giao'), findsOneWidget);
+    expect(find.text('Nhận được: '), findsOneWidget);
+    expect(find.text('Từ chối'), findsNothing); // Reject is removed once accepted
   });
 
-  testWidgets('DeliveryHomeScreen switches to Available Orders tab and shows available order', (tester) async {
+  testWidgets('DeliveryHomeScreen shows confirmation dialog when Đã giao is tapped on assigned order', (tester) async {
     await tester.pumpWidget(createWidgetUnderTest());
     await tester.pumpAndSettle();
 
-    // Tap "Available Orders" tab
-    await tester.tap(find.text('Available Orders'));
+    // Tap "Đã giao" on the assigned order card
+    await tester.tap(find.text('Đã giao'));
     await tester.pumpAndSettle();
 
-    // Verify available order card
-    expect(find.text('100 Beach Road'), findsOneWidget);
-    expect(find.text('\$32.50'), findsOneWidget);
-    expect(find.text('Accept Order'), findsOneWidget);
+    // Verify dialog appears
+    expect(find.text('Xác nhận đã giao'), findsOneWidget);
+    expect(find.text('Hủy'), findsOneWidget);
+    expect(find.text('Xác nhận'), findsOneWidget);
   });
 
-  testWidgets('DeliveryHomeScreen displays notification banner when new order arrives', (tester) async {
-    await tester.pumpWidget(createWidgetUnderTest(notification: sampleAvailableOrder));
+  testWidgets('DeliveryHomeScreen switches to Available Orders tab and shows available order when no active delivery', (tester) async {
+    await tester.pumpWidget(createWidgetUnderTest(
+      assignedOrders: const [],
+      availableOrders: [sampleAvailableOrder],
+    ));
     await tester.pumpAndSettle();
 
-    expect(find.text('New Order Assigned!'), findsOneWidget);
-    expect(find.text('View'), findsOneWidget);
+    // Tap "Đơn chờ nhận" tab
+    await tester.tap(find.text('Đơn chờ nhận'));
+    await tester.pumpAndSettle();
+
+    // Verify available order card has both Nhận đơn and Từ chối with VND
+    expect(find.text('100 Beach Road'), findsOneWidget);
+    expect(find.text(Money.format(32.50)), findsOneWidget);
+    expect(find.text('Nhận đơn'), findsOneWidget);
+    expect(find.text('Từ chối'), findsOneWidget);
+  });
+
+  testWidgets('DeliveryHomeScreen hides available orders when driver has an active order', (tester) async {
+    await tester.pumpWidget(createWidgetUnderTest(
+      assignedOrders: [sampleAssignedOrder], // Active delivery
+      availableOrders: const [], // Hidden when active
+    ));
+    await tester.pumpAndSettle();
+
+    // Tap "Đơn chờ nhận" tab
+    await tester.tap(find.text('Đơn chờ nhận'));
+    await tester.pumpAndSettle();
+
+    // Verify available orders are hidden and message is shown
+    expect(find.text('Đang có đơn hàng cần giao'), findsOneWidget);
+    expect(find.text('100 Beach Road'), findsNothing);
+  });
+
+  testWidgets('DeliveryHomeScreen shows reject confirmation dialog when Từ chối is tapped on available order', (tester) async {
+    await tester.pumpWidget(createWidgetUnderTest(
+      assignedOrders: const [],
+      availableOrders: [sampleAvailableOrder],
+    ));
+    await tester.pumpAndSettle();
+
+    // Tap "Đơn chờ nhận" tab
+    await tester.tap(find.text('Đơn chờ nhận'));
+    await tester.pumpAndSettle();
+
+    // Tap Từ chối
+    await tester.tap(find.text('Từ chối'));
+    await tester.pumpAndSettle();
+
+    // Verify dialog appears in Vietnamese
+    expect(find.text('Từ chối đơn hàng'), findsOneWidget);
+    expect(find.text('Hủy'), findsOneWidget);
+  });
+
+  testWidgets('DeliveryHomeScreen displays notification banner when new order arrives in Vietnamese with VND', (tester) async {
+    await tester.pumpWidget(createWidgetUnderTest(
+      assignedOrders: const [],
+      notification: sampleAvailableOrder,
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Có đơn hàng mới!'), findsOneWidget);
+    expect(find.text('Xem'), findsOneWidget);
+  });
+
+  testWidgets('DeliveryHomeScreen renders Earnings tab with distance-based 90% shipping fee calculation', (tester) async {
+    final deliveredOrder1 = OrderRecord(
+      id: 'ord-deliv-1',
+      clientId: 'c1',
+      addressId: 'a1',
+      street: '123 Le Loi, Ben Nghe',
+      reference: 'Near park',
+      latitude: 10.758,
+      longitude: 106.7009,
+      paymentMethod: 'CASH PAYMENT',
+      amount: 25.00,
+      status: OrderRecord.statusDelivered,
+      deliveryId: 'driver-test-uid',
+      deliveryName: 'Alex Driver',
+      products: const [],
+      createdAt: DateTime(2026, 1, 1),
+    );
+
+    await tester.pumpWidget(createWidgetUnderTest(
+      assignedOrders: [deliveredOrder1],
+      availableOrders: const [],
+    ));
+    await tester.pumpAndSettle();
+
+    // Switch to Thu nhập tab
+    await tester.tap(find.text('Thu nhập'));
+    await tester.pumpAndSettle();
+
+    // Verify Earnings content
+    expect(find.text('Tổng thu nhập tích lũy'), findsOneWidget);
+    expect(find.text('Chính sách thu nhập & Phí ship'), findsOneWidget);
+    expect(find.text('Tỷ lệ tài xế nhận'), findsOneWidget);
+    expect(find.text('90% (Dưới 1 km: 5.000 ₫)'), findsOneWidget);
+    expect(find.text('Đã hoàn thành 1 đơn hàng'), findsOneWidget);
+    expect(find.text('123 Le Loi, Ben Nghe'), findsOneWidget);
+    expect(find.text('Từ 1 - 3 km'), findsOneWidget);
+    expect(find.text('5.000 ₫ / km'), findsOneWidget);
+    expect(find.text('Từ 3 - 8 km'), findsOneWidget);
+    expect(find.text('8.000 ₫ / km'), findsOneWidget);
+    expect(find.text('Trên 8 km'), findsOneWidget);
+    expect(find.text('10.000 ₫ / km'), findsOneWidget);
   });
 }

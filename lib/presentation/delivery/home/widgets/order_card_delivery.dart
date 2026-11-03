@@ -3,7 +3,9 @@ import 'package:intl/intl.dart';
 
 import '../../../../domain/models/delivery_status.dart';
 import '../../../../domain/models/order_record.dart';
+import '../../../../domain/utils/driver_earnings.dart';
 import '../../../components/text_custom.dart';
+import '../../../helpers/money.dart';
 import '../../../themes/colors_frave.dart';
 
 class OrderCardDelivery extends StatelessWidget {
@@ -13,6 +15,7 @@ class OrderCardDelivery extends StatelessWidget {
   final VoidCallback? onAccept;
   final VoidCallback? onReject;
   final VoidCallback? onNavigateMap;
+  final VoidCallback? onDelivered;
 
   const OrderCardDelivery({
     super.key,
@@ -22,6 +25,7 @@ class OrderCardDelivery extends StatelessWidget {
     this.onAccept,
     this.onReject,
     this.onNavigateMap,
+    this.onDelivered,
   });
 
   Color _getStatusColor(DeliveryStatus status) {
@@ -46,7 +50,7 @@ class OrderCardDelivery extends StatelessWidget {
     final status = DeliveryStatus.fromString(order.status);
     final statusColor = _getStatusColor(status);
     final shortId = order.id.length > 8 ? order.id.substring(0, 8) : order.id;
-    final timeFormat = DateFormat('MMM dd, yyyy • HH:mm');
+    final timeFormat = DateFormat('dd/MM/yyyy • HH:mm');
 
     return InkWell(
       onTap: onTap,
@@ -80,7 +84,7 @@ class OrderCardDelivery extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     TextCustom(
-                      'Order #$shortId',
+                      'Đơn hàng #$shortId',
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
                     ),
@@ -93,7 +97,7 @@ class OrderCardDelivery extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: TextCustom(
-                    status.label,
+                    status.labelVi,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                     color: statusColor,
@@ -132,7 +136,7 @@ class OrderCardDelivery extends StatelessWidget {
                 const SizedBox(width: 6),
                 Expanded(
                   child: TextCustom(
-                    order.street.isNotEmpty ? order.street : 'Address not specified',
+                    order.street.isNotEmpty ? order.street : 'Chưa xác định địa chỉ',
                     fontSize: 13,
                     color: ColorsFrave.greyText,
                     maxLines: 1,
@@ -151,15 +155,32 @@ class OrderCardDelivery extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const TextCustom(
-                      'Amount to Collect',
+                      'Tiền thu hộ (COD)',
                       fontSize: 11,
                       color: ColorsFrave.greyText,
                     ),
                     TextCustom(
-                      '\$${order.amount.toStringAsFixed(2)}',
-                      fontSize: 16,
+                      Money.format(order.amount),
+                      fontSize: 15,
                       fontWeight: FontWeight.bold,
                       color: ColorsFrave.primaryColor,
+                    ),
+                    const SizedBox(height: 3),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const TextCustom(
+                          'Nhận được: ',
+                          fontSize: 11,
+                          color: ColorsFrave.greyText,
+                        ),
+                        TextCustom(
+                          Money.format(DriverEarnings.earningsUsdForOrder(order)),
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: ColorsFrave.successColor,
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -167,7 +188,30 @@ class OrderCardDelivery extends StatelessWidget {
                 // Actions based on tab
                 if (isAvailableTab)
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
+                      if (onReject != null) ...[
+                        OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: ColorsFrave.errorColor),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                          ),
+                          onPressed: onReject,
+                          child: const TextCustom(
+                            'Từ chối',
+                            color: ColorsFrave.errorColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: ColorsFrave.primaryColor,
@@ -181,7 +225,7 @@ class OrderCardDelivery extends StatelessWidget {
                         ),
                         onPressed: onAccept,
                         child: const TextCustom(
-                          'Accept Order',
+                          'Nhận đơn',
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
@@ -192,18 +236,6 @@ class OrderCardDelivery extends StatelessWidget {
                 else
                   Row(
                     children: [
-                      if (onReject != null &&
-                          (status == DeliveryStatus.accepted ||
-                              status == DeliveryStatus.pending))
-                        TextButton(
-                          onPressed: onReject,
-                          child: const TextCustom(
-                            'Reject',
-                            color: ColorsFrave.errorColor,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
                       if (onNavigateMap != null &&
                           status != DeliveryStatus.delivered &&
                           status != DeliveryStatus.cancelled) ...[
@@ -215,22 +247,51 @@ class OrderCardDelivery extends StatelessWidget {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
+                              horizontal: 10,
                               vertical: 8,
                             ),
                           ),
                           icon: const Icon(
                             Icons.navigation_outlined,
-                            size: 16,
+                            size: 15,
                             color: Colors.white,
                           ),
                           label: const TextCustom(
-                            'Map',
+                            'Bản đồ',
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            fontSize: 13,
+                            fontSize: 12,
                           ),
                           onPressed: onNavigateMap,
+                        ),
+                      ],
+                      if (onDelivered != null &&
+                          status != DeliveryStatus.delivered &&
+                          status != DeliveryStatus.cancelled) ...[
+                        const SizedBox(width: 6),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: ColorsFrave.successColor,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                          ),
+                          icon: const Icon(
+                            Icons.check_circle_outline,
+                            size: 15,
+                            color: Colors.white,
+                          ),
+                          label: const TextCustom(
+                            'Đã giao',
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                          onPressed: onDelivered,
                         ),
                       ],
                     ],

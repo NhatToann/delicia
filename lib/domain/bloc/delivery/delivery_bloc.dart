@@ -30,13 +30,21 @@ class DeliveryBloc extends Bloc<DeliveryEvent, DeliveryState> {
   StreamSubscription<List<OrderRecord>>? _assignedSub;
   StreamSubscription<List<OrderRecord>>? _availableSub;
 
+  String? _currentDeliveryId;
+  final Set<String> _locallyRejectedOrderIds = {};
+
   List<OrderRecord> _cachedAssigned = [];
   List<OrderRecord> _cachedAvailable = [];
+
+  bool _hasActiveDelivery(List<OrderRecord> assigned) => assigned.any((o) =>
+      o.status != OrderRecord.statusDelivered &&
+      o.status != OrderRecord.statusCancelled);
 
   Future<void> _onLoadDeliveryHome(
     LoadDeliveryHomeEvent event,
     Emitter<DeliveryState> emit,
   ) async {
+    _currentDeliveryId = event.deliveryId;
     emit(state.copyWith(isLoading: true, clearError: true));
     try {
       final results = await Future.wait([
@@ -44,12 +52,18 @@ class DeliveryBloc extends Bloc<DeliveryEvent, DeliveryState> {
         _ordersService.getAvailableOrders(),
       ]);
       _cachedAssigned = results[0];
-      _cachedAvailable = results[1];
+      _cachedAvailable = results[1].where((o) {
+        if (_locallyRejectedOrderIds.contains(o.id)) return false;
+        if (o.rejectedBy.contains(event.deliveryId)) return false;
+        return true;
+      }).toList();
+
+      final hasActive = _hasActiveDelivery(_cachedAssigned);
 
       emit(state.copyWith(
         isLoading: false,
         assignedOrders: _cachedAssigned,
-        availableOrders: _cachedAvailable,
+        availableOrders: hasActive ? const [] : _cachedAvailable,
       ));
     } catch (e) {
       emit(state.copyWith(isLoading: false, error: e.toString()));
@@ -60,6 +74,7 @@ class DeliveryBloc extends Bloc<DeliveryEvent, DeliveryState> {
     WatchDeliveryHomeEvent event,
     Emitter<DeliveryState> emit,
   ) async {
+    _currentDeliveryId = event.deliveryId;
     await _assignedSub?.cancel();
     await _availableSub?.cancel();
 
@@ -73,7 +88,12 @@ class DeliveryBloc extends Bloc<DeliveryEvent, DeliveryState> {
     });
 
     _availableSub = _ordersService.watchAvailableOrders().listen((available) {
-      _cachedAvailable = available;
+      final filtered = available.where((o) {
+        if (_locallyRejectedOrderIds.contains(o.id)) return false;
+        if (o.rejectedBy.contains(event.deliveryId)) return false;
+        return true;
+      }).toList();
+      _cachedAvailable = filtered;
       add(DeliveryOrdersUpdatedEvent(
         assignedOrders: _cachedAssigned,
         availableOrders: _cachedAvailable,
@@ -85,26 +105,40 @@ class DeliveryBloc extends Bloc<DeliveryEvent, DeliveryState> {
     DeliveryOrdersUpdatedEvent event,
     Emitter<DeliveryState> emit,
   ) {
-    OrderRecord? newlyAssigned;
-    final hadPriorState =
-        state.assignedOrders.isNotEmpty || state.availableOrders.isNotEmpty;
-
-    if (hadPriorState) {
-      final existingAssignedIds = state.assignedOrders.map((o) => o.id).toSet();
-      for (final order in event.assignedOrders) {
-        if (!existingAssignedIds.contains(order.id)) {
-          newlyAssigned = order;
-          break;
-        }
+    final filteredAvailable = event.availableOrders.where((order) {
+      if (_locallyRejectedOrderIds.contains(order.id)) return false;
+      if (_currentDeliveryId != null &&
+          order.rejectedBy.contains(_currentDeliveryId)) {
+        return false;
       }
+      return true;
+    }).toList();
 
-      if (newlyAssigned == null) {
-        final existingAvailableIds =
-            state.availableOrders.map((o) => o.id).toSet();
-        for (final order in event.availableOrders) {
-          if (!existingAvailableIds.contains(order.id)) {
+    final hasActive = _hasActiveDelivery(event.assignedOrders);
+    final visibleAvailable = hasActive ? const <OrderRecord>[] : filteredAvailable;
+
+    OrderRecord? newlyAssigned;
+    if (!hasActive) {
+      final hadPriorState =
+          state.assignedOrders.isNotEmpty || state.availableOrders.isNotEmpty;
+
+      if (hadPriorState) {
+        final existingAssignedIds = state.assignedOrders.map((o) => o.id).toSet();
+        for (final order in event.assignedOrders) {
+          if (!existingAssignedIds.contains(order.id)) {
             newlyAssigned = order;
             break;
+          }
+        }
+
+        if (newlyAssigned == null) {
+          final existingAvailableIds =
+              state.availableOrders.map((o) => o.id).toSet();
+          for (final order in filteredAvailable) {
+            if (!existingAvailableIds.contains(order.id)) {
+              newlyAssigned = order;
+              break;
+            }
           }
         }
       }
@@ -113,8 +147,8 @@ class DeliveryBloc extends Bloc<DeliveryEvent, DeliveryState> {
     emit(state.copyWith(
       isLoading: false,
       assignedOrders: event.assignedOrders,
-      availableOrders: event.availableOrders,
-      newOrderNotification: newlyAssigned ?? state.newOrderNotification,
+      availableOrders: visibleAvailable,
+      newOrderNotification: newlyAssigned ?? (hasActive ? null : state.newOrderNotification),
     ));
   }
 
@@ -180,10 +214,11 @@ class DeliveryBloc extends Bloc<DeliveryEvent, DeliveryState> {
       emit(state.copyWith(
         isLoading: false,
         isSuccess: true,
-        successMessage: 'Order accepted successfully!',
+        successMessage: 'Nhận đơn hàng thành công!',
         assignedOrders: newAssigned,
-        availableOrders: newAvailable,
+        availableOrders: const [],
         activeOrder: updatedOrder,
+        clearNotification: true,
       ));
     } catch (e) {
       emit(state.copyWith(isLoading: false, error: e.toString()));
@@ -194,6 +229,7 @@ class DeliveryBloc extends Bloc<DeliveryEvent, DeliveryState> {
     RejectOrderEvent event,
     Emitter<DeliveryState> emit,
   ) async {
+    _locallyRejectedOrderIds.add(event.orderId);
     emit(state.copyWith(isLoading: true, clearError: true, clearSuccess: true));
     try {
       await _ordersService.rejectOrder(event.orderId, event.deliveryId);
@@ -204,15 +240,20 @@ class DeliveryBloc extends Bloc<DeliveryEvent, DeliveryState> {
           _cachedAvailable.isNotEmpty ? _cachedAvailable : state.availableOrders;
       final newAssigned =
           currentAssigned.where((o) => o.id != event.orderId).toList();
+      final newAvailable =
+          currentAvailable.where((o) => o.id != event.orderId).toList();
       _cachedAssigned = newAssigned;
-      _cachedAvailable = currentAvailable;
+      _cachedAvailable = newAvailable;
+
+      final hasActive = _hasActiveDelivery(newAssigned);
+      final visibleAvailable = hasActive ? const <OrderRecord>[] : newAvailable;
 
       emit(state.copyWith(
         isLoading: false,
         isSuccess: true,
-        successMessage: 'Order rejected.',
+        successMessage: 'Đã từ chối đơn hàng.',
         assignedOrders: newAssigned,
-        availableOrders: currentAvailable,
+        availableOrders: visibleAvailable,
       ));
     } catch (e) {
       emit(state.copyWith(isLoading: false, error: e.toString()));
@@ -226,7 +267,7 @@ class DeliveryBloc extends Bloc<DeliveryEvent, DeliveryState> {
     // 1. State machine transition validation
     if (!event.currentStatus.canTransitionTo(event.targetStatus)) {
       final msg =
-          'Invalid state transition: Cannot transition from ${event.currentStatus.label} to ${event.targetStatus.label}.';
+          'Không thể chuyển trạng thái từ ${event.currentStatus.labelVi} sang ${event.targetStatus.labelVi}.';
       emit(state.copyWith(error: msg));
       return;
     }
@@ -248,6 +289,7 @@ class DeliveryBloc extends Bloc<DeliveryEvent, DeliveryState> {
         }
         return o;
       }).toList();
+      _cachedAssigned = updatedAssigned;
 
       OrderRecord? updatedActive = state.activeOrder;
       if (updatedActive != null && updatedActive.id == event.orderId) {
@@ -257,11 +299,28 @@ class DeliveryBloc extends Bloc<DeliveryEvent, DeliveryState> {
         );
       }
 
+      final hasActive = _hasActiveDelivery(updatedAssigned);
+      final visibleAvailable = hasActive
+          ? const <OrderRecord>[]
+          : _cachedAvailable.where((o) {
+              if (_locallyRejectedOrderIds.contains(o.id)) return false;
+              if (_currentDeliveryId != null &&
+                  o.rejectedBy.contains(_currentDeliveryId)) {
+                return false;
+              }
+              return true;
+            }).toList();
+
+      final successMsg = event.targetStatus == DeliveryStatus.delivered
+          ? 'Đã hoàn thành giao đơn hàng thành công!'
+          : 'Cập nhật trạng thái: ${event.targetStatus.labelVi}!';
+
       emit(state.copyWith(
         isLoading: false,
         isSuccess: true,
-        successMessage: 'Order status updated to ${event.targetStatus.label}!',
+        successMessage: successMsg,
         assignedOrders: updatedAssigned,
+        availableOrders: visibleAvailable,
         activeOrder: updatedActive,
       ));
     } catch (e) {

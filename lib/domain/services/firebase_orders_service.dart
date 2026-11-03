@@ -300,6 +300,11 @@ class FirebaseOrdersService implements OrdersService {
       final updates = <String, dynamic>{
         'deliveryId': deliveryId,
         'status': OrderRecord.statusDispatched,
+        'shipperLocation': {
+          'latitude': Environment.restaurantLatitude,
+          'longitude': Environment.restaurantLongitude,
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+        },
       };
       if (deliveryName != null) {
         updates['deliveryName'] = deliveryName;
@@ -317,11 +322,18 @@ class FirebaseOrdersService implements OrdersService {
       throw OrdersServiceException('Firebase Database not initialized.');
     }
     try {
-      await ref.child(orderId).update({
-        'deliveryId': '',
-        'deliveryName': '',
-        'status': OrderRecord.statusPaidOut,
-      });
+      if (deliveryId.isNotEmpty) {
+        await ref.child(orderId).child('rejectedBy').child(deliveryId).set(true);
+      }
+      final snap = await ref.child(orderId).get();
+      final val = snap.value;
+      if (val is Map && val['deliveryId'] == deliveryId) {
+        await ref.child(orderId).update({
+          'deliveryId': '',
+          'deliveryName': '',
+          'status': OrderRecord.statusPaidOut,
+        });
+      }
     } catch (e) {
       throw OrdersServiceException('Failed to reject order: $e');
     }

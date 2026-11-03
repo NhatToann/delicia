@@ -47,8 +47,8 @@ class SelectAddressScreen extends StatefulWidget {
 }
 
 class _SelectAddressScreenState extends State<SelectAddressScreen> {
-  // Prefer Da Nang when GPS or an initial route location is unavailable.
-  static const LatLng _fallbackCenter = LatLng(16.0471, 108.2068);
+  // Fallback to District 1, Ho Chi Minh City when GPS is unavailable.
+  static const LatLng _fallbackCenter = LatLng(10.7769, 106.7009);
   static const String _historyKey = 'delicia.address.search.history.v1';
   static DateTime? _lastGeocoderRequestAt;
 

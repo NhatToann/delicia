@@ -18,10 +18,13 @@ enum DeliveryStatus {
     ],
     DeliveryStatus.accepted: [
       DeliveryStatus.pickedUp,
+      DeliveryStatus.onTheWay,
+      DeliveryStatus.delivered,
       DeliveryStatus.cancelled,
     ],
     DeliveryStatus.pickedUp: [
       DeliveryStatus.onTheWay,
+      DeliveryStatus.delivered,
       DeliveryStatus.cancelled,
     ],
     DeliveryStatus.onTheWay: [
@@ -34,6 +37,11 @@ enum DeliveryStatus {
 
   /// Returns true if transitioning from [this] state to [next] is allowed.
   bool canTransitionTo(DeliveryStatus next) {
+    if (next == DeliveryStatus.delivered) {
+      return this != DeliveryStatus.pending &&
+          this != DeliveryStatus.cancelled &&
+          this != DeliveryStatus.delivered;
+    }
     final allowed = _validTransitions[this] ?? [];
     return allowed.contains(next);
   }
@@ -81,6 +89,24 @@ enum DeliveryStatus {
         return 'Delivered';
       case DeliveryStatus.cancelled:
         return 'Cancelled';
+    }
+  }
+
+  /// Human-friendly display label in Vietnamese.
+  String get labelVi {
+    switch (this) {
+      case DeliveryStatus.pending:
+        return 'Chờ nhận đơn';
+      case DeliveryStatus.accepted:
+        return 'Đã nhận đơn';
+      case DeliveryStatus.pickedUp:
+        return 'Đã lấy hàng';
+      case DeliveryStatus.onTheWay:
+        return 'Đang giao hàng';
+      case DeliveryStatus.delivered:
+        return 'Đã giao hàng';
+      case DeliveryStatus.cancelled:
+        return 'Đã hủy';
     }
   }
 

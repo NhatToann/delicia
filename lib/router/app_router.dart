@@ -30,7 +30,7 @@ class AppRouter {
   AppRouter._();
 
   static final GoRouter router = GoRouter(
-    initialLocation: '/splash',
+    initialLocation: '/login',
     routes: [
       // ---- Launch flow (UC-01) ---------------------------------------------
       // Splash ("Launch First") always runs first, then resolves into either
