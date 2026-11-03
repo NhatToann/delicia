@@ -21,7 +21,15 @@ class Money {
   static int get rate => Environment.payosVndRate;
 
   /// Converts a stored USD amount into integer VND.
-  static int toVnd(num usd) => (usd * rate).round();
+  /// If the raw amount was entered with 4 extra zeroes (e.g. >= 1000),
+  /// normalizes it back to base USD before multiplying by the conversion rate.
+  static int toVnd(num usd) {
+    var val = usd.toDouble();
+    if (val >= 1000) {
+      val = val / 10000.0;
+    }
+    return (val * rate).round();
+  }
 
   /// Vietnamese grouping: `.` separates thousands, `,` separates decimals.
   static final NumberFormat _decimal = NumberFormat.decimalPattern('vi_VN');

@@ -81,7 +81,7 @@ class AuthService {
       'lastName': last,
       'phone': fbUser?.phoneNumber ?? '',
       'image': fbUser?.photoURL ?? '',
-      'rolId': 2,
+      'rolId': 1,
       'createdAt': DateTime.now().millisecondsSinceEpoch,
     };
     try {
@@ -130,7 +130,7 @@ class AuthService {
   /// node in the Realtime Database.
   ///
   /// Returns the new [User] (with `rolId` and the assigned Firebase uid).
-  /// The default [rolId] is 2 (Client). Pass a different value for Admin/
+  /// The default [rolId] is 1 (Client). Pass a different value for Admin/
   /// Delivery sign-up flows (handled in UC-06 / UC-09).
   Future<User> register({
     required String email,
@@ -138,7 +138,7 @@ class AuthService {
     required String firstName,
     required String lastName,
     String? phone,
-    int rolId = 2,
+    int rolId = 1,
   }) async {
     fb.UserCredential credential;
     try {

@@ -4,11 +4,13 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../data/env/environment.dart';
+import '../../../data/services/route_service.dart';
 import '../../../domain/bloc/auth/auth_bloc.dart';
 import '../../../domain/bloc/cart/cart_bloc.dart';
 import '../../../domain/bloc/orders/orders_bloc.dart';
 import '../../../domain/bloc/payment/payment_bloc.dart';
 import '../../../domain/models/address.dart';
+import '../../../domain/models/lat_lng_point.dart';
 import '../../../domain/models/product_cart.dart';
 import '../../../domain/models/type_payment.dart';
 import '../../../domain/services/app_failure.dart';
@@ -46,10 +48,15 @@ class PaymentScreen extends StatefulWidget {
 
 class _PaymentScreenState extends State<PaymentScreen> {
   final TextEditingController _voucherController = TextEditingController();
+  final RouteService _routeService = RouteService();
 
   /// Address the user is delivering to. Seeded with the default one and
   /// replaced when the picker returns a new one.
   Address _address = Address.hardcodedDefault;
+
+  /// Road distance in km from restaurant to delivery address.
+  double _distanceKm = 0.0;
+  bool _calculatingDistance = false;
 
   /// The payment method currently selected.
   late TypePaymentMethod _method = widget.initialMethod ?? defaultPaymentMethod;
@@ -72,7 +79,54 @@ class _PaymentScreenState extends State<PaymentScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _calculateDistanceAndFee(_address);
+  }
+
+  Future<void> _calculateDistanceAndFee(Address address) async {
+    setState(() => _calculatingDistance = true);
+    double distKm = 0.0;
+    try {
+      const origin = LatLngPoint(
+        latitude: Environment.restaurantLatitude,
+        longitude: Environment.restaurantLongitude,
+      );
+      final dest = LatLngPoint(
+        latitude: address.latitude,
+        longitude: address.longitude,
+      );
+
+      final route = await _routeService.getRoute(
+        origin: origin,
+        destination: dest,
+      );
+      distKm = route.distanceMeters / 1000.0;
+    } catch (_) {
+      // Fallback: great-circle distance * 1.2
+      const origin = LatLngPoint(
+        latitude: Environment.restaurantLatitude,
+        longitude: Environment.restaurantLongitude,
+      );
+      final dest = LatLngPoint(
+        latitude: address.latitude,
+        longitude: address.longitude,
+      );
+      final directMeters = RouteService.distanceMeters(origin, dest);
+      distKm = (directMeters * 1.2) / 1000.0;
+    }
+    if (mounted) {
+      setState(() {
+        _distanceKm = distKm;
+        _calculatingDistance = false;
+      });
+    }
+  }
+
+
+  @override
   void dispose() {
+    _routeService.dispose();
     _voucherController.dispose();
     super.dispose();
   }
@@ -144,13 +198,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
     });
   }
 
+  double get _deliveryFeeUsd => CartPricing.deliveryFeeUsd(_distanceKm);
+
   double _amountToPay(double subtotal) {
     final discountedSubtotal =
         subtotal - (_voucher?.subtotalDiscount(subtotal) ?? 0);
-    final total = CartPricing.totalOf(discountedSubtotal);
-    return _voucher?.isFreeShipping == true
-        ? total - CartPricing.deliveryFee
-        : total;
+    final delivery = _voucher?.isFreeShipping == true ? 0.0 : _deliveryFeeUsd;
+    return CartPricing.totalOf(discountedSubtotal, delivery: delivery);
   }
 
   @override
@@ -201,6 +255,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         child: _PaymentBody(
                           products: products,
                           address: _address,
+                          distanceKm: _distanceKm,
+                          calculatingDistance: _calculatingDistance,
+                          deliveryFeeUsd: _deliveryFeeUsd,
                           method: _method,
                           voucher: _voucher,
                           voucherController: _voucherController,
@@ -252,6 +309,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     final picked = await context.push<Address>('/client/select-address');
     if (picked == null || !mounted) return;
     setState(() => _address = picked);
+    await _calculateDistanceAndFee(picked);
   }
 
   /// Opens the method sheet and applies the choice.
@@ -405,8 +463,8 @@ class _PaymentVoucher {
   double subtotalDiscount(double subtotal) =>
       isFreeShipping ? 0 : subtotal * percent / 100;
 
-  double savings(double subtotal) =>
-      isFreeShipping ? CartPricing.deliveryFee : subtotalDiscount(subtotal);
+  double savings(double subtotal, {double deliveryFee = CartPricing.deliveryFee}) =>
+      isFreeShipping ? deliveryFee : subtotalDiscount(subtotal);
 }
 
 String _voucherDescription(BuildContext context, _PaymentVoucher voucher) =>
@@ -420,6 +478,9 @@ class _PaymentBody extends StatelessWidget {
   const _PaymentBody({
     required this.products,
     required this.address,
+    required this.distanceKm,
+    required this.calculatingDistance,
+    required this.deliveryFeeUsd,
     required this.method,
     required this.voucher,
     required this.voucherController,
@@ -434,6 +495,9 @@ class _PaymentBody extends StatelessWidget {
 
   final List<ProductCart> products;
   final Address address;
+  final double distanceKm;
+  final bool calculatingDistance;
+  final double deliveryFeeUsd;
   final TypePaymentMethod method;
   final _PaymentVoucher? voucher;
   final TextEditingController voucherController;
@@ -483,11 +547,23 @@ class _PaymentBody extends StatelessWidget {
                     ),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: Text(
-                        address.street,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: FraveText.medium(15, color: ColorsFrave.ink),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            address.street,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: FraveText.medium(15, color: ColorsFrave.ink),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            distanceKm <= 0 && calculatingDistance
+                                ? 'Đang tính khoảng cách đường đi...'
+                                : 'Khoảng cách: ${distanceKm.toStringAsFixed(1)} km từ quán (đường ngắn nhất)',
+                            style: FraveText.regular(12, color: ColorsFrave.greyText),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -712,16 +788,17 @@ class _PaymentBody extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           _PaymentBreakdownRow(
-            label: l10n.cartSummaryDelivery,
-            amount: voucher?.isFreeShipping == true
-                ? 0
-                : CartPricing.deliveryFee,
+            label: 'Phí giao hàng (${distanceKm.toStringAsFixed(1)} km)',
+            amount: voucher?.isFreeShipping == true ? 0 : deliveryFeeUsd,
+            customAmountText: (voucher?.isFreeShipping == true || deliveryFeeUsd == 0)
+                ? 'Miễn phí'
+                : null,
           ),
           if (voucher != null) ...[
             const SizedBox(height: 8),
             _PaymentBreakdownRow(
               label: l10n.paymentVoucherDiscount(voucher!.code),
-              amount: -voucher!.savings(_subtotal),
+              amount: -voucher!.savings(_subtotal, deliveryFee: deliveryFeeUsd),
               isDiscount: true,
             ),
           ],
@@ -741,12 +818,12 @@ class _PaymentBody extends StatelessWidget {
                 child: Text(
                   Money.format(
                     CartPricing.totalOf(
-                          _subtotal -
-                              (voucher?.subtotalDiscount(_subtotal) ?? 0),
-                        ) -
-                        (voucher?.isFreeShipping == true
-                            ? CartPricing.deliveryFee
-                            : 0),
+                      _subtotal -
+                          (voucher?.subtotalDiscount(_subtotal) ?? 0),
+                      delivery: voucher?.isFreeShipping == true
+                          ? 0.0
+                          : deliveryFeeUsd,
+                    ),
                   ),
                   textAlign: TextAlign.end,
                   maxLines: 1,
@@ -766,11 +843,13 @@ class _PaymentBreakdownRow extends StatelessWidget {
   const _PaymentBreakdownRow({
     required this.label,
     required this.amount,
+    this.customAmountText,
     this.isDiscount = false,
   });
 
   final String label;
   final double amount;
+  final String? customAmountText;
   final bool isDiscount;
 
   @override
@@ -787,11 +866,13 @@ class _PaymentBreakdownRow extends StatelessWidget {
       ),
       const SizedBox(width: 8),
       Text(
-        Money.format(amount),
+        customAmountText ?? Money.format(amount),
         textAlign: TextAlign.end,
         style: FraveText.medium(
           14,
-          color: isDiscount ? ColorsFrave.successColor : ColorsFrave.ink,
+          color: (isDiscount || customAmountText == 'Miễn phí')
+              ? ColorsFrave.successColor
+              : ColorsFrave.ink,
         ),
       ),
     ],

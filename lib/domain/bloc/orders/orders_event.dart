@@ -30,6 +30,11 @@ class OnClearLastOrderEvent extends OrdersEvent {
   const OnClearLastOrderEvent();
 }
 
+class OnSetCurrentOrderEvent extends OrdersEvent {
+  final OrderRecord order;
+  const OnSetCurrentOrderEvent(this.order);
+}
+
 /// Bind (or rebind) the My Orders stream to a client id.
 ///
 /// Fires on:

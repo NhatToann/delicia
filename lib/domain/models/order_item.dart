@@ -47,12 +47,18 @@ class OrderItem {
         if (optionLabel != null) 'optionLabel': optionLabel,
       };
 
-  factory OrderItem.fromMap(Map<dynamic, dynamic> map) => OrderItem(
-        productId: (map['productId'] ?? '').toString(),
-        nameProduct: (map['nameProduct'] ?? '').toString(),
-        picture: (map['picture'] ?? '').toString(),
-        price: double.tryParse((map['price'] ?? 0).toString()) ?? 0.0,
-        quantity: int.tryParse((map['quantity'] ?? 1).toString()) ?? 1,
-        optionLabel: map['optionLabel']?.toString(),
-      );
+  factory OrderItem.fromMap(Map<dynamic, dynamic> map) {
+    var price = double.tryParse((map['price'] ?? 0).toString()) ?? 0.0;
+    if (price >= 1000) {
+      price = price / 10000.0;
+    }
+    return OrderItem(
+      productId: (map['productId'] ?? '').toString(),
+      nameProduct: (map['nameProduct'] ?? '').toString(),
+      picture: (map['picture'] ?? '').toString(),
+      price: price,
+      quantity: int.tryParse((map['quantity'] ?? 1).toString()) ?? 1,
+      optionLabel: map['optionLabel']?.toString(),
+    );
+  }
 }

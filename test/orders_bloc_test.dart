@@ -62,9 +62,31 @@ class _FakeOrdersService implements OrdersService {
       Stream<OrderRecord?>.value(null);
 
   @override
+  Future<List<OrderRecord>> getOrdersForDelivery(String deliveryId) async =>
+      const [];
+
+  @override
+  Future<List<OrderRecord>> getAvailableOrders() async => const [];
+
+  @override
+  Stream<List<OrderRecord>> watchDeliveryOrders(String deliveryId) =>
+      Stream.value(const []);
+
+  @override
+  Stream<List<OrderRecord>> watchAvailableOrders() => Stream.value(const []);
+
+  @override
+  Future<void> acceptOrder(String orderId, String deliveryId, {String? deliveryName}) async {}
+
+  @override
+  Future<void> rejectOrder(String orderId, String deliveryId) async {}
+
+  @override
+  Future<void> updateDeliveryStatus(String orderId, String newStatus, {String? deliveryPhoto}) async {}
+
+  @override
   Stream<List<OrderRecord>> watchMyOrders(String clientId) {
     final controller = StreamController<List<OrderRecord>>.broadcast();
-    // Emit an empty list immediately so callers don't hang.
     controller.add(const <OrderRecord>[]);
     return controller.stream;
   }
@@ -75,7 +97,6 @@ class _FakeOrdersService implements OrdersService {
       throw OrdersServiceException('cancel failed');
     }
     lastCancelReason = reason;
-    // No-op in tests — the bloc does the optimistic update itself.
   }
 }
 
@@ -92,19 +113,13 @@ class _ScriptedOrdersService implements OrdersService {
 
   @override
   Stream<List<OrderRecord>> watchMyOrders(String clientId) {
-    // Single-subscription controller. Seed the stream the moment a
-    // listener attaches so the first frame already has the test's
-    // payload. Real Firebase would behave the same way (initial onValue
-    // is delivered as soon as we subscribe).
     final out = StreamController<List<OrderRecord>>();
     late StreamSubscription<List<OrderRecord>> sub;
     out.onListen = () {
-      // 1) bridge the controller so scripted events keep flowing.
       sub = _controller.stream.listen(
         out.add,
         onError: out.addError,
       );
-      // 2) deliver the seed *after* listen() so it isn't dropped.
       if (_seed.isNotEmpty) {
         scheduleMicrotask(() {
           if (!out.isClosed) out.add(_seed);
@@ -135,6 +150,29 @@ class _ScriptedOrdersService implements OrdersService {
 
   @override
   Future<void> cancelOrder(String orderId, {String? reason}) async {}
+
+  @override
+  Future<List<OrderRecord>> getOrdersForDelivery(String deliveryId) async =>
+      const [];
+
+  @override
+  Future<List<OrderRecord>> getAvailableOrders() async => const [];
+
+  @override
+  Stream<List<OrderRecord>> watchDeliveryOrders(String deliveryId) =>
+      Stream.value(const []);
+
+  @override
+  Stream<List<OrderRecord>> watchAvailableOrders() => Stream.value(const []);
+
+  @override
+  Future<void> acceptOrder(String orderId, String deliveryId, {String? deliveryName}) async {}
+
+  @override
+  Future<void> rejectOrder(String orderId, String deliveryId) async {}
+
+  @override
+  Future<void> updateDeliveryStatus(String orderId, String newStatus, {String? deliveryPhoto}) async {}
 }
 
 const _cartItem = ProductCart(

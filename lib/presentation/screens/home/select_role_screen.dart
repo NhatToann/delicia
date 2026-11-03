@@ -83,16 +83,16 @@ class _SelectRoleScreenState extends State<SelectRoleScreen> {
                       title: context.l10n.roleCustomer,
                       description: context.l10n.roleCustomerSubtitle,
                       icon: Icons.shopping_bag_outlined,
-                      selected: _selected == '2',
-                      onTap: () => setState(() => _selected = '2'),
+                      selected: _selected == '1',
+                      onTap: () => setState(() => _selected = '1'),
                     ),
                     const SizedBox(height: 16),
                     _RoleCard(
                       title: context.l10n.roleRestaurant,
                       description: context.l10n.roleRestaurantSubtitle,
                       icon: Icons.restaurant_outlined,
-                      selected: _selected == '1',
-                      onTap: () => setState(() => _selected = '1'),
+                      selected: _selected == '2',
+                      onTap: () => setState(() => _selected = '2'),
                     ),
                     const SizedBox(height: 16),
                     _RoleCard(
@@ -115,10 +115,10 @@ class _SelectRoleScreenState extends State<SelectRoleScreen> {
                         : () {
                             switch (_selected) {
                               case '1':
-                                context.go('/admin/home');
+                                context.go('/client/home');
                                 break;
                               case '2':
-                                context.go('/client/home');
+                                context.go('/admin/home');
                                 break;
                               case '3':
                                 context.go('/delivery/home');

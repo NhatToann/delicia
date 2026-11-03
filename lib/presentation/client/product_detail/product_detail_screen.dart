@@ -235,6 +235,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   void _showAddedToCartConfirmation() {
     setState(() => _addingToCart = true);
 
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted && _addingToCart) {
+        setState(() => _addingToCart = false);
+      }
+    });
+
     final messenger = ScaffoldMessenger.of(context);
     messenger
       ..hideCurrentSnackBar()
@@ -1080,7 +1086,9 @@ class _StepperButton extends StatelessWidget {
       button: true,
       label: semanticLabel,
       child: Material(
-        color: ColorsFrave.navOrange,
+        color: onTap != null
+            ? ColorsFrave.navOrange
+            : ColorsFrave.navOrange.withValues(alpha: 0.4),
         shape: const CircleBorder(),
         clipBehavior: Clip.antiAlias,
         child: InkWell(

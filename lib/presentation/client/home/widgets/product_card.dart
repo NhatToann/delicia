@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../domain/bloc/cart/cart_bloc.dart';
 import '../../../../domain/bloc/products/products_bloc.dart';
 import '../../../../domain/models/product.dart';
+import '../../../../domain/models/product_cart.dart';
+import '../../../components/text_custom.dart';
 import '../../../helpers/category_assets.dart';
 import '../../../helpers/image_resolver.dart';
 import '../../../helpers/l10n_extension.dart';
@@ -272,22 +275,56 @@ class _AddButton extends StatelessWidget {
     return Semantics(
       button: true,
       label: context.l10n.homeAddProductToCart(product.nameProduct),
-      child: Container(
-        width: 28,
-        height: 28,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: ColorsFrave.primaryGradient,
+      child: Material(
+        color: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () {
+            context.read<CartBloc>().add(
+                  OnAddProductToCartEvent(
+                    ProductCart(
+                      uidProduct: product.id,
+                      imageProduct: product.picture,
+                      nameProduct: product.nameProduct,
+                      price: product.price,
+                      quantity: 1,
+                      addedAt: DateTime.now(),
+                    ),
+                  ),
+                );
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(
+                SnackBar(
+                  content: TextCustom(
+                    'Đã thêm "${product.nameProduct}" vào giỏ hàng',
+                    color: Colors.white,
+                  ),
+                  backgroundColor: ColorsFrave.navOrange,
+                  duration: const Duration(seconds: 1),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+          },
+          child: Container(
+            width: 28,
+            height: 28,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: ColorsFrave.primaryGradient,
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.add,
+              size: 18,
+              color: ColorsFrave.onPrimary,
+            ),
           ),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: const Icon(
-          Icons.add,
-          size: 18,
-          color: ColorsFrave.onPrimary,
         ),
       ),
     );

@@ -74,9 +74,10 @@ class _LaunchFirstScreenState extends State<LaunchFirstScreen>
   }
 
   String _destinationFor(String rolId) => switch (rolId) {
-        '1' || '3' => '/select-role',
-        '2' => '/client/home',
-        _ => '/intro',
+        '1' => '/client/home',
+        '2' => '/admin/home',
+        '3' => '/delivery/home',
+        _ => '/login',
       };
 
   void _goTo(String location) {
@@ -100,7 +101,7 @@ class _LaunchFirstScreenState extends State<LaunchFirstScreen>
         _scheduleTransition(LaunchFirstScreen.checkGrace);
         return;
       }
-      _goTo('/intro');
+      _goTo('/login');
     });
   }
 
@@ -127,7 +128,7 @@ class _LaunchFirstScreenState extends State<LaunchFirstScreen>
         animation: _intro,
         onContinue: () {
           _defer?.cancel();
-          _goTo('/intro');
+          _goTo('/login');
         },
       ),
     );

@@ -71,14 +71,16 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.of(context, rootNavigator: true).pop();
           switch (state.rolId) {
             case '1':
-            case '3':
-              context.go('/select-role');
-              break;
-            case '2':
               context.go('/client/home');
               break;
+            case '2':
+              context.go('/admin/home');
+              break;
+            case '3':
+              context.go('/delivery/home');
+              break;
             default:
-              context.go('/intro');
+              context.go('/client/home');
           }
         }
       },
@@ -92,7 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 AuthHeader(
                   title: context.l10n.actionSignIn,
-                  onBack: () => goBack(context, fallback: '/intro'),
+                  onBack: () => goBack(context, fallback: '/login'),
                 ),
 
                 Expanded(
