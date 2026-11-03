@@ -297,4 +297,43 @@ void main() {
     expect(find.text('Trên 8 km'), findsOneWidget);
     expect(find.text('10.000 ₫ / km'), findsOneWidget);
   });
+
+  testWidgets('DeliveryHomeScreen renders Trang cá nhân tab and displays profile info matching client profile style', (tester) async {
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pumpAndSettle();
+
+    // Verify Tab header for Trang cá nhân is visible
+    expect(find.text('Trang cá nhân'), findsOneWidget);
+
+    // Switch to Trang cá nhân tab
+    await tester.tap(find.text('Trang cá nhân'));
+    await tester.pumpAndSettle();
+
+    // Verify Profile header and fields
+    expect(find.text('Hồ sơ của tôi'), findsOneWidget);
+    expect(find.text('Tài xế Delicia • Đang hoạt động'), findsOneWidget);
+    expect(find.text('Họ và tên'), findsOneWidget);
+    expect(find.text('Alex Driver'), findsWidgets);
+    expect(find.text('Ngày sinh'), findsOneWidget);
+    expect(find.text('Email'), findsOneWidget);
+    expect(find.text('driver@delicia.com'), findsOneWidget);
+    expect(find.text('Số điện thoại'), findsOneWidget);
+    expect(find.text('Vai trò tài khoản'), findsOneWidget);
+    expect(find.text('Tài xế giao hàng (Driver)'), findsOneWidget);
+    expect(find.text('Cập nhật hồ sơ'), findsOneWidget);
+    expect(find.text('Đăng xuất tài khoản'), findsOneWidget);
+  });
+
+  testWidgets('DeliveryHomeScreen switches to Trang cá nhân when profile icon in AppBar is tapped', (tester) async {
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pumpAndSettle();
+
+    // Tap profile icon button in AppBar
+    await tester.tap(find.byIcon(Icons.person_outline));
+    await tester.pumpAndSettle();
+
+    // Verify profile is displayed
+    expect(find.text('Hồ sơ của tôi'), findsOneWidget);
+    expect(find.text('Tài xế giao hàng (Driver)'), findsOneWidget);
+  });
 }

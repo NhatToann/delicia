@@ -5,6 +5,7 @@ import '../../domain/models/order_record.dart';
 import '../presentation/delivery/details/delivery_details_screen.dart';
 import '../presentation/delivery/home/delivery_home_screen.dart';
 import '../presentation/delivery/map/map_delivery_screen.dart';
+import '../presentation/delivery/profile/delivery_profile_screen.dart';
 import '../presentation/screens/intro/launch_first_screen.dart';
 import '../presentation/screens/intro/launch_welcome_screen.dart';
 import '../presentation/screens/login/check_email_screen.dart';
@@ -123,6 +124,10 @@ class AppRouter {
         builder: (_, state) => MapDeliveryScreen(
           orderId: state.pathParameters['orderId'] ?? '',
         ),
+      ),
+      GoRoute(
+        path: '/delivery/profile',
+        builder: (_, __) => const DeliveryProfileScreen(),
       ),
 
       // ---- Placeholders (other members) -----------------------------------

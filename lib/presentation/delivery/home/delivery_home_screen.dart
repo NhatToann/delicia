@@ -12,6 +12,7 @@ import '../../../domain/utils/driver_earnings.dart';
 import '../../components/text_custom.dart';
 import '../../helpers/money.dart';
 import '../../themes/colors_frave.dart';
+import '../profile/delivery_profile_screen.dart';
 import 'widgets/available_orders_tab.dart';
 import 'widgets/order_card_delivery.dart';
 
@@ -31,7 +32,7 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
 
     final authState = context.read<AuthBloc>().state;
     _driverId = authState.user?.uid ?? 'driver_demo';
@@ -134,54 +135,68 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    final authUser = context.watch<AuthBloc>().state.user;
+    final driverName = (authUser?.fullName.isNotEmpty == true)
+        ? authUser!.fullName
+        : _driverName;
+
     return Scaffold(
       backgroundColor: ColorsFrave.backgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: ColorsFrave.secondaryColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.two_wheeler_rounded,
-                color: ColorsFrave.secondaryColor,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextCustom(
-                  _driverName,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
+        title: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: () => _tabController.animateTo(3),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: ColorsFrave.secondaryColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 4,
-                      backgroundColor: ColorsFrave.successColor,
-                    ),
-                    SizedBox(width: 4),
-                    TextCustom(
-                      'Online & Sẵn sàng',
-                      color: ColorsFrave.successColor,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ],
+                child: const Icon(
+                  Icons.two_wheeler_rounded,
+                  color: ColorsFrave.secondaryColor,
+                  size: 22,
                 ),
-              ],
-            ),
-          ],
+              ),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextCustom(
+                    driverName,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                  const Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 4,
+                        backgroundColor: ColorsFrave.successColor,
+                      ),
+                      SizedBox(width: 4),
+                      TextCustom(
+                        'Online & Sẵn sàng',
+                        color: ColorsFrave.successColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person_outline, color: ColorsFrave.greyText),
+            tooltip: 'Trang cá nhân',
+            onPressed: () => _tabController.animateTo(3),
+          ),
           IconButton(
             icon: const Icon(Icons.logout, color: ColorsFrave.greyText),
             tooltip: 'Đăng xuất',
@@ -193,15 +208,19 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen>
         ],
         bottom: TabBar(
           controller: _tabController,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           labelColor: ColorsFrave.primaryColor,
           unselectedLabelColor: ColorsFrave.greyText,
           indicatorColor: ColorsFrave.primaryColor,
           indicatorWeight: 3,
+          labelPadding: const EdgeInsets.symmetric(horizontal: 14),
           labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           tabs: const [
             Tab(text: 'Đơn đang giao'),
             Tab(text: 'Đơn chờ nhận'),
             Tab(text: 'Thu nhập'),
+            Tab(text: 'Trang cá nhân'),
           ],
         ),
       ),
@@ -288,6 +307,9 @@ class _DeliveryHomeScreenState extends State<DeliveryHomeScreen>
                       },
                       onTap: _navigateToDetails,
                     ),
+
+                    // Tab 4: Trang cá nhân (Delivery Profile)
+                    const DeliveryProfileContent(),
                   ],
                 ),
               ),
