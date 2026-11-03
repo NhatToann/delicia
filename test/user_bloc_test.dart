@@ -35,11 +35,12 @@ class _FakeUserService implements ClientUserService {
 
   @override
   Future<User> updateProfile(
-    String uid, {
-    String? firstName,
-    String? lastName,
-    String? phone,
-  }) async {
+      String uid, {
+        String? firstName,
+        String? lastName,
+        String? phone,
+        String? dateOfBirth, // <-- Thêm tham số này vào
+      }) async {
     if (throwOnUpdate) throw ClientUserServiceException('update failed');
     user = User(
       uid: uid,
@@ -47,6 +48,7 @@ class _FakeUserService implements ClientUserService {
       firstName: firstName ?? user?.firstName ?? 'A',
       lastName: lastName ?? user?.lastName ?? 'B',
       phone: phone ?? user?.phone,
+      dateOfBirth: dateOfBirth ?? user?.dateOfBirth, // <-- Cập nhật ngày sinh
       image: user?.image,
       rolId: user?.rolId ?? 2,
     );

@@ -200,7 +200,7 @@ Environment.tileServerUrl         // OSM tiles
 Environment.defaultDeliveryFee = 2.5
 Environment.estimatedDeliveryMinutes = 25
 Environment.payosClientId / ApiKey / ChecksumKey   // RỖNG → payOS bị ẩn
-Environment.payosVndRate = 25000
+Environment.payosVndRate_tam = 25000
 ```
 
 `CartPricing` (cùng file) là **nguồn duy nhất** cho mọi con số tiền: `deliveryFee`, `taxRate = 0.05`, `taxOf()`, `totalOf()`. **Không hardcode giá** — Figma chỉ có giá mẫu (`$40.00`, `$5.00`) để demo layout.

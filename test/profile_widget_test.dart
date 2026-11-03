@@ -33,17 +33,19 @@ class _SeedUserService implements ClientUserService {
 
   @override
   Future<User> updateProfile(
-    String uid, {
-    String? firstName,
-    String? lastName,
-    String? phone,
-  }) async {
+      String uid, {
+        String? firstName,
+        String? lastName,
+        String? phone,
+        String? dateOfBirth, // <-- Thêm tham số này vào
+      }) async {
     user = User(
       uid: uid,
       email: user.email,
       firstName: firstName ?? user.firstName,
       lastName: lastName ?? user.lastName,
       phone: phone ?? user.phone,
+      dateOfBirth: dateOfBirth ?? user.dateOfBirth, // <-- Cập nhật ngày sinh (nếu model User có trường này)
       image: user.image,
       rolId: user.rolId,
     );

@@ -21,7 +21,6 @@ import '../presentation/client/orders/orders_screen.dart';
 import '../presentation/client/orders/order_detail_screen.dart';
 import '../presentation/client/orders/orders_list_screen.dart';
 import '../presentation/client/address/select_address_screen.dart';
-import '../presentation/client/profile/my_profile_screen.dart';
 import '../presentation/client/profile/address_form_screen.dart';
 import '../presentation/client/profile/address_list_screen.dart';
 import '../presentation/client/profile/profile_screen.dart';
@@ -42,38 +41,38 @@ class AppRouter {
       // the role destination (session alive) or "Launch Welcome" (`/intro`).
       GoRoute(
         path: '/splash',
-        builder: (_, __) => const LaunchFirstScreen(),
+        builder: (context, state) => const LaunchFirstScreen(),
       ),
       GoRoute(
         path: '/intro',
-        builder: (_, __) => const LaunchWelcomeScreen(),
+        builder: (context, state) => const LaunchWelcomeScreen(),
       ),
-      GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: '/register',
-        builder: (_, _) => const RegisterClientScreen(),
+        builder: (context, state) => const RegisterClientScreen(),
       ),
       GoRoute(
         path: '/forgot-password',
-        builder: (_, _) => const ForgotPasswordScreen(),
+        builder: (context, state) => const ForgotPasswordScreen(),
       ),
       GoRoute(
         path: '/check-email',
-        builder: (_, _) => const CheckEmailScreen(),
+        builder: (context, state) => const CheckEmailScreen(),
       ),
       GoRoute(
         path: '/select-role',
-        builder: (_, _) => const SelectRoleScreen(),
+        builder: (context, state) => const SelectRoleScreen(),
       ),
 
       // ---- Client flow (UC-02 / UC-03 / UC-04 / UC-05 / UC-06) -----------
       GoRoute(
         path: '/client/home',
-        builder: (_, _) => const ClientHomeScreen(),
+        builder: (context, state) => const ClientHomeScreen(),
       ),
       GoRoute(
         path: '/client/search-category',
-        builder: (_, state) {
+        builder: (context, state) {
           final extra = state.extra;
           return SearchForCategoryScreen(
             category: extra is Category ? extra : null,
@@ -82,26 +81,24 @@ class AppRouter {
       ),
       GoRoute(
         path: '/client/details-product/:id',
-        builder: (_, state) => ProductDetailScreen(
+        builder: (context, state) => ProductDetailScreen(
           productId: state.pathParameters['id'] ?? '',
         ),
       ),
-      GoRoute(path: '/client/cart', builder: (_, _) => const CartScreen()),
+      GoRoute(path: '/client/cart', builder: (context, state) => const CartScreen()),
       GoRoute(
         path: '/client/payment',
-        builder: (_, __) => const PaymentScreen(),
+        builder: (context, state) => const PaymentScreen(),
       ),
 
-      // UC-05 — orders list + detail (Member A).  The list shows the active
-      // orders and the full history, with a per-order detail screen that
-      // streams realtime updates.
+      // UC-05 — orders list + detail (Member A).
       GoRoute(
         path: '/client/orders',
-        builder: (_, _) => const OrdersListScreen(),
+        builder: (context, state) => const OrdersListScreen(),
       ),
       GoRoute(
         path: '/client/orders/detail/:id',
-        builder: (_, state) {
+        builder: (context, state) {
           final id = state.pathParameters['id'] ?? '';
           final extra = state.extra;
           return OrderDetailScreen(
@@ -110,33 +107,31 @@ class AppRouter {
           );
         },
       ),
-      // The Leader's Figma-aligned order list stays reachable under its own
-      // path so it doesn't hijack the UC-05 list route.
       GoRoute(
         path: '/client/orders/list',
-        builder: (_, _) => const ClientOrdersView(),
+        builder: (context, state) => const ClientOrdersView(),
       ),
 
-      // UC-06 — profile + addresses.
+      // UC-06 — profile + addresses (Đã gộp MyProfileScreen vào ProfileScreen).
       GoRoute(
         path: '/client/profile',
-        builder: (_, _) => const ProfileScreen(),
+        builder: (context, state) => const ProfileScreen(),
       ),
       GoRoute(
         path: '/client/profile/edit',
-        builder: (_, _) => const MyProfileScreen(),
+        builder: (context, state) => const ProfileScreen(),
       ),
       GoRoute(
         path: '/client/profile/addresses',
-        builder: (_, _) => const AddressListScreen(),
+        builder: (context, state) => const AddressListScreen(),
       ),
       GoRoute(
         path: '/client/profile/addresses/new',
-        builder: (_, _) => const AddressFormScreen(),
+        builder: (context, state) => const AddressFormScreen(),
       ),
       GoRoute(
         path: '/client/profile/addresses/edit/:id',
-        builder: (_, state) {
+        builder: (context, state) {
           final extra = state.extra;
           return AddressFormScreen(
             existingAddress: extra is ClientAddress ? extra : null,
@@ -146,17 +141,17 @@ class AppRouter {
 
       GoRoute(
         path: '/client/select-address',
-        builder: (_, _) => const SelectAddressScreen(),
+        builder: (context, state) => const SelectAddressScreen(),
       ),
       GoRoute(
         path: '/client/map',
-        builder: (_, _) => const MapClientScreen(),
+        builder: (context, state) => const MapClientScreen(),
       ),
 
       // ---- Delivery flow (UC-03) ------------------------------------------
       GoRoute(
         path: '/delivery/map/:orderId',
-        builder: (_, state) => MapDeliveryScreen(
+        builder: (context, state) => MapDeliveryScreen(
           orderId: state.pathParameters['orderId'] ?? '',
         ),
       ),
@@ -164,12 +159,12 @@ class AppRouter {
       // ---- Placeholders (other members) -----------------------------------
       GoRoute(
         path: '/admin/home',
-        builder: (_, _) => const HomePlaceholder(label: 'Admin Home (UC-08)'),
+        builder: (context, state) => const HomePlaceholder(label: 'Admin Home (UC-08)'),
       ),
       GoRoute(
         path: '/delivery/home',
-        builder: (_, _) =>
-            const HomePlaceholder(label: 'Delivery Home (UC-10)'),
+        builder: (context, state) =>
+        const HomePlaceholder(label: 'Delivery Home (UC-10)'),
       ),
     ],
   );

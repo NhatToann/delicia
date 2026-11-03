@@ -20,11 +20,13 @@ class OnUpdateUserProfileEvent extends UserEvent {
   final String? firstName;
   final String? lastName;
   final String? phone;
+  final String? dateOfBirth;
   const OnUpdateUserProfileEvent({
     required this.uid,
     this.firstName,
     this.lastName,
     this.phone,
+    this.dateOfBirth,
   });
 }
 

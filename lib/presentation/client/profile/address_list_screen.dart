@@ -11,11 +11,6 @@ import '../../helpers/l10n_extension.dart';
 import '../../themes/colors_frave.dart';
 import '../../themes/type_frave.dart';
 
-/// AddressListScreen — listing + CRUD entry points for the client's saved
-/// addresses (UC-06).
-///
-/// The screen reuses the My Orders header band so the two flows share the
-/// same yellow band, the same chevron and the same title treatment.
 class AddressListScreen extends StatefulWidget {
   const AddressListScreen({super.key});
 
@@ -25,6 +20,24 @@ class AddressListScreen extends StatefulWidget {
 
 class _AddressListScreenState extends State<AddressListScreen> {
   String? _loadedUid;
+
+  void _showSuccessSnack(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white),
+            const SizedBox(width: 10),
+            Text(message, style: FraveText.medium(14, color: Colors.white)),
+          ],
+        ),
+        backgroundColor: Colors.green.shade600,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +75,6 @@ class _AddressListScreenState extends State<AddressListScreen> {
           ),
           Expanded(
             child: BlocConsumer<AddressBloc, AddressState>(
-              listenWhen: (a, b) => a.error != b.error,
               listener: (_, state) {
                 if (state.error != null) {
                   errorTextSnack(context, state.error!);
@@ -90,52 +102,46 @@ class _AddressListScreenState extends State<AddressListScreen> {
                   child: state.addresses.isEmpty
                       ? _EmptyState()
                       : ListView.separated(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(35, 24, 35, 32),
-                          itemCount: state.addresses.length,
-                          separatorBuilder: (_, _) => const SizedBox(height: 14),
-                          itemBuilder: (_, i) => _AddressCard(
-                            address: state.addresses[i],
-                          ),
-                        ),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+                    itemCount: state.addresses.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 14),
+                    itemBuilder: (_, i) => _AddressCard(
+                      address: state.addresses[i],
+                      onSuccessAction: (msg) => _showSuccessSnack(context, msg),
+                    ),
+                  ),
                 );
               },
             ),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: ColorsFrave.navOrange,
-        foregroundColor: ColorsFrave.onOrange,
-        onPressed: uid.isEmpty
-            ? null
-            : () => context.push('/client/profile/addresses/new'),
-        icon: const Icon(Icons.add_location_alt_outlined),
-        label: Text(
-          context.l10n.addressAdd,
-          style: FraveText.semiBold(14, color: ColorsFrave.onOrange),
-        ),
-      ),
     );
   }
 }
 
-/// One saved address, with its default badge and its three actions.
 class _AddressCard extends StatelessWidget {
   final ClientAddress address;
+  final ValueChanged<String> onSuccessAction;
 
-  const _AddressCard({required this.address});
+  const _AddressCard({required this.address, required this.onSuccessAction});
 
   @override
   Widget build(BuildContext context) {
     final uid = context.read<AuthBloc>().state.user?.uid ?? '';
+    final isDefault = address.isDefault == true;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: ColorsFrave.surfaceColor,
         borderRadius: BorderRadius.circular(RadiusFrave.card),
+        border: isDefault
+            ? Border.all(color: ColorsFrave.navOrange.withValues(alpha: 0.5), width: 1.5)
+            : null,
         boxShadow: const <BoxShadow>[
-          BoxShadow(color: Color(0x14000000), blurRadius: 8),
+          BoxShadow(color: Color(0x0F000000), blurRadius: 8, offset: Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -145,16 +151,16 @@ class _AddressCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Container(
-                width: 40,
-                height: 40,
-                decoration: const BoxDecoration(
-                  color: ColorsFrave.orangeSoft,
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: isDefault ? ColorsFrave.navOrange : ColorsFrave.orangeSoft,
                   shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,
-                child: const Icon(
+                child: Icon(
                   Icons.location_on_outlined,
-                  color: ColorsFrave.navOrange,
+                  color: isDefault ? ColorsFrave.onOrange : ColorsFrave.navOrange,
                   size: 20,
                 ),
               ),
@@ -163,14 +169,37 @@ class _AddressCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(
-                      address.street,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: FraveText.medium(16, color: ColorsFrave.ink),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            address.street,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: FraveText.semiBold(15, color: ColorsFrave.ink),
+                          ),
+                        ),
+                        if (isDefault) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: ColorsFrave.pillYellow,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              context.l10n.addressDefault,
+                              style: FraveText.medium(11, color: ColorsFrave.ink),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     if (address.reference.isNotEmpty) ...<Widget>[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Text(
                         address.reference,
                         maxLines: 2,
@@ -181,58 +210,48 @@ class _AddressCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (address.isDefault == true)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: ColorsFrave.pillYellow,
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                  child: Text(
-                    context.l10n.addressDefault,
-                    style: FraveText.medium(12, color: ColorsFrave.ink),
-                  ),
-                ),
             ],
           ),
-          const SizedBox(height: 14),
-          const Divider(
-            height: 1,
-            thickness: 1,
-            color: ColorsFrave.dividerOrange,
-          ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 12),
+          const Divider(height: 1, thickness: 1, color: ColorsFrave.dividerOrange),
+          const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
-              if (address.isDefault != true)
+              if (!isDefault)
                 _Action(
                   icon: Icons.star_outline,
                   label: context.l10n.addressSetDefault,
                   color: ColorsFrave.navOrange,
-                  onTap: () => context.read<AddressBloc>().add(
-                    OnSetDefaultAddressEvent(uid: uid, addressId: address.id),
-                  ),
+                  onTap: () {
+                    context.read<AddressBloc>().add(
+                      OnSetDefaultAddressEvent(uid: uid, addressId: address.id),
+                    );
+                    onSuccessAction('Đã đặt làm địa chỉ mặc định thành công!');
+                  },
                 )
               else
                 const SizedBox.shrink(),
-              _Action(
-                icon: Icons.edit_outlined,
-                label: context.l10n.actionEdit,
-                color: ColorsFrave.navOrange,
-                onTap: () => context.push(
-                  '/client/profile/addresses/edit/${address.id}',
-                  extra: address,
-                ),
-              ),
-              _Action(
-                icon: Icons.delete_outline,
-                label: context.l10n.addressDelete,
-                color: ColorsFrave.errorColor,
-                onTap: () => _confirmDelete(context, uid, address),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _Action(
+                    icon: Icons.edit_outlined,
+                    label: context.l10n.actionEdit,
+                    color: ColorsFrave.navOrange,
+                    onTap: () => context.push(
+                      '/client/profile/addresses/edit/${address.id}',
+                      extra: address,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _Action(
+                    icon: Icons.delete_outline,
+                    label: context.l10n.addressDelete,
+                    color: ColorsFrave.errorColor,
+                    onTap: () => _confirmDelete(context, uid, address),
+                  ),
+                ],
               ),
             ],
           ),
@@ -242,10 +261,10 @@ class _AddressCard extends StatelessWidget {
   }
 
   Future<void> _confirmDelete(
-    BuildContext context,
-    String uid,
-    ClientAddress address,
-  ) async {
+      BuildContext context,
+      String uid,
+      ClientAddress address,
+      ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -255,7 +274,7 @@ class _AddressCard extends StatelessWidget {
         ),
         title: Text(
           context.l10n.addressDeleteTitle,
-          style: FraveText.bold(20, color: ColorsFrave.ink),
+          style: FraveText.bold(18, color: ColorsFrave.ink),
         ),
         content: Text(
           context.l10n.addressDeleteBody(address.street),
@@ -288,11 +307,17 @@ class _AddressCard extends StatelessWidget {
       context.read<AddressBloc>().add(
         OnDeleteAddressEvent(uid: uid, addressId: address.id),
       );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Đã xóa địa chỉ thành công!'),
+          backgroundColor: Colors.red.shade600,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 }
 
-/// A small icon + label action.
 class _Action extends StatelessWidget {
   const _Action({
     required this.icon,
@@ -313,18 +338,15 @@ class _Action extends StatelessWidget {
       label: label,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(8),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Icon(icon, size: 17, color: color),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: FraveText.medium(13, color: color),
-              ),
+              Icon(icon, size: 16, color: color),
+              const SizedBox(width: 4),
+              Text(label, style: FraveText.medium(13, color: color)),
             ],
           ),
         ),
@@ -333,18 +355,17 @@ class _Action extends StatelessWidget {
   }
 }
 
-/// Shown when the customer has not saved a single address yet.
 class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(35, 48, 35, 48),
+      padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 60),
       children: <Widget>[
         Center(
           child: Container(
-            width: 120,
-            height: 120,
+            width: 100,
+            height: 100,
             decoration: const BoxDecoration(
               color: ColorsFrave.orangeSoft,
               shape: BoxShape.circle,
@@ -352,24 +373,24 @@ class _EmptyState extends StatelessWidget {
             alignment: Alignment.center,
             child: const Icon(
               Icons.location_off_outlined,
-              size: 56,
+              size: 48,
               color: ColorsFrave.navOrange,
             ),
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
         Text(
           context.l10n.addressEmptyTitle,
           textAlign: TextAlign.center,
-          style: FraveText.bold(20, color: ColorsFrave.ink),
+          style: FraveText.bold(18, color: ColorsFrave.ink),
         ),
         const SizedBox(height: 8),
         Text(
           context.l10n.addressEmptyBody,
           textAlign: TextAlign.center,
-          style: FraveText.regular(14, color: ColorsFrave.greyText),
+          style: FraveText.regular(13, color: ColorsFrave.greyText),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 28),
         SizedBox(
           height: 46,
           child: FilledButton.icon(
@@ -381,12 +402,9 @@ class _EmptyState extends StatelessWidget {
               shape: const StadiumBorder(),
             ),
             icon: const Icon(Icons.add, size: 18),
-            label: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                context.l10n.addressAdd,
-                style: FraveText.semiBold(14, color: ColorsFrave.onOrange),
-              ),
+            label: Text(
+              context.l10n.addressAdd,
+              style: FraveText.semiBold(14, color: ColorsFrave.onOrange),
             ),
           ),
         ),

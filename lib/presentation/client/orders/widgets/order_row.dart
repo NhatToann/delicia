@@ -23,10 +23,6 @@ import 'order_status_timeline.dart';
 ///   buttons     y288 h26 r100, x118 → x358
 ///                 Cancel Order — bg #E95322 · white · Medium 15
 ///                 Track Driver — bg #FFDECF · #E95322 · Regular 15
-///
-/// The Figma shows a single dish per order; a real order can hold
-/// several, so the thumbnail is the first product and the title is the
-/// first product's name.
 class OrderRow extends StatelessWidget {
   const OrderRow({
     super.key,
@@ -38,15 +34,13 @@ class OrderRow extends StatelessWidget {
 
   final OrderRecord order;
 
-  /// Fired when the user taps "Cancel Order". The cancellation flow
-  /// itself lands in a later use-case; the button is disabled until
-  /// then, so this is only wired up defensively.
+  /// Fired when the user taps "Cancel Order".
   final VoidCallback? onCancel;
 
   /// Fired when the user taps "Track Driver" — opens the live map.
   final VoidCallback? onTrack;
 
-  /// Fired when the whole row is tapped (expands the item list).
+  /// Fired when the whole row is tapped.
   final VoidCallback? onTap;
 
   /// Figma: the divider sits at y211, the thumbnail at y222.
@@ -62,11 +56,11 @@ class OrderRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = order.products;
     final thumb = items.isEmpty ? null : items.first;
-    final title = thumb?.nameProduct ?? context.l10n.ordersFallbackTitle(order.id);
+    final title =
+        thumb?.nameProduct ?? context.l10n.ordersFallbackTitle(order.id);
     final totalItems = items.fold<int>(0, (sum, i) => sum + i.quantity);
     final timestamp = _formatTimestamp(order.createdAt);
-    final gutter =
-        MediaQuery.sizeOf(context).width < 380 ? 20.0 : 35.0;
+    final gutter = MediaQuery.sizeOf(context).width < 380 ? 20.0 : 35.0;
 
     return Material(
       color: Colors.transparent,
@@ -74,8 +68,6 @@ class OrderRow extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          // Figma: content starts at x35 on a 393 px frame. On narrow
-          // phones the gutter shrinks so the row never overflows.
           padding: EdgeInsets.only(
             left: gutter,
             right: gutter,
@@ -85,24 +77,20 @@ class OrderRow extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              // Figma: 71.68 x 108. The status badge is overlaid on the
-              // thumbnail's bottom edge so the row keeps the exact Figma
-              // geometry (the badge is not part of the mockup).
               Stack(
                 children: <Widget>[
                   ClipRRect(
                     borderRadius: BorderRadius.circular(20),
                     child: SizedBox(
-                      // Figma: 71.68 x 108.
                       width: 72,
                       height: 108,
                       child: thumb == null
                           ? Container(color: ColorsFrave.orangeSoft)
                           : ImageResolver.resolveWidget(
-                              thumb.picture,
-                              fit: BoxFit.cover,
-                              fallback: CategoryAssets.pool.first,
-                            ),
+                        thumb.picture,
+                        fit: BoxFit.cover,
+                        fallback: CategoryAssets.pool.first,
+                      ),
                     ),
                   ),
                   Positioned(
@@ -113,17 +101,12 @@ class OrderRow extends StatelessWidget {
                   ),
                 ],
               ),
-              // Figma: the text column starts at x120.
               const SizedBox(width: 13),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    // Figma: the title glyphs start at y242, i.e. 20 px
-                    // below the thumbnail's top edge (y222).
                     const SizedBox(height: 20),
-                    // Title on the left, price on the right — Figma puts
-                    // them on the same baseline (y242).
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
@@ -152,8 +135,6 @@ class OrderRow extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 5),
-                    // Timestamp on the left, item count on the right
-                    // (Figma: both at y269).
                     Row(
                       children: <Widget>[
                         Expanded(
@@ -181,13 +162,8 @@ class OrderRow extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 2),
-                    // Action row — Figma places the two pills at y288,
-                    // aligned under the text column rather than the
-                    // thumbnail.
                     Row(
                       children: <Widget>[
-                        // Figma: the Cancel Order pill starts at x118 and
-                        // is only as wide as its label.
                         Flexible(
                           child: _OrderActionButton(
                             key: ValueKey<String>(
@@ -201,8 +177,6 @@ class OrderRow extends StatelessWidget {
                           ),
                         ),
                         const Spacer(),
-                        // Figma: the Track Driver pill is 100 px wide and
-                        // ends at x358.
                         Flexible(
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(
@@ -213,8 +187,7 @@ class OrderRow extends StatelessWidget {
                               background: ColorsFrave.orangeSoft,
                               foreground: ColorsFrave.navOrange,
                               isFilled: false,
-                              onPressed:
-                                  order.canTrackDelivery ? onTrack : null,
+                              onPressed: order.canTrackDelivery ? onTrack : null,
                             ),
                           ),
                         ),
@@ -230,7 +203,6 @@ class OrderRow extends StatelessWidget {
     );
   }
 
-  /// "29 Nov, 01:20 pm" — the Figma timestamp format.
   static String _formatTimestamp(DateTime value) {
     const months = <String>[
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -240,16 +212,10 @@ class OrderRow extends StatelessWidget {
     final hh = hour.toString().padLeft(2, '0');
     final minute = value.minute.toString().padLeft(2, '0');
     final meridiem = value.hour < 12 ? 'am' : 'pm';
-    return '${value.day} ${months[value.month - 1]}, '
-        '$hh:$minute $meridiem';
+    return '${value.day} ${months[value.month - 1]}, $hh:$minute $meridiem';
   }
 }
 
-/// The status ribbon overlaid on the bottom of an order's thumbnail.
-///
-/// The Figma mockup leaves that area empty, so the ribbon is our addition —
-/// a customer needs to know where the order is at a glance.  It is small
-/// enough not to disturb the 72 x 108 thumbnail geometry.
 class _StatusRibbon extends StatelessWidget {
   const _StatusRibbon({required this.status});
 
@@ -281,9 +247,6 @@ class _StatusRibbon extends StatelessWidget {
   }
 }
 
-/// Small pill button used for "Cancel Order" / "Track Driver".
-///
-/// Figma: h26, r100, horizontal padding 12, League Spartan 15.
 class _OrderActionButton extends StatelessWidget {
   const _OrderActionButton({
     super.key,
@@ -304,8 +267,6 @@ class _OrderActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final enabled = onPressed != null;
     return Opacity(
-      // The cancel / track flows land in a later use-case, so the button
-      // reads as "present but not yet live" until the handler exists.
       opacity: enabled ? 1 : 0.55,
       child: Material(
         color: background,

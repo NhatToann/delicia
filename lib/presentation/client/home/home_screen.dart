@@ -6,6 +6,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../domain/bloc/auth/auth_bloc.dart';
+import '../../../../domain/bloc/user/user_bloc.dart';
 import '../../../domain/bloc/products/products_bloc.dart';
 import '../../../domain/models/category.dart';
 import '../../../domain/models/product.dart';
@@ -186,6 +188,13 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
   /// wired to the real screens (UC-05 / UC-06); the remaining rows are
   /// still placeholders.
   void _openProfile() {
+    final authState = context.read<AuthBloc>().state;
+    final uid = authState.user?.uid ?? '';
+    if (uid.isNotEmpty) {
+      // Đảm bảo luôn lấy Avatar/Profile mới nhất từ UserBloc khi mở menu cam
+      context.read<UserBloc>().add(OnLoadUserProfileEvent(uid: uid));
+    }
+
     final ordersLabel = context.l10n.navOrders;
     final myProfileLabel = context.l10n.profileMyProfile;
     final addressLabel = context.l10n.profileDeliveryAddress;
@@ -204,8 +213,6 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
           context.push('/client/profile/addresses');
           return;
         }
-        // Still a placeholder — show which row was tapped so the
-        // team can see the wiring while the screen is built.
         debugPrint('ProfileMenu: "$label" is not wired up yet');
       },
     );

@@ -21,7 +21,7 @@ import '../../themes/type_frave.dart';
 import 'widgets/order_status_timeline.dart';
 
 /// OrderDetailScreen — opens a single order and subscribes to its realtime
-/// updates (UC-05).  Accepts the [OrderRecord] via `state.extra` so the
+/// updates (UC-05). Accepts the [OrderRecord] via `state.extra` so the
 /// list can hand it over without an extra fetch, then streams the
 /// up-to-date version via [ClientOrdersService.watchOrderUpdates].
 ///
@@ -55,24 +55,24 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         .watchOrderUpdates(widget.orderId)
         .listen(
           (record) {
-            if (!mounted) return;
-            setState(() => _live = record);
-            if (record != null) {
-              // Bubble the new state into the list BLoC so the list stays
-              // consistent with the detail screen.
-              context.read<ClientOrdersBloc>().add(
-                OnLoadClientOrdersEvent(
-                  clientId: context.read<AuthBloc>().state.user?.uid ?? '',
-                ),
-              );
-            }
-          },
-          onError: (Object e) {
-            if (!mounted) return;
-            errorTextSnack(context, 'Live updates unavailable: $e');
-          },
-          cancelOnError: false,
-        );
+        if (!mounted) return;
+        setState(() => _live = record);
+        if (record != null) {
+          // Bubble the new state into the list BLoC so the list stays
+          // consistent with the detail screen.
+          context.read<ClientOrdersBloc>().add(
+            OnLoadClientOrdersEvent(
+              clientId: context.read<AuthBloc>().state.user?.uid ?? '',
+            ),
+          );
+        }
+      },
+      onError: (Object e) {
+        if (!mounted) return;
+        errorTextSnack(context, 'Live updates unavailable: $e');
+      },
+      cancelOnError: false,
+    );
   }
 
   @override
@@ -101,10 +101,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           Expanded(
             child: order == null
                 ? const Center(
-                    child: CircularProgressIndicator(
-                      color: ColorsFrave.navOrange,
-                    ),
-                  )
+              child: CircularProgressIndicator(
+                color: ColorsFrave.navOrange,
+              ),
+            )
                 : _Loaded(order: order),
           ),
         ],
@@ -122,8 +122,9 @@ class _Loaded extends StatelessWidget {
   Widget build(BuildContext context) {
     final subtotal = order.products.fold<double>(
       0,
-      (s, p) => s + (p.price * p.quantity),
+          (s, p) => s + (p.price * p.quantity),
     );
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(35, 24, 35, 32),
       children: <Widget>[
@@ -150,15 +151,15 @@ class _Loaded extends StatelessWidget {
           ),
           child: order.products.isEmpty
               ? Text(
-                  context.l10n.ordersEmptyActiveTitle,
-                  style: FraveText.regular(14, color: ColorsFrave.greyText),
-                )
+            context.l10n.ordersEmptyActiveTitle,
+            style: FraveText.regular(14, color: ColorsFrave.greyText),
+          )
               : Column(
-                  children: <Widget>[
-                    for (final product in order.products)
-                      _ItemTile(item: product),
-                  ],
-                ),
+            children: <Widget>[
+              for (final product in order.products)
+                _ItemTile(item: product),
+            ],
+          ),
         ),
         const SizedBox(height: 24),
         _SectionTitle(context.l10n.ordersDetailSummary),
@@ -198,20 +199,16 @@ class _Loaded extends StatelessWidget {
   }
 
   /// Publishes the order to the shared [OrdersBloc] before opening the map.
-  ///
-  /// The map reads `OrdersBloc.state.lastOrder`, which is normally set by
-  /// the checkout flow.  Opening the map from the order history has to hand
-  /// the order over explicitly, otherwise the map has nothing to centre on.
   void _openTracking(BuildContext context, OrderRecord order) {
     context.read<OrdersBloc>().add(OnTrackOrderEvent(order));
     context.push('/client/map');
   }
 
   Future<void> _confirmCancel(
-    BuildContext context,
-    String uid,
-    String orderId,
-  ) async {
+      BuildContext context,
+      String uid,
+      String orderId,
+      ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -380,6 +377,9 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double deliveryFee =
+    (order.amount > subtotal) ? (order.amount - subtotal) : 0.0;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -393,6 +393,12 @@ class _SummaryCard extends StatelessWidget {
             context,
             context.l10n.ordersDetailItems,
             Money.format(subtotal),
+          ),
+          const SizedBox(height: 6),
+          _row(
+            context,
+            'Phí giao hàng',
+            Money.format(deliveryFee),
           ),
           const SizedBox(height: 6),
           _row(
@@ -437,11 +443,11 @@ class _SummaryCard extends StatelessWidget {
   }
 
   Widget _row(
-    BuildContext context,
-    String label,
-    String value, {
-    bool bold = false,
-  }) {
+      BuildContext context,
+      String label,
+      String value, {
+        bool bold = false,
+      }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[

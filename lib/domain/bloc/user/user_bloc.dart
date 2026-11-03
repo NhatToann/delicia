@@ -24,7 +24,7 @@ part 'user_state.dart';
 /// source of truth between them.
 class UserBloc extends Bloc<UserEvent, UserState> {
   UserBloc({required this._userService})
-    : super(const UserState()) {
+      : super(const UserState()) {
     on<OnLoadUserProfileEvent>(_onLoad);
     on<OnWatchUserProfileEvent>(_onWatch);
     on<OnUpdateUserProfileEvent>(_onUpdate);
@@ -37,9 +37,9 @@ class UserBloc extends Bloc<UserEvent, UserState> {
   StreamSubscription<User?>? _profileSub;
 
   Future<void> _onLoad(
-    OnLoadUserProfileEvent event,
-    Emitter<UserState> emit,
-  ) async {
+      OnLoadUserProfileEvent event,
+      Emitter<UserState> emit,
+      ) async {
     if (event.uid.isEmpty) {
       emit(
         state.copyWith(
@@ -81,9 +81,9 @@ class UserBloc extends Bloc<UserEvent, UserState> {
   }
 
   Future<void> _onWatch(
-    OnWatchUserProfileEvent event,
-    Emitter<UserState> emit,
-  ) async {
+      OnWatchUserProfileEvent event,
+      Emitter<UserState> emit,
+      ) async {
     if (event.uid.isEmpty) return;
     emit(state.copyWith(activeUid: event.uid, clearError: true));
     await _profileSub?.cancel();
@@ -92,23 +92,23 @@ class UserBloc extends Bloc<UserEvent, UserState> {
           .watchProfile(event.uid)
           .listen(
             (user) {
-              if (user == null) return;
-              add(OnLoadUserProfileEvent(uid: event.uid));
-            },
-            onError: (Object e) {
-              if (kDebugMode) debugPrint('User profile watch error: $e');
-            },
-            cancelOnError: false,
-          );
+          if (user == null) return;
+          add(OnLoadUserProfileEvent(uid: event.uid));
+        },
+        onError: (Object e) {
+          if (kDebugMode) debugPrint('User profile watch error: $e');
+        },
+        cancelOnError: false,
+      );
     } catch (_) {
       // Watch is best-effort; load still works without it.
     }
   }
 
   Future<void> _onUpdate(
-    OnUpdateUserProfileEvent event,
-    Emitter<UserState> emit,
-  ) async {
+      OnUpdateUserProfileEvent event,
+      Emitter<UserState> emit,
+      ) async {
     final uid = event.uid.isEmpty ? (state.activeUid ?? '') : event.uid;
     if (uid.isEmpty) {
       emit(state.copyWith(error: 'Sign in to update your profile.'));
@@ -121,6 +121,7 @@ class UserBloc extends Bloc<UserEvent, UserState> {
         firstName: event.firstName,
         lastName: event.lastName,
         phone: event.phone,
+        dateOfBirth: event.dateOfBirth,
       );
       emit(
         state.copyWith(
@@ -140,9 +141,9 @@ class UserBloc extends Bloc<UserEvent, UserState> {
   }
 
   Future<void> _onUploadAvatar(
-    OnUploadAvatarEvent event,
-    Emitter<UserState> emit,
-  ) async {
+      OnUploadAvatarEvent event,
+      Emitter<UserState> emit,
+      ) async {
     final uid = event.uid.isEmpty ? (state.activeUid ?? '') : event.uid;
     if (uid.isEmpty) {
       emit(state.copyWith(error: 'Sign in to change your avatar.'));
@@ -159,6 +160,7 @@ class UserBloc extends Bloc<UserEvent, UserState> {
           activeUid: uid,
           avatarBytes: bytes,
           clearAvatarBytes: bytes == null,
+          lastSavedAt: DateTime.now(), // Trigger lắng nghe ở UI
         ),
       );
     } on ClientUserServiceException catch (e) {
@@ -174,9 +176,9 @@ class UserBloc extends Bloc<UserEvent, UserState> {
   }
 
   Future<void> _onUploadAvatarBytes(
-    OnUploadAvatarBytesEvent event,
-    Emitter<UserState> emit,
-  ) async {
+      OnUploadAvatarBytesEvent event,
+      Emitter<UserState> emit,
+      ) async {
     final uid = event.uid.isEmpty ? (state.activeUid ?? '') : event.uid;
     if (uid.isEmpty) {
       emit(state.copyWith(error: 'Sign in to change your avatar.'));
@@ -197,6 +199,7 @@ class UserBloc extends Bloc<UserEvent, UserState> {
           activeUid: uid,
           avatarBytes: bytes,
           clearAvatarBytes: bytes == null,
+          lastSavedAt: DateTime.now(), // Trigger lắng nghe ở UI để cập nhật ngay lập tức avatar
         ),
       );
     } on ClientUserServiceException catch (e) {
