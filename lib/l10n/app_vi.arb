@@ -833,5 +833,44 @@
   "adminDeliveryActiveOrders": "Đang giao {count} đơn",
   "@adminDeliveryActiveOrders": {
     "placeholders": { "count": { "type": "int" } }
+  },
+
+  "adminDeliveryAdd": "Thêm tài xế",
+  "adminDeliveryAddTitle": "Thêm tài xế mới",
+  "adminDeliveryName": "Họ và tên",
+  "adminDeliveryPhone": "Số điện thoại",
+  "adminDeliveryEmail": "Email",
+  "adminDeliveryPassword": "Mật khẩu",
+  "adminDeliveryNameRequired": "Vui lòng nhập họ và tên tài xế",
+  "adminDeliveryPhoneRequired": "Vui lòng nhập số điện thoại",
+  "adminDeliveryPhoneInvalid": "Số điện thoại không hợp lệ",
+  "adminDeliveryEmailRequired": "Vui lòng nhập email",
+  "adminDeliveryEmailInvalid": "Email không hợp lệ",
+  "adminDeliveryPasswordRequired": "Vui lòng nhập mật khẩu",
+  "adminDeliveryPasswordTooShort": "Mật khẩu phải có ít nhất 6 ký tự",
+  "adminDeliveryAdded": "Đã thêm tài xế {name}",
+  "@adminDeliveryAdded": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "adminDeliveryDeleted": "Đã xoá tài xế {name}",
+  "@adminDeliveryDeleted": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "adminDeliveryDeleteTitle": "Xoá tài xế?",
+  "adminDeliveryDeleteMessage": "Tài xế \"{name}\" sẽ bị xoá vĩnh viễn. Các đơn hàng đã gán cho tài xế này vẫn được giữ.",
+  "@adminDeliveryDeleteMessage": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "adminDeliveryDeleteBlocked": "Tài xế đang giao {count} đơn. Vui lòng chuyển đơn sang tài xế khác trước khi xoá.",
+  "@adminDeliveryDeleteBlocked": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "errorDeliveryCreate": "Không thể tạo tài xế: {detail}",
+  "@errorDeliveryCreate": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorDeliveryDelete": "Không thể xoá tài xế: {detail}",
+  "@errorDeliveryDelete": {
+    "placeholders": { "detail": { "type": "String" } }
   }
 }

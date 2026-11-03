@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:bloc/bloc.dart';
@@ -7,6 +8,7 @@ import '../../models/category.dart';
 import '../../models/product.dart';
 import '../../services/admin_catalog_service.dart';
 import '../../services/app_failure.dart';
+import '../../services/catalog_watcher.dart';
 
 part 'product_event.dart';
 part 'product_state.dart';
@@ -15,12 +17,32 @@ part 'product_state.dart';
 ///
 /// Like [CategoryBloc], the whole catalogue is kept in memory and the
 /// search / category filter run client-side.
+///
+/// ## Why the bloc listens to the catalogue
+///
+/// The product **list** and the product **form** are separate screens, and
+/// each one owns its own bloc. A price edited in the form therefore wrote
+/// to Firebase while the list kept the copy it had fetched when it opened
+/// — so the list showed the old amount until the admin left the screen and
+/// came back.
+///
+/// The bloc now subscribes to the catalogue instead of fetching it once.
+/// Every write — the form's save, the status toggle, a delete — comes back
+/// through the same listener, so the list always shows what the database
+/// holds.
 class ProductBloc extends Bloc<ProductEvent, ProductState> {
   ProductBloc({
     required AdminCatalogService catalogService,
     ImageUploadService? imageUploadService,
   })  : _catalogService = catalogService,
         _imageUploadService = imageUploadService,
+        // The service doubles as the catalogue watcher when it can stream.
+        // The check is a runtime one because listening is an *optional*
+        // capability: the in-memory test fake does not implement it, and
+        // the bloc falls back to a plain fetch in that case.
+        _watcher = catalogService is CatalogWatcher
+            ? catalogService as CatalogWatcher
+            : null,
         super(const ProductState()) {
     on<ProductLoadRequested>(_onLoadRequested);
     on<ProductSearchChanged>(_onSearchChanged);
@@ -29,6 +51,8 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
     on<ProductUpdateRequested>(_onUpdateRequested);
     on<ProductDeleteRequested>(_onDeleteRequested);
     on<ProductStatusChanged>(_onStatusChanged);
+    on<_ProductsWatchUpdated>(_onWatchUpdated);
+    on<_ProductsWatchFailed>(_onWatchFailed);
   }
 
   final AdminCatalogService _catalogService;
@@ -37,14 +61,31 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
   /// saved without a picture.
   final ImageUploadService? _imageUploadService;
 
+  /// The live catalogue feed. Optional — the bloc falls back to a plain
+  /// fetch when the service cannot stream.
+  final CatalogWatcher? _watcher;
+
+  /// The live subscription to the catalogue.
+  StreamSubscription<List<Productsdb>>? _productsSub;
+
+  /// Whether the catalogue listener is already attached.
+  bool _watching = false;
+
+  @override
+  Future<void> close() async {
+    await _productsSub?.cancel();
+    _productsSub = null;
+    return super.close();
+  }
+
   Future<void> _onLoadRequested(
     ProductLoadRequested event,
     Emitter<ProductState> emit,
   ) async {
     emit(state.copyWith(isLoading: true, clearError: true));
     try {
-      final products = await _catalogService.getProducts();
       final categories = await _catalogService.getCategories();
+      final products = await _catalogService.getProducts();
       emit(
         state.copyWith(
           isLoading: false,
@@ -57,9 +98,65 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
           ),
         ),
       );
+      // The live listener is attached *after* the first read, so the
+      // screen shows its rows immediately instead of waiting for the
+      // stream's first emission. From here on every write — from this
+      // screen or from anywhere else — comes back through the listener,
+      // so the list can never drift from what the database holds.
+      _attachWatcher();
     } catch (e) {
       emit(state.copyWith(isLoading: false, error: asFailure(e)));
     }
+  }
+
+  /// Attaches the live catalogue listener.
+  ///
+  /// The listener delivers the current catalogue straight away, so there
+  /// is no separate "fetch then listen" step and no window in which the
+  /// list could show a stale row.
+  void _attachWatcher() {
+    final watcher = _watcher;
+    if (watcher == null || _watching) return;
+    _watching = true;
+    _productsSub = watcher.watchProducts().listen(
+      (products) {
+        if (isClosed) return;
+        add(_ProductsWatchUpdated(products));
+      },
+      onError: (Object e) {
+        if (isClosed) return;
+        add(_ProductsWatchFailed(e));
+      },
+    );
+  }
+
+  /// Applies a catalogue snapshot that arrived from the listener.
+  void _onWatchUpdated(
+    _ProductsWatchUpdated event,
+    Emitter<ProductState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        isLoading: false,
+        products: event.products,
+        visibleProducts: _filter(
+          event.products,
+          state.query,
+          state.categoryId,
+        ),
+      ),
+    );
+  }
+
+  /// Surfaces a listener failure.
+  ///
+  /// The error is informational — the list keeps showing the rows it
+  /// already has, so a dropped connection never blanks the screen.
+  void _onWatchFailed(
+    _ProductsWatchFailed event,
+    Emitter<ProductState> emit,
+  ) {
+    emit(state.copyWith(isLoading: false, error: asFailure(event.error)));
   }
 
   void _onSearchChanged(

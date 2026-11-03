@@ -23,6 +23,14 @@ class DeliveryState {
   /// `true` after a successful enable / disable.
   final bool actionSucceeded;
 
+  /// `true` after a driver was created — the screen shows the toast and
+  /// resets the form.
+  final bool driverCreated;
+
+  /// The name of the driver that was just deleted — `null` when nothing
+  /// was deleted yet. The screen names the driver in the toast.
+  final String? deletedDriverName;
+
   const DeliveryState({
     this.isLoading = false,
     this.isSubmitting = false,
@@ -31,6 +39,8 @@ class DeliveryState {
     this.visibleUsers = const <DeliveryUser>[],
     this.query = '',
     this.actionSucceeded = false,
+    this.driverCreated = false,
+    this.deletedDriverName,
   });
 
   DeliveryState copyWith({
@@ -43,6 +53,10 @@ class DeliveryState {
     String? query,
     bool? actionSucceeded,
     bool clearActionSucceeded = false,
+    bool? driverCreated,
+    bool clearDriverCreated = false,
+    String? deletedDriverName,
+    bool clearDeletedDriverName = false,
   }) {
     return DeliveryState(
       isLoading: isLoading ?? this.isLoading,
@@ -54,6 +68,12 @@ class DeliveryState {
       actionSucceeded: clearActionSucceeded
           ? false
           : (actionSucceeded ?? this.actionSucceeded),
+      driverCreated: clearDriverCreated
+          ? false
+          : (driverCreated ?? this.driverCreated),
+      deletedDriverName: clearDeletedDriverName
+          ? null
+          : (deletedDriverName ?? this.deletedDriverName),
     );
   }
 }

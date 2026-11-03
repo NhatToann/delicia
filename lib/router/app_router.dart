@@ -5,6 +5,7 @@ import '../presentation/admin/categories/category_form_screen.dart';
 import '../presentation/admin/categories/category_list_screen.dart';
 import '../presentation/admin/dashboard/dashboard_screen.dart';
 import '../presentation/admin/delivery/delivery_users_screen.dart';
+import '../presentation/admin/delivery/driver_form_screen.dart';
 import '../presentation/admin/orders/new_orders_screen.dart';
 import '../presentation/admin/orders/order_detail_admin_screen.dart';
 import '../presentation/admin/orders/orders_management_screen.dart';
@@ -175,6 +176,13 @@ class AppRouter {
       GoRoute(
         path: '/admin/delivery',
         builder: (_, __) => const AdminDeliveryUsersScreen(),
+      ),
+      // The "new driver" screen is declared *before* the list route is
+      // reachable — GoRouter matches the exact path first, so a separate
+      // entry is enough.
+      GoRoute(
+        path: '/admin/delivery/new',
+        builder: (_, __) => const AdminDriverFormScreen(),
       ),
 
       // ---- Placeholders (other members) -----------------------------------

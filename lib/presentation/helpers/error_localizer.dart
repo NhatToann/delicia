@@ -102,6 +102,10 @@ String localizeFailure(AppLocalizations l10n, AppFailure failure) {
       return l10n.errorOrdersUpdateStatus(detail ?? '');
     case AppFailureCodes.deliveryToggleEnabled:
       return l10n.errorDeliveryToggleEnabled(detail ?? '');
+    case AppFailureCodes.deliveryCreate:
+      return l10n.errorDeliveryCreate(detail ?? '');
+    case AppFailureCodes.deliveryDelete:
+      return l10n.errorDeliveryDelete(detail ?? '');
     case AppFailureCodes.dashboardLoad:
       return l10n.errorDashboardLoad(detail ?? '');
 

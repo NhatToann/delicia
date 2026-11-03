@@ -69,3 +69,21 @@ class ProductStatusChanged extends ProductEvent {
   final Productsdb product;
   final int status;
 }
+
+/// A catalogue snapshot that arrived through the live listener.
+///
+/// Internal to the bloc — the screen never dispatches it by hand.
+class _ProductsWatchUpdated extends ProductEvent {
+  const _ProductsWatchUpdated(this.products);
+
+  final List<Productsdb> products;
+}
+
+/// The live listener failed.
+///
+/// Internal to the bloc — the screen never dispatches it by hand.
+class _ProductsWatchFailed extends ProductEvent {
+  const _ProductsWatchFailed(this.error);
+
+  final Object error;
+}

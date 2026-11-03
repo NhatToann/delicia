@@ -7,6 +7,7 @@ import '../models/image_product.dart';
 import '../models/product.dart';
 import 'app_failure.dart';
 import 'catalog_service.dart';
+import 'catalog_watcher.dart';
 
 /// Firebase Realtime Database backed [CategoryService]. Production
 /// implementation — tests use a fake [CategoryService] instead.
@@ -95,7 +96,7 @@ class FirebaseCategoryService implements CategoryService {
 }
 
 /// Firebase Realtime Database backed [ProductsService].
-class FirebaseProductsService implements ProductsService {
+class FirebaseProductsService implements ProductsService, CatalogWatcher {
   FirebaseProductsService({FirebaseDatabase? database})
       : _database = database ?? _defaultDatabase();
 
@@ -279,6 +280,27 @@ class FirebaseProductsService implements ProductsService {
     } catch (e) {
       throw CatalogServiceException(AppFailureCodes.productDelete, '$e');
     }
+  }
+
+  /// Streams the whole catalogue, starting with the current contents.
+  ///
+  /// This is the listener that makes an admin's price change show up on
+  /// the customer's screen straight away. Every screen that shows a price
+  /// holds a copy of the catalogue in memory — without this stream that
+  /// copy stays frozen at whatever it was when the screen opened.
+  ///
+  /// `onValue` fires once when the listener attaches, so the first
+  /// emission is the current catalogue; the caller does not have to fetch
+  /// it separately.
+  @override
+  Stream<List<Productsdb>> watchProducts() {
+    final ref = _ref;
+    if (ref == null) {
+      return Stream<List<Productsdb>>.value(const <Productsdb>[]);
+    }
+    return ref.onValue.map(_parse).handleError((Object e) {
+      throw CatalogServiceException(AppFailureCodes.productsLoad, '$e');
+    });
   }
 
   List<Productsdb> _parse(DatabaseEvent event) {

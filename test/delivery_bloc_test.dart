@@ -8,6 +8,8 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:delicia/domain/bloc/delivery/delivery_bloc.dart';
 import 'package:delicia/domain/models/delivery_user.dart';
+import 'package:delicia/domain/services/admin_orders_service.dart';
+import 'package:delicia/domain/services/app_failure.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'helpers/fake_admin_services.dart';
@@ -125,6 +127,134 @@ void main() {
       wait: const Duration(milliseconds: 50),
       verify: (bloc) {
         expect(bloc.state.actionSucceeded, isFalse);
+        expect(bloc.state.error, isNotNull);
+      },
+    );
+  });
+
+  group('DeliveryBloc — create / delete', () {
+    blocTest<DeliveryBloc, DeliveryState>(
+      'creates a driver and reports success',
+      build: () => DeliveryBloc(deliveryUsersService: FakeDeliveryUsersService()),
+      act: (bloc) => bloc.add(
+        const DeliveryUserCreated(
+          email: 'tai.xe@delicia.vn',
+          password: '123456',
+          firstName: 'Nguyễn',
+          lastName: 'Tài xế',
+          phone: '0900000000',
+        ),
+      ),
+      wait: const Duration(milliseconds: 50),
+      verify: (bloc) {
+        expect(bloc.state.driverCreated, isTrue);
+        expect(bloc.state.isSubmitting, isFalse);
+        expect(bloc.state.error, isNull);
+      },
+    );
+
+    test('the service receives the new driver', () async {
+      final service = FakeDeliveryUsersService();
+      final bloc = DeliveryBloc(deliveryUsersService: service);
+
+      bloc.add(
+        const DeliveryUserCreated(
+          email: 'tai.xe@delicia.vn',
+          password: '123456',
+          firstName: 'Nguyễn',
+          lastName: 'Tài xế',
+          phone: '0900000000',
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(service.created.length, 1);
+      expect(service.created.first['email'], 'tai.xe@delicia.vn');
+      expect(service.created.first['firstName'], 'Nguyễn');
+      await bloc.close();
+    });
+
+    blocTest<DeliveryBloc, DeliveryState>(
+      'surfaces a create failure',
+      build: () {
+        final service = FakeDeliveryUsersService();
+        service.throwOnCreate = AdminOrdersServiceException(
+          AppFailureCodes.deliveryCreate,
+          'boom',
+        );
+        return DeliveryBloc(deliveryUsersService: service);
+      },
+      act: (bloc) => bloc.add(
+        const DeliveryUserCreated(
+          email: 'tai.xe@delicia.vn',
+          password: '123456',
+          firstName: 'Nguyễn',
+          lastName: 'Tài xế',
+        ),
+      ),
+      wait: const Duration(milliseconds: 50),
+      verify: (bloc) {
+        expect(bloc.state.driverCreated, isFalse);
+        expect(bloc.state.error, isNotNull);
+      },
+    );
+
+    blocTest<DeliveryBloc, DeliveryState>(
+      'deletes a driver and reports the name',
+      build: () => DeliveryBloc(deliveryUsersService: FakeDeliveryUsersService()),
+      act: (bloc) => bloc.add(
+        const DeliveryUserDeleted(
+          uid: 'd1',
+          email: 'tai.xe@delicia.vn',
+          name: 'Nguyễn Tài xế',
+        ),
+      ),
+      wait: const Duration(milliseconds: 50),
+      verify: (bloc) {
+        expect(bloc.state.deletedDriverName, 'Nguyễn Tài xế');
+        expect(bloc.state.isSubmitting, isFalse);
+        expect(bloc.state.error, isNull);
+      },
+    );
+
+    test('the service receives the deletion', () async {
+      final service = FakeDeliveryUsersService();
+      final bloc = DeliveryBloc(deliveryUsersService: service);
+
+      bloc.add(
+        const DeliveryUserDeleted(
+          uid: 'd1',
+          email: 'tai.xe@delicia.vn',
+          name: 'Nguyễn Tài xế',
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(service.deleted.length, 1);
+      expect(service.deleted.first['uid'], 'd1');
+      await bloc.close();
+    });
+
+    blocTest<DeliveryBloc, DeliveryState>(
+      'surfaces a delete failure',
+      build: () {
+        final service = FakeDeliveryUsersService();
+        service.throwOnDelete = AdminOrdersServiceException(
+          AppFailureCodes.deliveryDelete,
+          'boom',
+        );
+        return DeliveryBloc(deliveryUsersService: service);
+      },
+      act: (bloc) => bloc.add(
+        const DeliveryUserDeleted(
+          uid: 'd1',
+          email: 'tai.xe@delicia.vn',
+          name: 'Nguyễn Tài xế',
+        ),
+      ),
+      wait: const Duration(milliseconds: 50),
+      verify: (bloc) {
+        expect(bloc.state.deletedDriverName, isNull);
         expect(bloc.state.error, isNotNull);
       },
     );

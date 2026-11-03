@@ -9,6 +9,27 @@ class Environment {
   static const String firebaseDatabaseUrl =
       'https://delicia-60e0a-default-rtdb.asia-southeast1.firebasedatabase.app';
 
+  /// The Web API key of the Firebase project.
+  ///
+  /// A *client* API key is not a secret — it ships inside every build of
+  /// the app anyway (`google-services.json` → `google_api_key`) and only
+  /// identifies the project. It is needed here because the admin console
+  /// creates the delivery drivers through a **secondary Firebase app**,
+  /// which cannot read the API key from the default app on every
+  /// platform.
+  static const String firebaseApiKey = 'AIzaSyAQZB-sHa8T9QANnusCPrgmRxMSSGEsvk8';
+
+  /// The Firebase project id (used to build the options of the secondary
+  /// app that owns the driver accounts).
+  static const String firebaseProjectId = 'delicia-60e0a';
+
+  /// The messaging sender id of the Android app (also part of the
+  /// secondary app options).
+  static const String firebaseSenderId = '204797923977';
+
+  /// The Android app id of the default Firebase app.
+  static const String firebaseAppId = '1:204797923977:android:c0abbb80396d9fd3b76c58';
+
   /// Convenience: products, categories and orders are all stored under
   /// `delicia/...` to keep the Realtime DB tidy. Override if your team has a
   /// different naming convention.

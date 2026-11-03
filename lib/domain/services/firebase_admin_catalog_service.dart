@@ -9,6 +9,7 @@ import '../models/category.dart';
 import '../models/product.dart';
 import 'admin_catalog_service.dart';
 import 'app_failure.dart';
+import 'catalog_watcher.dart';
 
 /// Firebase Realtime Database backed [AdminCatalogService] (UC-08).
 ///
@@ -22,7 +23,7 @@ import 'app_failure.dart';
 /// `update()` on a `DatabaseReference` is safe (it merges the children
 /// you name), so the implementation below uses `update()` for partial
 /// writes and `set()` for a freshly pushed row.
-class FirebaseAdminCatalogService implements AdminCatalogService {
+class FirebaseAdminCatalogService implements AdminCatalogService, CatalogWatcher {
   FirebaseAdminCatalogService({FirebaseDatabase? database})
       : _database = database ?? _defaultDatabase();
 
@@ -192,6 +193,39 @@ class FirebaseAdminCatalogService implements AdminCatalogService {
       if (e is AdminServiceException) rethrow;
       throw AdminServiceException(AppFailureCodes.productDelete, '$e');
     }
+  }
+
+  /// Streams the whole catalogue, starting with the current contents.
+  ///
+  /// The admin console needs this for the same reason the customer app
+  /// does: the product **list** and the product **form** each hold their
+  /// own copy of the catalogue, so a price edited in the form left the
+  /// list showing the old amount. With a listener the list follows the
+  /// write immediately.
+  @override
+  Stream<List<Productsdb>> watchProducts() {
+    final ref = _productsRef;
+    if (ref == null) {
+      return Stream<List<Productsdb>>.value(const <Productsdb>[]);
+    }
+    return ref.onValue.map((event) {
+      final value = event.snapshot.value;
+      if (value is! Map) return const <Productsdb>[];
+      final out = <Productsdb>[];
+      value.forEach((key, entry) {
+        if (entry is Map) {
+          out.add(
+            Productsdb.fromMap(
+              key.toString(),
+              Map<dynamic, dynamic>.from(entry),
+            ),
+          );
+        }
+      });
+      return out;
+    }).handleError((Object e) {
+      throw AdminServiceException(AppFailureCodes.productsLoad, '$e');
+    });
   }
 
   List<Category> _parseCategories(DatabaseEvent event) {

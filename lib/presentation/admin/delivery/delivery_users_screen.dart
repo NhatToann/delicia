@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../domain/bloc/delivery/delivery_bloc.dart';
 import '../../../domain/models/delivery_user.dart';
@@ -48,6 +49,13 @@ class _AdminDeliveryUsersView extends StatelessWidget {
           context.l10n.adminDeliveryTitle,
           style: FraveText.semiBold(20, color: ColorsFrave.onOrange),
         ),
+        actions: <Widget>[
+          IconButton(
+            onPressed: () => context.push('/admin/delivery/new'),
+            icon: const Icon(Icons.person_add_alt_1_rounded),
+            tooltip: context.l10n.adminDeliveryAdd,
+          ),
+        ],
       ),
       body: Column(
         children: <Widget>[
@@ -55,9 +63,20 @@ class _AdminDeliveryUsersView extends StatelessWidget {
           Expanded(
             child: BlocConsumer<DeliveryBloc, DeliveryState>(
               listenWhen: (previous, current) =>
-                  previous.error != current.error && current.error != null,
+                  previous.error != current.error && current.error != null ||
+                  previous.deletedDriverName != current.deletedDriverName,
               listener: (context, state) {
-                errorMessageSnack(context, state.error!);
+                if (state.error != null) {
+                  errorMessageSnack(context, state.error!);
+                  return;
+                }
+                final deleted = state.deletedDriverName;
+                if (deleted != null) {
+                  successSnack(
+                    context,
+                    context.l10n.adminDeliveryDeleted(deleted),
+                  );
+                }
               },
               builder: (context, state) {
                 if (state.isLoading && state.users.isEmpty) {
@@ -206,7 +225,72 @@ class _DeliveryUserTile extends StatelessWidget {
                   );
             },
           ),
+          IconButton(
+            onPressed: () => _confirmDelete(context),
+            icon: const Icon(
+              Icons.delete_outline_rounded,
+              size: 20,
+              color: ColorsFrave.errorColor,
+            ),
+            tooltip: context.l10n.actionDelete,
+          ),
         ],
+      ),
+    );
+  }
+
+  /// Asks for a confirmation and then removes the driver for good.
+  Future<void> _confirmDelete(BuildContext context) async {
+    final l10n = context.l10n;
+    final bloc = context.read<DeliveryBloc>();
+
+    // A driver that is still carrying orders must not vanish — the
+    // orders would point at an account that does not exist any more.
+    if (user.activeOrders > 0) {
+      errorTextSnack(
+        context,
+        l10n.adminDeliveryDeleteBlocked(user.activeOrders),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: ColorsFrave.surfaceColor,
+        title: Text(
+          l10n.adminDeliveryDeleteTitle,
+          style: FraveText.semiBold(18, color: ColorsFrave.ink),
+        ),
+        content: Text(
+          l10n.adminDeliveryDeleteMessage(user.name),
+          style: FraveText.regular(14, color: ColorsFrave.greyText),
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(
+              l10n.actionCancel,
+              style: FraveText.medium(14, color: ColorsFrave.greyText),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(
+              l10n.actionDelete,
+              style: FraveText.medium(14, color: ColorsFrave.errorColor),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    bloc.add(
+      DeliveryUserDeleted(
+        uid: user.uid,
+        email: user.email,
+        name: user.name,
       ),
     );
   }

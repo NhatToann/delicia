@@ -60,6 +60,8 @@ class AppFailureCodes {
   static const String ordersAssignDelivery = 'orders.assignDelivery';
   static const String ordersUpdateStatus = 'orders.updateStatus';
   static const String deliveryToggleEnabled = 'delivery.toggleEnabled';
+  static const String deliveryCreate = 'delivery.create';
+  static const String deliveryDelete = 'delivery.delete';
   static const String dashboardLoad = 'dashboard.load';
 
   // ---- Payment -------------------------------------------------------------

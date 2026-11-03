@@ -8,6 +8,7 @@ import '../../models/image_product.dart';
 import '../../models/product.dart';
 import '../../services/app_failure.dart';
 import '../../services/catalog_service.dart';
+import '../../services/catalog_watcher.dart';
 import '../../utils/product_search.dart';
 
 part 'products_event.dart';
@@ -19,12 +20,31 @@ part 'products_state.dart';
 /// State machine:
 ///   ProductsState(...)        → holds the lists + flags
 ///   FailureProductsState(err) → caught error
+///
+/// ## Why the catalogue is watched, not just fetched
+///
+/// The customer app and the admin console share one database. When the
+/// admin corrected a dish's price, the customer screens kept showing the
+/// old amount — every screen had fetched the catalogue once, when it
+/// opened, and nothing ever told it the row had changed.
+///
+/// The bloc therefore subscribes to the catalogue. Every screen that shows
+/// a price — the home rails, the search grid, the detail page — reads it
+/// from the same state, so a price change reaches all of them at once.
 class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
   ProductsBloc({
     required CategoryService categoryService,
     required ProductsService productsService,
   })  : _categoryService = categoryService,
         _productsService = productsService,
+        // The service doubles as the catalogue watcher when it can stream.
+        // Listening is an *optional* capability, so the check is a runtime
+        // one: the production Firebase service implements it (the app
+        // listens), the in-memory test fakes do not (the tests keep their
+        // deterministic, one-shot behaviour).
+        _watcher = productsService is CatalogWatcher
+            ? productsService as CatalogWatcher
+            : null,
         super(const ProductsState()) {
     on<OnGetCategoriesEvent>(_onGetCategories);
     on<OnGetTopProductsEvent>(_onGetTopProducts);
@@ -42,10 +62,111 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
     on<OnGetHomeFeedEvent>(_onGetHomeFeed);
     on<OnSortHomeFeedEvent>(_onSortHomeFeed);
     on<OnToggleFavoriteEvent>(_onToggleFavorite);
+    on<_CatalogueUpdated>(_onCatalogueUpdated);
+    on<_CatalogueFailed>(_onCatalogueFailed);
   }
 
   final CategoryService _categoryService;
   final ProductsService _productsService;
+
+  /// The live catalogue feed. Optional — without it the bloc falls back to
+  /// one-shot reads.
+  final CatalogWatcher? _watcher;
+
+  /// The live subscription to the catalogue.
+  StreamSubscription<List<Productsdb>>? _catalogueSub;
+
+  /// Whether the catalogue listener is already attached.
+  ///
+  /// The home screen, the search screen and the detail screen all ask for
+  /// the catalogue; without this flag each request would tear the listener
+  /// down and attach a new one.
+  bool _watching = false;
+
+  @override
+  Future<void> close() async {
+    await _catalogueSub?.cancel();
+    _catalogueSub = null;
+    return super.close();
+  }
+
+  /// Attaches the live catalogue listener.
+  ///
+  /// Firebase's `onValue` fires once when the listener attaches, so the
+  /// current catalogue arrives without a separate fetch. From then on every
+  /// write — from the admin console or anywhere else — comes back through
+  /// the same stream and the screens re-render.
+  Future<void> _watchCatalogue() async {
+    final watcher = _watcher;
+    if (watcher == null || _watching) return;
+    _watching = true;
+    await _catalogueSub?.cancel();
+    _catalogueSub = watcher.watchProducts().listen(
+      (products) {
+        if (isClosed) return;
+        add(_CatalogueUpdated(products));
+      },
+      onError: (Object e) {
+        // A dropped listener must never take the screen down — the rows
+        // already in state stay on screen.
+        if (isClosed) return;
+        add(_CatalogueFailed(e));
+      },
+    );
+  }
+
+  /// Applies a catalogue snapshot that arrived through the listener.
+  ///
+  /// Every list the state holds is re-derived from the new rows, so the
+  /// home rails, the search grid and the open detail page all show the
+  /// new price — including the dish the customer is currently looking at.
+  void _onCatalogueUpdated(
+    _CatalogueUpdated event,
+    Emitter<ProductsState> emit,
+  ) {
+    final products = event.products;
+    final active = products.where((p) => p.isActive).toList();
+
+    // The open detail page keeps its dish, but re-read from the fresh
+    // snapshot so the price under the customer's finger is the new one.
+    final current = state.currentProduct;
+    Productsdb? refreshedCurrent = current;
+    if (current != null) {
+      for (final product in products) {
+        if (product.id == current.id) {
+          refreshedCurrent = product;
+          break;
+        }
+      }
+    }
+
+    emit(
+      state.copyWith(
+        allProducts: products,
+        topProducts: products.where((p) => p.isActive).toList(),
+        searchResults: ProductSearch.filter(
+          products,
+          state.searchQuery,
+          categoryId: state.selectedCategoryId,
+        ),
+        recommendedProducts: _rank(active, HomeSort.recommended),
+        bestSellers: _rank(active, HomeSort.bestSelling),
+        nearbyProducts: _rank(active, state.homeSort),
+        currentProduct: refreshedCurrent,
+      ),
+    );
+  }
+
+  /// Surfaces a listener failure.
+  ///
+  /// The error is informational — the rows already in state stay on
+  /// screen, so a dropped connection never blanks the screen.
+  void _onCatalogueFailed(
+    _CatalogueFailed event,
+    Emitter<ProductsState> emit,
+  ) {
+    emit(state.copyWith(error: asFailure(event.error)));
+  }
 
   Future<void> _onGetCategories(
     OnGetCategoriesEvent event,
@@ -69,6 +190,7 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
   ) async {
     emit(state.copyWith(isLoadingTopProducts: true, error: null));
     try {
+      await _watchCatalogue();
       final products = await _productsService.getTopProducts();
       emit(state.copyWith(topProducts: products, isLoadingTopProducts: false));
     } catch (e) {
@@ -85,6 +207,7 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
   ) async {
     emit(state.copyWith(isLoadingSearch: true, error: null));
     try {
+      await _watchCatalogue();
       final products = await _productsService.getAllProducts();
       // The visible list follows the same rule as the search: an active
       // query narrows it, an active category narrows it, and with neither
@@ -113,6 +236,10 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
   ) async {
     emit(state.copyWith(isLoadingDetails: true, error: null));
     try {
+      // The listener is attached here as well, so the dish the customer
+      // is looking at follows a price change made in the admin console
+      // even when the detail screen was opened directly.
+      await _watchCatalogue();
       final product = await _productsService.getProduct(event.productId);
       if (product == null) {
         emit(state.copyWith(
@@ -253,6 +380,7 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
       error: null,
     ));
     try {
+      await _watchCatalogue();
       final source = state.allProducts.isNotEmpty
           ? state.allProducts
           : await _productsService.getAllProducts();
@@ -332,6 +460,7 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
   ) async {
     emit(state.copyWith(isLoadingHomeFeed: true, error: null));
     try {
+      await _watchCatalogue();
       final products = await _productsService.getTopProducts(limit: 60);
       final active = products.where((p) => p.isActive).toList();
       emit(state.copyWith(

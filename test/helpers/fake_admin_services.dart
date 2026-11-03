@@ -251,7 +251,19 @@ class FakeDeliveryUsersService implements DeliveryUsersService {
   /// The enable / disable calls the admin made.
   final List<Map<String, dynamic>> toggles = <Map<String, dynamic>>[];
 
+  /// The drivers the admin created.
+  final List<Map<String, dynamic>> created = <Map<String, dynamic>>[];
+
+  /// The drivers the admin deleted.
+  final List<Map<String, dynamic>> deleted = <Map<String, dynamic>>[];
+
   bool throwOnToggle = false;
+
+  /// When set, every create throws.
+  Object? throwOnCreate;
+
+  /// When set, every delete throws.
+  Object? throwOnDelete;
 
   /// Pushes a new batch of drivers into the stream.
   void emit(List<DeliveryUser> users) => _controller.add(users);
@@ -288,6 +300,37 @@ class FakeDeliveryUsersService implements DeliveryUsersService {
     toggles.add(<String, dynamic>{'uid': uid, 'enabled': enabled});
     final index = _users.indexWhere((u) => u.uid == uid);
     if (index >= 0) _users[index] = _users[index].copyWith(isEnabled: enabled);
+  }
+
+  @override
+  Future<String> createDeliveryDriver({
+    required String email,
+    required String password,
+    required String firstName,
+    required String lastName,
+    String? phone,
+  }) async {
+    final failure = throwOnCreate;
+    if (failure != null) throw failure;
+    created.add(<String, dynamic>{
+      'email': email,
+      'password': password,
+      'firstName': firstName,
+      'lastName': lastName,
+      'phone': phone ?? '',
+    });
+    return 'driver-${created.length}';
+  }
+
+  @override
+  Future<void> deleteDeliveryDriver({
+    required String uid,
+    required String email,
+  }) async {
+    final failure = throwOnDelete;
+    if (failure != null) throw failure;
+    deleted.add(<String, dynamic>{'uid': uid, 'email': email});
+    _users.removeWhere((u) => u.uid == uid);
   }
 }
 

@@ -42,6 +42,26 @@ abstract class DeliveryUsersService {
     required String uid,
     required bool enabled,
   });
+
+  /// Creates a brand-new driver account: a Firebase Auth user plus the
+  /// `users/{uid}` profile that carries `rolId == 3`.
+  ///
+  /// Returns the uid of the account that was created.
+  Future<String> createDeliveryDriver({
+    required String email,
+    required String password,
+    required String firstName,
+    required String lastName,
+    String? phone,
+  });
+
+  /// Removes a driver: the profile node is deleted from the database and
+  /// the matching Firebase Auth account is removed as well, so the person
+  /// can no longer sign in.
+  Future<void> deleteDeliveryDriver({
+    required String uid,
+    required String email,
+  });
 }
 
 /// Admin-side customer-account operations (UC-07).

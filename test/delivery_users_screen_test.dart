@@ -102,4 +102,42 @@ void main() {
 
     expect(find.text('Chưa có tài xế nào'), findsOneWidget);
   });
+
+  testWidgets('the delete button asks for a confirmation', (
+    WidgetTester tester,
+  ) async {
+    final service = FakeDeliveryUsersService(
+      users: <DeliveryUser>[_driver(uid: 'd1')],
+    );
+
+    await tester.pumpWidget(_harness(service));
+    await settleAdmin(tester);
+
+    await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+    await settleAdmin(tester);
+
+    expect(find.text('Xoá tài xế?'), findsOneWidget);
+    expect(service.deleted, isEmpty);
+  });
+
+  testWidgets('deletes the driver after the confirmation', (
+    WidgetTester tester,
+  ) async {
+    final service = FakeDeliveryUsersService(
+      users: <DeliveryUser>[_driver(uid: 'd1')],
+    );
+
+    await tester.pumpWidget(_harness(service));
+    await settleAdmin(tester);
+
+    await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+    await settleAdmin(tester);
+
+    // The dialog has a "Xoá" action next to the "Huỷ" one.
+    await tester.tap(find.widgetWithText(TextButton, 'Xoá'));
+    await settleAdmin(tester);
+
+    expect(service.deleted.length, 1);
+    expect(service.deleted.first['uid'], 'd1');
+  });
 }

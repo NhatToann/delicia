@@ -23,6 +23,8 @@ class DeliveryBloc extends Bloc<DeliveryEvent, DeliveryState> {
     on<DeliveryUsersLoadRequested>(_onLoadRequested);
     on<DeliveryUserSearchChanged>(_onSearchChanged);
     on<DeliveryUserEnabledChanged>(_onEnabledChanged);
+    on<DeliveryUserCreated>(_onCreated);
+    on<DeliveryUserDeleted>(_onDeleted);
     on<_DeliveryUsersUpdated>(_onUsersUpdated);
     on<_DeliveryUsersFailed>(_onUsersFailed);
   }
@@ -99,12 +101,76 @@ class DeliveryBloc extends Bloc<DeliveryEvent, DeliveryState> {
       ),
     );
   }
-
   void _onUsersFailed(
     _DeliveryUsersFailed event,
     Emitter<DeliveryState> emit,
   ) {
     emit(state.copyWith(isLoading: false, error: asFailure(event.error)));
+  }
+
+  /// Creates a driver account.
+  ///
+  /// The list itself is refreshed by the realtime feed — the new profile
+  /// shows up on its own — so the bloc only reports the outcome.
+  Future<void> _onCreated(
+    DeliveryUserCreated event,
+    Emitter<DeliveryState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        isSubmitting: true,
+        clearError: true,
+        clearDriverCreated: true,
+        clearDeletedDriverName: true,
+      ),
+    );
+    try {
+      await _deliveryUsersService.createDeliveryDriver(
+        email: event.email,
+        password: event.password,
+        firstName: event.firstName,
+        lastName: event.lastName,
+        phone: event.phone,
+      );
+      emit(
+        state.copyWith(
+          isSubmitting: false,
+          driverCreated: true,
+          clearDriverCreated: false,
+        ),
+      );
+    } catch (e) {
+      emit(state.copyWith(isSubmitting: false, error: asFailure(e)));
+    }
+  }
+
+  /// Deletes a driver account.
+  Future<void> _onDeleted(
+    DeliveryUserDeleted event,
+    Emitter<DeliveryState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        isSubmitting: true,
+        clearError: true,
+        clearDriverCreated: true,
+        clearDeletedDriverName: true,
+      ),
+    );
+    try {
+      await _deliveryUsersService.deleteDeliveryDriver(
+        uid: event.uid,
+        email: event.email,
+      );
+      emit(
+        state.copyWith(
+          isSubmitting: false,
+          deletedDriverName: event.name,
+        ),
+      );
+    } catch (e) {
+      emit(state.copyWith(isSubmitting: false, error: asFailure(e)));
+    }
   }
 
   /// Case-insensitive name / phone / email filter.
