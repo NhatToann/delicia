@@ -185,8 +185,10 @@ void main() {
     });
 
     test('converts the app amount into VND', () {
-      expect(PayOsGateway.toVnd(2.0), 50000);
-      expect(PayOsGateway.toVnd(1.5), 37500);
+      // The app already works in whole dong — payOS only needs the amount
+      // rounded to an integer, there is no currency conversion.
+      expect(PayOsGateway.toVnd(75000), 75000);
+      expect(PayOsGateway.toVnd(75000.4), 75000);
     });
   });
 }

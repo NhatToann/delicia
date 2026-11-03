@@ -2,13 +2,13 @@
 ///
 /// The Realtime Database has no aggregation, so the seven-day series is
 /// derived client-side from the raw order list. [revenue] is kept in the
-/// same unit as `OrderRecord.amount` (USD) — the presentation layer
-/// converts it to VND through `Money.format`.
+/// same unit as `OrderRecord.amount` (VND) — the presentation layer
+/// renders it with `Money.format`.
 class DailyStat {
   /// The day this bucket covers, normalised to midnight.
   final DateTime date;
 
-  /// Total revenue of the day, in USD.
+  /// Total revenue of the day, in VND.
   final double revenue;
 
   /// Number of orders placed on that day.

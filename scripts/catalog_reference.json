@@ -32,8 +32,8 @@
       "nameProduct": "Burger Nấm Truffle Đặc Trưng",
       "nameProductEn": "Signature Truffle Burger",
       "description": "Thịt trộn Wagyu, cheddar lão hóa, sốt aioli nấm truffle, bánh mì brioche.",
-      "price": 12.9,
-      "oldPrice": 15.9,
+      "price": 75000,
+      "oldPrice": 90000,
       "status": 1,
       "category": "Bánh Burger",
       "categoryId": "cat_burger",
@@ -43,14 +43,15 @@
       "sold": 3400,
       "isRecommended": true,
       "isBestSeller": true,
-      "picture": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=900&q=85"
+      "picture": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=900&q=85",
+      "currency": "VND"
     },
     "p02": {
       "nameProduct": "Pizza Gà Cay",
       "nameProductEn": "Spicy Chicken Pizza",
       "description": "Đế sourdough, pepperoni, mozzarella Buffalo, mật ong cay.",
-      "price": 14.5,
-      "oldPrice": 17.0,
+      "price": 85000,
+      "oldPrice": 99000,
       "status": 1,
       "category": "Pizza",
       "categoryId": "cat_pizza",
@@ -60,13 +61,14 @@
       "sold": 2900,
       "isRecommended": true,
       "isBestSeller": true,
-      "picture": "https://images.unsplash.com/photo-1692737580547-b45bb4a02356?auto=format&fit=crop&w=900&q=85"
+      "picture": "https://images.unsplash.com/photo-1692737580547-b45bb4a02356?auto=format&fit=crop&w=900&q=85",
+      "currency": "VND"
     },
     "p03": {
       "nameProduct": "Bowl Poke Cá Hồi Miso",
       "nameProductEn": "Miso Salmon Poke Bowl",
       "description": "Cơm sushi, cá hồi, đậu edamame, bơ, sốt miso.",
-      "price": 15.8,
+      "price": 79000,
       "oldPrice": null,
       "status": 1,
       "category": "Món Lành Mạnh",
@@ -77,14 +79,15 @@
       "sold": 1750,
       "isRecommended": true,
       "isBestSeller": false,
-      "picture": "https://images.unsplash.com/photo-1604259596863-57153177d40b?auto=format&fit=crop&w=900&q=85"
+      "picture": "https://images.unsplash.com/photo-1604259596863-57153177d40b?auto=format&fit=crop&w=900&q=85",
+      "currency": "VND"
     },
     "p04": {
       "nameProduct": "Gà Chiên Giòn",
       "nameProductEn": "Crispy Fried Chicken",
       "description": "Đùi gà ngâm bơ sữa, salad bắp cải, sốt comeback cay.",
-      "price": 11.4,
-      "oldPrice": 13.9,
+      "price": 45000,
+      "oldPrice": 54000,
       "status": 1,
       "category": "Món Gà",
       "categoryId": "cat_chicken",
@@ -94,13 +97,14 @@
       "sold": 3200,
       "isRecommended": true,
       "isBestSeller": true,
-      "picture": "https://images.unsplash.com/photo-1730900737724-5b752e1ed3dd?auto=format&fit=crop&w=900&q=85"
+      "picture": "https://images.unsplash.com/photo-1730900737724-5b752e1ed3dd?auto=format&fit=crop&w=900&q=85",
+      "currency": "VND"
     },
     "p05": {
       "nameProduct": "Bowlpoke Gà Teriyaki",
       "nameProductEn": "Teriyaki Chicken Poke Bowl",
       "description": "Cơm sushi, gà teriyaki, đậu edamame, bơ, hạt mè.",
-      "price": 13.2,
+      "price": 65000,
       "oldPrice": null,
       "status": 1,
       "category": "Món Á",
@@ -111,14 +115,15 @@
       "sold": 2200,
       "isRecommended": true,
       "isBestSeller": true,
-      "picture": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=900&q=85"
+      "picture": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=900&q=85",
+      "currency": "VND"
     },
     "p06": {
       "nameProduct": "Latte Caramel Muối",
       "nameProductEn": "Salted Caramel Latte",
       "description": "Hai shot espresso, caramel muối, lớp bọt sữa yếm mạch.",
-      "price": 4.9,
-      "oldPrice": 5.9,
+      "price": 35000,
+      "oldPrice": 42000,
       "status": 1,
       "category": "Đồ Uống",
       "categoryId": "cat_drink",
@@ -128,13 +133,14 @@
       "sold": 5100,
       "isRecommended": true,
       "isBestSeller": true,
-      "picture": "https://images.unsplash.com/photo-1570968915860-54d5c301fa9f?auto=format&fit=crop&w=900&q=85"
+      "picture": "https://images.unsplash.com/photo-1570968915860-54d5c301fa9f?auto=format&fit=crop&w=900&q=85",
+      "currency": "VND"
     },
     "p07": {
       "nameProduct": "Bánh Cheesecake Matcha",
       "nameProductEn": "Matcha Cheesecake",
       "description": "Matcha Uji, bánh kem kiểu Nhật, kem yuzu.",
-      "price": 6.5,
+      "price": 45000,
       "oldPrice": null,
       "status": 1,
       "category": "Tráng Miệng",
@@ -145,14 +151,15 @@
       "sold": 1400,
       "isRecommended": true,
       "isBestSeller": false,
-      "picture": "https://matchado.co.uk/cdn/shop/files/376A8794-Edit_trim.jpg?v=1755010310&width=900"
+      "picture": "https://matchado.co.uk/cdn/shop/files/376A8794-Edit_trim.jpg?v=1755010310&width=900",
+      "currency": "VND"
     },
     "p08": {
       "nameProduct": "Cà Phê Đá Việt",
       "nameProductEn": "Vietnamese Iced Coffee",
       "description": "Cà phê Robusta, sữa đặc, pha nhỏ giọt chậm.",
-      "price": 3.8,
-      "oldPrice": 4.8,
+      "price": 15000,
+      "oldPrice": 18000,
       "status": 1,
       "category": "Đồ Uống",
       "categoryId": "cat_drink",
@@ -162,13 +169,14 @@
       "sold": 4300,
       "isRecommended": false,
       "isBestSeller": true,
-      "picture": "https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=900&q=85"
+      "picture": "https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=900&q=85",
+      "currency": "VND"
     },
     "p09": {
       "nameProduct": "Salad Nữ Thần Xanh",
       "nameProductEn": "Green Goddess Salad",
       "description": "Cải baby, bơ, quinoa, sốt gia vị thảo mộc.",
-      "price": 10.5,
+      "price": 65000,
       "oldPrice": null,
       "status": 1,
       "category": "Món Lành Mạnh",
@@ -179,14 +187,15 @@
       "sold": 940,
       "isRecommended": false,
       "isBestSeller": false,
-      "picture": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=900&q=85"
+      "picture": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=900&q=85",
+      "currency": "VND"
     },
     "p10": {
       "nameProduct": "Bánh Chocolate Tan Chảy",
       "nameProductEn": "Molten Chocolate Cake",
       "description": "Gánache 70%, kem vani, muối biển.",
-      "price": 7.2,
-      "oldPrice": 8.5,
+      "price": 39000,
+      "oldPrice": 49000,
       "status": 1,
       "category": "Tráng Miệng",
       "categoryId": "cat_dessert",
@@ -196,13 +205,14 @@
       "sold": 2600,
       "isRecommended": true,
       "isBestSeller": true,
-      "picture": "https://images.unsplash.com/photo-1617305855058-336d24456869?auto=format&fit=crop&w=900&q=85"
+      "picture": "https://images.unsplash.com/photo-1617305855058-336d24456869?auto=format&fit=crop&w=900&q=85",
+      "currency": "VND"
     },
     "p11": {
       "nameProduct": "Burger Phô Mai Tan Chảy",
       "nameProductEn": "Melted Cheddar Burger",
       "description": "Thịt bò nướng, cheddar tan chảy, rau tươi và bánh brioche.",
-      "price": 8.9,
+      "price": 49000,
       "oldPrice": null,
       "status": 1,
       "category": "Bánh Burger",
@@ -213,14 +223,15 @@
       "sold": 1800,
       "isRecommended": true,
       "isBestSeller": true,
-      "picture": "https://images.unsplash.com/photo-1598182198871-d3f4ab4fd181?auto=format&fit=crop&w=900&q=85"
+      "picture": "https://images.unsplash.com/photo-1598182198871-d3f4ab4fd181?auto=format&fit=crop&w=900&q=85",
+      "currency": "VND"
     },
     "p12": {
       "nameProduct": "Burger BBQ Thịt Xông Khói",
       "nameProductEn": "Smoky Bacon BBQ Burger",
       "description": "Thịt bò nướng, thịt xông khói giòn, phô mai cheddar và sốt BBQ.",
-      "price": 10.9,
-      "oldPrice": 11.9,
+      "price": 59000,
+      "oldPrice": 71000,
       "status": 1,
       "category": "Bánh Burger",
       "categoryId": "cat_burger",
@@ -230,13 +241,14 @@
       "sold": 1600,
       "isRecommended": true,
       "isBestSeller": true,
-      "picture": "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=900&q=85"
+      "picture": "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=900&q=85",
+      "currency": "VND"
     },
     "p13": {
       "nameProduct": "Burger Nấm Phô Mai",
       "nameProductEn": "Mushroom Swiss Burger",
       "description": "Nấm áp chảo, phô mai Thụy Sĩ, bò nướng và sốt tiêu đen.",
-      "price": 9.8,
+      "price": 49000,
       "oldPrice": null,
       "status": 1,
       "category": "Bánh Burger",
@@ -247,13 +259,14 @@
       "sold": 1200,
       "isRecommended": true,
       "isBestSeller": true,
-      "picture": "https://images.unsplash.com/photo-1561758033-d89a9ad46330?auto=format&fit=crop&w=900&q=85"
+      "picture": "https://images.unsplash.com/photo-1561758033-d89a9ad46330?auto=format&fit=crop&w=900&q=85",
+      "currency": "VND"
     },
     "p14": {
       "nameProduct": "Burger Gà Cay Giòn",
       "nameProductEn": "Crispy Spicy Chicken Burger",
       "description": "Gà giòn cay, xà lách, dưa chua và sốt mayonnaise cay.",
-      "price": 8.5,
+      "price": 39000,
       "oldPrice": null,
       "status": 1,
       "category": "Bánh Burger",
@@ -264,13 +277,14 @@
       "sold": 1050,
       "isRecommended": true,
       "isBestSeller": false,
-      "picture": "https://images.unsplash.com/photo-1671522635501-f03491b207e6?auto=format&fit=crop&w=900&q=85"
+      "picture": "https://images.unsplash.com/photo-1671522635501-f03491b207e6?auto=format&fit=crop&w=900&q=85",
+      "currency": "VND"
     },
     "p15": {
       "nameProduct": "Pizza Margherita",
       "nameProductEn": "Margherita Pizza",
       "description": "Cà chua chín, mozzarella tươi, húng quế và dầu ô liu.",
-      "price": 11.5,
+      "price": 79000,
       "oldPrice": null,
       "status": 1,
       "category": "Pizza",
@@ -281,14 +295,15 @@
       "sold": 2100,
       "isRecommended": true,
       "isBestSeller": true,
-      "picture": "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=900&q=85"
+      "picture": "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=900&q=85",
+      "currency": "VND"
     },
     "p16": {
       "nameProduct": "Pizza Bốn Phô Mai",
       "nameProductEn": "Four Cheese Pizza",
       "description": "Mozzarella, parmesan, gorgonzola và ricotta trên đế nướng lò.",
-      "price": 13.2,
-      "oldPrice": 14.5,
+      "price": 89000,
+      "oldPrice": 99000,
       "status": 1,
       "category": "Pizza",
       "categoryId": "cat_pizza",
@@ -298,13 +313,14 @@
       "sold": 1450,
       "isRecommended": true,
       "isBestSeller": true,
-      "picture": "https://images.unsplash.com/photo-1579751626657-72bc17010498?auto=format&fit=crop&w=900&q=85"
+      "picture": "https://images.unsplash.com/photo-1579751626657-72bc17010498?auto=format&fit=crop&w=900&q=85",
+      "currency": "VND"
     },
     "p17": {
       "nameProduct": "Pizza Rau Củ Địa Trung Hải",
       "nameProductEn": "Mediterranean Veggie Pizza",
       "description": "Ớt chuông, nấm, ô liu, cà chua bi và phô mai mozzarella.",
-      "price": 12.4,
+      "price": 79000,
       "oldPrice": null,
       "status": 1,
       "category": "Pizza",
@@ -315,13 +331,14 @@
       "sold": 1100,
       "isRecommended": true,
       "isBestSeller": true,
-      "picture": "https://images.unsplash.com/photo-1571407970349-bc81e7e96d47?auto=format&fit=crop&w=900&q=85"
+      "picture": "https://images.unsplash.com/photo-1571407970349-bc81e7e96d47?auto=format&fit=crop&w=900&q=85",
+      "currency": "VND"
     },
     "p18": {
       "nameProduct": "Pizza Hawai",
       "nameProductEn": "Hawaiian Pizza",
       "description": "Giăm bông, dứa chín, mozzarella và sốt cà chua nhà làm.",
-      "price": 12.8,
+      "price": 85000,
       "oldPrice": null,
       "status": 1,
       "category": "Pizza",
@@ -332,13 +349,14 @@
       "sold": 980,
       "isRecommended": true,
       "isBestSeller": false,
-      "picture": "https://images.unsplash.com/photo-1604382355076-af4b0eb60143?auto=format&fit=crop&w=900&q=85"
+      "picture": "https://images.unsplash.com/photo-1604382355076-af4b0eb60143?auto=format&fit=crop&w=900&q=85",
+      "currency": "VND"
     },
     "p19": {
       "nameProduct": "Cà Phê Cappuccino",
       "nameProductEn": "Classic Cappuccino",
       "description": "Espresso đậm vị, sữa nóng đánh bọt mịn và lớp latte art.",
-      "price": 4.8,
+      "price": 29000,
       "oldPrice": null,
       "status": 1,
       "category": "Đồ Uống",
@@ -349,13 +367,14 @@
       "sold": 1350,
       "isRecommended": true,
       "isBestSeller": true,
-      "picture": "https://images.unsplash.com/photo-1541167760496-1628856ab772?auto=format&fit=crop&w=900&q=85"
+      "picture": "https://images.unsplash.com/photo-1541167760496-1628856ab772?auto=format&fit=crop&w=900&q=85",
+      "currency": "VND"
     },
     "p20": {
       "nameProduct": "Trà Đào Mật Ong",
       "nameProductEn": "Honey Peach Iced Tea",
       "description": "Trà đen ủ lạnh, đào chín, mật ong và lát cam tươi.",
-      "price": 3.9,
+      "price": 29000,
       "oldPrice": null,
       "status": 1,
       "category": "Đồ Uống",
@@ -366,13 +385,14 @@
       "sold": 1200,
       "isRecommended": true,
       "isBestSeller": true,
-      "picture": "https://artfultea.com/cdn/shop/files/0-1_2f43135a-b317-47d8-8f56-5e79f8a4265f.jpg?v=1763234911&width=900"
+      "picture": "https://artfultea.com/cdn/shop/files/0-1_2f43135a-b317-47d8-8f56-5e79f8a4265f.jpg?v=1763234911&width=900",
+      "currency": "VND"
     },
     "p21": {
       "nameProduct": "Soda Dâu Tây",
       "nameProductEn": "Strawberry Sparkling Soda",
       "description": "Dâu tây tươi, soda lạnh, chanh và lá bạc hà.",
-      "price": 3.5,
+      "price": 25000,
       "oldPrice": null,
       "status": 1,
       "category": "Đồ Uống",
@@ -383,13 +403,14 @@
       "sold": 900,
       "isRecommended": true,
       "isBestSeller": false,
-      "picture": "https://cdn.shopify.com/s/files/1/2798/7364/files/glass_2x_99dfa3d7-d14c-4db9-9f48-b20869b6fc5a.png?v=1662062559&width=900"
+      "picture": "https://cdn.shopify.com/s/files/1/2798/7364/files/glass_2x_99dfa3d7-d14c-4db9-9f48-b20869b6fc5a.png?v=1662062559&width=900",
+      "currency": "VND"
     },
     "p22": {
       "nameProduct": "Tiramisu Cà Phê",
       "nameProductEn": "Classic Coffee Tiramisu",
       "description": "Bánh ladyfinger thấm espresso, kem mascarpone và cacao.",
-      "price": 6.2,
+      "price": 45000,
       "oldPrice": null,
       "status": 1,
       "category": "Tráng Miệng",
@@ -400,13 +421,14 @@
       "sold": 1500,
       "isRecommended": true,
       "isBestSeller": true,
-      "picture": "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?auto=format&fit=crop&w=900&q=85"
+      "picture": "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?auto=format&fit=crop&w=900&q=85",
+      "currency": "VND"
     },
     "p23": {
       "nameProduct": "Brownie Chocolate",
       "nameProductEn": "Fudgy Chocolate Brownie",
       "description": "Brownie chocolate đậm vị, hạt óc chó và sốt chocolate nóng.",
-      "price": 5.4,
+      "price": 35000,
       "oldPrice": null,
       "status": 1,
       "category": "Tráng Miệng",
@@ -417,13 +439,14 @@
       "sold": 1300,
       "isRecommended": true,
       "isBestSeller": true,
-      "picture": "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=900&q=85"
+      "picture": "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=900&q=85",
+      "currency": "VND"
     },
     "p24": {
       "nameProduct": "Macaron Hạnh Nhân",
       "nameProductEn": "Almond Macarons",
       "description": "Vỏ bánh hạnh nhân giòn nhẹ, nhân kem vanilla mềm mịn.",
-      "price": 5.8,
+      "price": 29000,
       "oldPrice": null,
       "status": 1,
       "category": "Tráng Miệng",
@@ -434,13 +457,14 @@
       "sold": 820,
       "isRecommended": true,
       "isBestSeller": false,
-      "picture": "https://images.unsplash.com/photo-1548848221-0c2e497ed557?auto=format&fit=crop&w=900&q=85"
+      "picture": "https://images.unsplash.com/photo-1548848221-0c2e497ed557?auto=format&fit=crop&w=900&q=85",
+      "currency": "VND"
     },
     "p25": {
       "nameProduct": "Bowl Quinoa Rau Củ",
       "nameProductEn": "Quinoa Garden Bowl",
       "description": "Quinoa, bơ, cà chua bi, rau xanh và sốt chanh thảo mộc.",
-      "price": 10.2,
+      "price": 69000,
       "oldPrice": null,
       "status": 1,
       "category": "Món Lành Mạnh",
@@ -451,13 +475,14 @@
       "sold": 950,
       "isRecommended": true,
       "isBestSeller": false,
-      "picture": "https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=900&q=85"
+      "picture": "https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=900&q=85",
+      "currency": "VND"
     },
     "p26": {
       "nameProduct": "Salad Ức Gà Nướng",
       "nameProductEn": "Grilled Chicken Salad",
       "description": "Ức gà nướng, xà lách non, cà chua bi và sốt mè rang.",
-      "price": 10.9,
+      "price": 75000,
       "oldPrice": null,
       "status": 1,
       "category": "Món Lành Mạnh",
@@ -468,13 +493,14 @@
       "sold": 860,
       "isRecommended": true,
       "isBestSeller": false,
-      "picture": "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=900&q=85"
+      "picture": "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=900&q=85",
+      "currency": "VND"
     },
     "p27": {
       "nameProduct": "Bowl Bơ Cá Ngừ",
       "nameProductEn": "Avocado Tuna Bowl",
       "description": "Cá ngừ, bơ, cơm gạo lứt, edamame và mè rang.",
-      "price": 12.6,
+      "price": 79000,
       "oldPrice": null,
       "status": 1,
       "category": "Món Lành Mạnh",
@@ -485,7 +511,8 @@
       "sold": 740,
       "isRecommended": true,
       "isBestSeller": false,
-      "picture": "https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?auto=format&fit=crop&w=900&q=85"
+      "picture": "https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?auto=format&fit=crop&w=900&q=85",
+      "currency": "VND"
     }
   },
   "categories": {

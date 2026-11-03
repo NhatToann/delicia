@@ -32,7 +32,7 @@ const Productsdb _burger = Productsdb(
   id: 'p1',
   nameProduct: 'Big Burger',
   description: 'Double cheese',
-  price: 18.99,
+  price: 474750,
   status: 1,
   picture: '',
   category: 'Burger',
@@ -43,14 +43,14 @@ const Productsdb _burger = Productsdb(
   isRecommended: true,
   isBestSeller: true,
   restaurantName: 'Burger Queen',
-  oldPrice: 24.99,
+  oldPrice: 624750,
 );
 
 const Productsdb _pepsi = Productsdb(
   id: 'p2',
   nameProduct: 'Pepsi',
   description: 'Cold drink',
-  price: 4.99,
+  price: 124750,
   status: 1,
   picture: '',
   category: 'Drinks',
@@ -61,14 +61,14 @@ const Productsdb _pepsi = Productsdb(
   isRecommended: true,
   isBestSeller: true,
   restaurantName: 'Soda Shop',
-  oldPrice: 6.99,
+  oldPrice: 174750,
 );
 
 const Productsdb _pizza = Productsdb(
   id: 'p3',
   nameProduct: 'Margherita',
   description: 'Tomato and basil',
-  price: 12.50,
+  price: 312500,
   status: 1,
   picture: '',
   category: 'Pizza',
@@ -78,14 +78,14 @@ const Productsdb _pizza = Productsdb(
   sold: 210,
   isBestSeller: true,
   restaurantName: 'Pizza House',
-  oldPrice: 15.90,
+  oldPrice: 397500,
 );
 
 const Productsdb _sushi = Productsdb(
   id: 'p4',
   nameProduct: 'Salmon Roll',
   description: 'Fresh salmon',
-  price: 15.00,
+  price: 375000,
   status: 1,
   picture: '',
   category: 'Asian',
@@ -95,14 +95,14 @@ const Productsdb _sushi = Productsdb(
   sold: 180,
   isBestSeller: true,
   restaurantName: 'Tokyo Bento',
-  oldPrice: 18.40,
+  oldPrice: 460000,
 );
 
 const Productsdb _pasta = Productsdb(
   id: 'p5',
   nameProduct: 'Creamy Pasta',
   description: 'Alfredo sauce',
-  price: 11.75,
+  price: 293750,
   status: 1,
   picture: '',
   category: 'Meal',
@@ -113,14 +113,14 @@ const Productsdb _pasta = Productsdb(
   isBestSeller: true,
   isRecommended: true,
   restaurantName: 'Casa Pasta',
-  oldPrice: 14.25,
+  oldPrice: 356250,
 );
 
 const Productsdb _salad = Productsdb(
   id: 'p6',
   nameProduct: 'Garden Salad',
   description: 'Fresh greens',
-  price: 8.40,
+  price: 210000,
   status: 1,
   picture: '',
   category: 'Vegan',
@@ -131,14 +131,14 @@ const Productsdb _salad = Productsdb(
   isBestSeller: true,
   isRecommended: true,
   restaurantName: 'Green Bowl',
-  oldPrice: 10.00,
+  oldPrice: 250000,
 );
 
 const Productsdb _cake = Productsdb(
   id: 'p7',
   nameProduct: 'Cheesecake',
   description: 'Berry topping',
-  price: 6.95,
+  price: 173750,
   status: 1,
   picture: '',
   category: 'Dessert',
@@ -149,14 +149,14 @@ const Productsdb _cake = Productsdb(
   isBestSeller: true,
   isRecommended: true,
   restaurantName: 'Sweet Corner',
-  oldPrice: 8.50,
+  oldPrice: 212500,
 );
 
 const Productsdb _juice = Productsdb(
   id: 'p8',
   nameProduct: 'Fresh Juice',
   description: 'Orange & mint',
-  price: 5.25,
+  price: 131250,
   status: 1,
   picture: '',
   category: 'Drinks',
@@ -167,7 +167,7 @@ const Productsdb _juice = Productsdb(
   isBestSeller: true,
   isRecommended: true,
   restaurantName: 'Soda Shop',
-  oldPrice: 6.75,
+  oldPrice: 168750,
 );
 
 class _FakeCategoryService implements CategoryService {

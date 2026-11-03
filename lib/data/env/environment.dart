@@ -58,9 +58,12 @@ class Environment {
       ? '© OpenStreetMap contributors'
       : 'Map tiles by CARTO (CC BY 3.0) · OpenStreetMap (ODbL)';
 
-  /// Default delivery fee in VND/USD — used by CheckoutScreen as the
+  /// Default delivery fee, in VND — used by CheckoutScreen as the
   /// "Delivery fee" line item until the backend returns it dynamically.
-  static const double defaultDeliveryFee = 2.5;
+  ///
+  /// 25 000 ₫ is the flat fee the restaurant charges; every order in the
+  /// Realtime Database carries exactly this amount on top of its subtotal.
+  static const double defaultDeliveryFee = 25000;
 
   // ---- Delivery estimate --------------------------------------------------
   /// Minutes shown as "Estimated Delivery" on the Payment screen
@@ -84,10 +87,6 @@ class Environment {
 
   /// Merchant API host. Swappable so a self-hosted proxy can be used.
   static const String payosApiBase = 'https://api-merchant.payos.vn';
-
-  /// Conversion rate used to turn the app's currency into VND, which is
-  /// the only currency payOS accepts.
-  static const int payosVndRate = 25000;
 
   /// Whether enough credentials are present to talk to payOS.
   static bool get payosConfigured =>

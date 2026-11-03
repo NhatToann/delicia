@@ -56,14 +56,14 @@ OrderRecord _order() {
     latitude: 0,
     longitude: 0,
     paymentMethod: 'CASH PAYMENT',
-    amount: 20,
+    amount: 500000,
     status: OrderRecord.statusOnWay,
     products: <OrderItem>[
       OrderItem(
         productId: 'p1',
         nameProduct: 'Strawberry shake',
         picture: '',
-        price: 10,
+        price: 250000,
         quantity: 2,
       ),
     ],

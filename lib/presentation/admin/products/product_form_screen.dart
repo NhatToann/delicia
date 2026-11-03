@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../domain/bloc/product/product_bloc.dart';
@@ -9,6 +10,7 @@ import '../../../domain/models/product.dart';
 import '../../../domain/services/admin_catalog_service.dart';
 import '../../helpers/error_message.dart';
 import '../../helpers/l10n_extension.dart';
+import '../../helpers/money.dart';
 import '../../components/btn_frave.dart';
 import '../../themes/colors_frave.dart';
 import '../../themes/type_frave.dart';
@@ -17,8 +19,12 @@ import 'widgets/image_picker_widget.dart';
 /// AdminProductFormScreen — create / edit a product (UC-08).
 ///
 /// The form covers the whole product row: name, description, price,
-/// category, stock and the photo. The category is picked from a
-/// dropdown — the id is what the row stores, never the display name.
+/// category and the photo. The category is picked from a dropdown — the
+/// id is what the row stores, never the display name.
+///
+/// The price is edited in **VND**, the same unit the database stores it
+/// in and the same unit the customer reads on the card. Admin and
+/// customer therefore always agree on what a dish costs.
 class AdminProductFormScreen extends StatelessWidget {
   const AdminProductFormScreen({
     super.key,
@@ -62,7 +68,10 @@ class _AdminProductFormViewState extends State<_AdminProductFormView> {
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
   late final TextEditingController _priceController;
-  late final TextEditingController _stockController;
+
+  /// Focus of the price field — used to regroup the number with the
+  /// Vietnamese thousands separator once the admin leaves the field.
+  late final FocusNode _priceFocus;
 
   /// The category the product belongs to.
   String _categoryId = '';
@@ -93,9 +102,7 @@ class _AdminProductFormViewState extends State<_AdminProductFormView> {
     _priceController = TextEditingController(
       text: product == null ? '' : _formatPrice(product.price),
     );
-    _stockController = TextEditingController(
-      text: product == null ? '0' : '${product.sold}',
-    );
+    _priceFocus = FocusNode()..addListener(_regroupPrice);
     _categoryId = product?.categoryId ?? '';
     _pictureUrl = product?.picture ?? '';
     _isActive = product?.isActive ?? true;
@@ -107,7 +114,7 @@ class _AdminProductFormViewState extends State<_AdminProductFormView> {
     _nameController.dispose();
     _descriptionController.dispose();
     _priceController.dispose();
-    _stockController.dispose();
+    _priceFocus.dispose();
     super.dispose();
   }
 
@@ -121,17 +128,40 @@ class _AdminProductFormViewState extends State<_AdminProductFormView> {
     _nameController.text = product.nameProduct;
     _descriptionController.text = product.description;
     _priceController.text = _formatPrice(product.price);
-    _stockController.text = '${product.sold}';
     _categoryId = product.categoryId;
     _pictureUrl = product.picture;
     _isActive = product.isActive;
   }
 
-  /// The price is stored in USD — the form shows it the same way.
-  static String _formatPrice(double value) {
-    if (value == 0) return '';
-    final text = value.toStringAsFixed(2);
-    return text.endsWith('.00') ? text.substring(0, text.length - 3) : text;
+  /// The price field is edited in **VND** — the same number the customer
+  /// sees on the card (`180.000`), and the same number the database
+  /// stores (`180000`).
+  ///
+  /// Admin and customer therefore always agree on what a dish costs, and
+  /// the value written back is the number that was typed — no conversion.
+  static String _formatPrice(double vnd) {
+    if (vnd == 0) return '';
+    return Money.formatVndPlain(vnd);
+  }
+
+  /// Rewrites the price with the Vietnamese thousands separator once the
+  /// admin leaves the field, so `180000` reads as `180.000`.
+  ///
+  /// While the field has focus the raw digits are left alone — inserting
+  /// a separator mid-typing would move the caret around and fight the
+  /// keyboard.
+  void _regroupPrice() {
+    if (_priceFocus.hasFocus) return;
+    final vnd = Money.parseVnd(_priceController.text);
+    if (vnd == null) return;
+    final regrouped = Money.formatVndPlain(vnd);
+    if (regrouped == _priceController.text) return;
+    final selection = _priceController.selection;
+    final offset = selection.baseOffset.clamp(0, regrouped.length);
+    _priceController.value = TextEditingValue(
+      text: regrouped,
+      selection: TextSelection.collapsed(offset: offset),
+    );
   }
 
   @override
@@ -213,27 +243,10 @@ class _AdminProductFormViewState extends State<_AdminProductFormView> {
               maxLines: 3,
             ),
             const SizedBox(height: 14),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(
-                  child: _Field(
-                    label: l10n.adminProductPrice,
-                    controller: _priceController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _Field(
-                    label: l10n.adminProductStock,
-                    controller: _stockController,
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-              ],
+            _PriceField(
+              label: l10n.adminProductPrice,
+              controller: _priceController,
+              focusNode: _priceFocus,
             ),
             const SizedBox(height: 14),
             _CategoryDropdown(
@@ -274,8 +287,12 @@ class _AdminProductFormViewState extends State<_AdminProductFormView> {
       return;
     }
 
-    final price = double.tryParse(_priceController.text.trim().replaceAll(',', '.'));
-    if (price == null || price < 0) {
+    // The field is typed in VND — `180.000` means 180 000 ₫. The dots are
+    // the Vietnamese thousands separator, so they are stripped before the
+    // digits are read, and the amount is stored as it is: the database
+    // holds VND, so no conversion happens here.
+    final vnd = Money.parseVnd(_priceController.text.trim());
+    if (vnd == null || vnd < 0) {
       errorTextSnack(context, l10n.adminProductPriceRequired);
       return;
     }
@@ -292,16 +309,14 @@ class _AdminProductFormViewState extends State<_AdminProductFormView> {
         .firstOrNull ??
         '';
 
-    final stock = int.tryParse(_stockController.text.trim()) ?? 0;
     final existing = _entity;
 
     final product = (existing ?? Productsdb.empty).copyWith(
       nameProduct: name,
       description: _descriptionController.text.trim(),
-      price: price,
+      price: vnd.toDouble(),
       categoryId: _categoryId,
       category: categoryName,
-      sold: stock,
       status: _isActive ? 1 : 0,
     );
 
@@ -318,6 +333,78 @@ class _AdminProductFormViewState extends State<_AdminProductFormView> {
                   imageContentType: _pendingContentType,
                 ),
         );
+  }
+}
+
+/// The price field of the admin product form.
+///
+/// It is a dedicated widget rather than a plain [_Field] because a price
+/// needs its own keyboard contract:
+///
+///   * the **numeric keypad** is requested, so the admin never has to
+///     hunt for the digits on a full keyboard;
+///   * only digits are accepted — the field can never hold a letter, a
+///     sign or a decimal separator, which is what used to make typing
+///     feel broken;
+///   * the thousands separator is added by the parent once the field
+///     loses focus, so the digits are never disturbed mid-typing.
+class _PriceField extends StatelessWidget {
+  const _PriceField({
+    required this.label,
+    required this.controller,
+    required this.focusNode,
+  });
+
+  final String label;
+  final TextEditingController controller;
+  final FocusNode focusNode;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          label,
+          style: FraveText.medium(14, color: ColorsFrave.ink),
+        ),
+        const SizedBox(height: 7),
+        TextField(
+          controller: controller,
+          focusNode: focusNode,
+          keyboardType: TextInputType.number,
+          textInputAction: TextInputAction.done,
+          // Digits only. A dot would be read as a decimal separator and
+          // a letter would make the whole amount unparseable.
+          inputFormatters: <TextInputFormatter>[
+            FilteringTextInputFormatter.digitsOnly,
+          ],
+          style: FraveText.regular(14, color: ColorsFrave.ink),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: ColorsFrave.surfaceColor,
+            suffixText: Money.symbol,
+            suffixStyle: FraveText.regular(13, color: ColorsFrave.greyText),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(RadiusFrave.field),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(RadiusFrave.field),
+              borderSide: const BorderSide(color: ColorsFrave.outlineVariant),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(RadiusFrave.field),
+              borderSide: const BorderSide(color: ColorsFrave.navOrange, width: 1.5),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -414,14 +501,12 @@ class _Field extends StatelessWidget {
     required this.controller,
     this.maxLines = 1,
     this.textInputAction,
-    this.keyboardType,
   });
 
   final String label;
   final TextEditingController controller;
   final int maxLines;
   final TextInputAction? textInputAction;
-  final TextInputType? keyboardType;
 
   @override
   Widget build(BuildContext context) {
@@ -437,7 +522,6 @@ class _Field extends StatelessWidget {
           controller: controller,
           maxLines: maxLines,
           textInputAction: textInputAction,
-          keyboardType: keyboardType,
           style: FraveText.regular(14, color: ColorsFrave.ink),
           decoration: InputDecoration(
             filled: true,

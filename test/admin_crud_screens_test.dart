@@ -256,8 +256,9 @@ void main() {
       await tester.enterText(find.byType(TextField).first, 'Món mới');
       await settleAdmin(tester);
 
-      // The price field.
-      await tester.enterText(find.byType(TextField).at(2), '12');
+      // The price field — typed in VND, the same unit the customer sees.
+      // The field only accepts digits, so `180000` it is.
+      await tester.enterText(find.byType(TextField).at(2), '180000');
       await settleAdmin(tester);
 
       // The category dropdown.
@@ -271,7 +272,97 @@ void main() {
 
       expect(catalog.createdProducts.length, 1);
       expect(catalog.createdProducts.first.nameProduct, 'Món mới');
-      expect(catalog.createdProducts.first.price, 12);
+      // The database stores VND, so the typed amount is stored as it is —
+      // and the customer-facing renderer shows exactly 180.000 ₫.
+      expect(catalog.createdProducts.first.price, closeTo(180000, 0.001));
+    });
+
+    testWidgets('the price field accepts digits and groups them on blur', (
+      WidgetTester tester,
+    ) async {
+      _useTallViewport(tester);
+      final catalog = FakeAdminCatalogService(
+        categories: <Category>[const Category(id: 'c1', category: 'Burger')],
+      );
+
+      await tester.pumpWidget(
+        _harness(
+          const AdminProductFormScreen(),
+          catalogService: catalog,
+        ),
+      );
+      await settleAdmin(tester);
+
+      final priceField = find.byType(TextField).at(2);
+
+      // Digits go in — the field never rejects them.
+      await tester.enterText(priceField, '180000');
+      await settleAdmin(tester);
+      expect(
+        tester.widget<TextField>(priceField).controller!.text,
+        '180000',
+      );
+
+      // Leaving the field groups them the Vietnamese way.
+      await tester.tap(find.byType(TextField).first);
+      await settleAdmin(tester);
+      expect(
+        tester.widget<TextField>(priceField).controller!.text,
+        '180.000',
+      );
+    });
+
+    testWidgets('an existing price is shown in VND, exactly as stored', (
+      WidgetTester tester,
+    ) async {
+      _useTallViewport(tester);
+      final catalog = FakeAdminCatalogService(
+        categories: <Category>[const Category(id: 'c1', category: 'Burger')],
+        products: <Productsdb>[
+          Productsdb(
+            id: 'p01',
+            nameProduct: 'Burger',
+            description: 'Ngon',
+            // The live database stores this in VND.
+            price: 75000,
+            status: 1,
+            picture: '',
+            category: 'Burger',
+            categoryId: 'c1',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        _harness(
+          const AdminProductFormScreen(productId: 'p01'),
+          catalogService: catalog,
+        ),
+      );
+      await settleAdmin(tester);
+
+      // 75 000 ₫ in the database reads as `75.000` in the field — the same
+      // number the customer sees on the card.
+      expect(find.text('75.000'), findsOneWidget);
+    });
+
+    testWidgets('the form has no stock field', (WidgetTester tester) async {
+      _useTallViewport(tester);
+      final catalog = FakeAdminCatalogService(
+        categories: <Category>[const Category(id: 'c1', category: 'Burger')],
+      );
+
+      await tester.pumpWidget(
+        _harness(
+          const AdminProductFormScreen(),
+          catalogService: catalog,
+        ),
+      );
+      await settleAdmin(tester);
+
+      // "Tồn kho" is not a field the admin edits any more — the count of
+      // sold items belongs to the sales data, not to the price form.
+      expect(find.text('Tồn kho'), findsNothing);
     });
   });
 }

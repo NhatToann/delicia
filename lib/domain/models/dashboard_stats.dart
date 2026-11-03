@@ -4,7 +4,7 @@
 /// Realtime Database cannot aggregate, so the bloc computes the totals
 /// once and hands them to the UI.
 class DashboardStats {
-  /// Revenue booked today, in USD.
+  /// Revenue booked today, in VND.
   final double todayRevenue;
 
   /// Number of orders created today.

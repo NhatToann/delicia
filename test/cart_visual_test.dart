@@ -14,7 +14,7 @@ const ProductCart _shake = ProductCart(
   uidProduct: 'p1',
   imageProduct: 'assets/figma_home/card_best_1.png',
   nameProduct: 'Strawberry Shake',
-  price: 10.00,
+  price: 250000,
   quantity: 2,
 );
 
@@ -22,7 +22,7 @@ const ProductCart _lasagna = ProductCart(
   uidProduct: 'p2',
   imageProduct: 'assets/figma_home/card_best_2.png',
   nameProduct: 'Broccoli Lasagna',
-  price: 12.00,
+  price: 300000,
   quantity: 1,
 );
 

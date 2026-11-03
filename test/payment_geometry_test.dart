@@ -76,7 +76,7 @@ const ProductCart _shake = ProductCart(
   uidProduct: 'p1',
   imageProduct: 'assets/figma_home/card_best_1.png',
   nameProduct: 'Strawberry Shake',
-  price: 20.00,
+  price: 500000,
   quantity: 2,
 );
 
@@ -84,7 +84,7 @@ const ProductCart _lasagna = ProductCart(
   uidProduct: 'p2',
   imageProduct: 'assets/figma_home/card_best_2.png',
   nameProduct: 'Broccoli Lasagna',
-  price: 20.00,
+  price: 500000,
   quantity: 1,
 );
 
@@ -263,8 +263,8 @@ void main() {
     ) async {
       await _pump(tester);
       expect(find.text('Tổng cộng'), findsOneWidget);
-      // $60 of food + 5 % tax + the flat delivery fee.
-      expect(find.text('1.637.500 ₫'), findsOneWidget);
+      // 1 500 000 ₫ of food + 5 % tax (75 000) + the flat 25 000 delivery fee.
+      expect(find.text('1.600.000 ₫'), findsOneWidget);
     });
   });
 }

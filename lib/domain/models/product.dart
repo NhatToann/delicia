@@ -46,6 +46,14 @@ class Productsdb {
   /// implicit "base" variant priced at [price].
   final List<ProductOption> options;
 
+  /// The currency the stored amounts are expressed in.
+  ///
+  /// The catalogue holds whole **VND** — `75000` is 75 000 ₫ — and every
+  /// row says so in a `currency` field. The app renders the amount as it
+  /// is stored, so this field is informational: it documents the unit the
+  /// numbers are in and travels with the row when it is written back.
+  final String currency;
+
   const Productsdb({
     required this.id,
     required this.nameProduct,
@@ -64,6 +72,7 @@ class Productsdb {
     this.nameProductEn = '',
     this.oldPrice,
     this.options = const <ProductOption>[],
+    this.currency = 'VND',
   });
 
   factory Productsdb.fromMap(String id, Map<dynamic, dynamic> map) {
@@ -87,6 +96,7 @@ class Productsdb {
           ? null
           : _parseDouble(map['oldPrice']),
       options: _parseOptions(map['options']),
+      currency: (map['currency'] ?? 'VND').toString(),
     );
   }
 
@@ -108,6 +118,7 @@ class Productsdb {
         if (oldPrice != null) 'oldPrice': oldPrice,
         if (options.isNotEmpty)
           'options': options.map((o) => o.toMap()).toList(),
+        'currency': currency,
       };
 
   bool get isActive => status == 1;
@@ -205,6 +216,7 @@ class Productsdb {
     String? nameProductEn,
     double? oldPrice,
     List<ProductOption>? options,
+    String? currency,
   }) =>
       Productsdb(
         id: id ?? this.id,
@@ -224,6 +236,7 @@ class Productsdb {
         nameProductEn: nameProductEn ?? this.nameProductEn,
         oldPrice: oldPrice ?? this.oldPrice,
         options: options ?? this.options,
+        currency: currency ?? this.currency,
       );
 
   static double _parseDouble(dynamic raw) {
