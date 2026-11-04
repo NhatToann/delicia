@@ -333,7 +333,7 @@ test(cart): add 3 tests for quantity stepper
 ```bash
 flutter pub get
 flutter analyze     # 0 error (info-level thì được)
-flutter test        # 196 pass / 2 fail hiện tại — xem §12
+flutter test        # 549 pass / 16 fail hiện tại — xem §12
 flutter build apk --debug
 ```
 
@@ -390,7 +390,7 @@ Toàn bộ là info-level, tập trung ở 2 chỗ:
 ### `flutter test`
 
 ```
-540 pass / 29 fail (29 fail này **có sẵn từ trước** — xem ghi chú bên dưới)
+549 pass / 16 fail (16 fail này **có sẵn từ trước** — xem ghi chú bên dưới)
 ```
 
 > 2026-10-26: 2 fail cũ (`home_golden_test.dart` + `home_positions_test.dart`, `0.24%, 787px diff`) đã **được sửa gốc**: greeting theo buổi trong header giờ lấy giờ từ **clock tiêm vào** (`ClientHomeScreen.clock`), nên ảnh golden không còn phụ thuộc giờ hệ thống. Xem §16.3.
@@ -402,7 +402,7 @@ Toàn bộ là info-level, tập trung ở 2 chỗ:
 
 > **Về `Money.format()`:** trước đây hàm này **nhân 25 000** (giả định DB lưu USD) nên
 > một món 75 000 ₫ hiện ra là 1 875 000 ₫. Sau khi bỏ phép nhân, chuỗi số ngắn hơn →
-> vị trí text đổi → **golden ảnh cũ lệch**. Đây là nguyên nhân gốc của phần lớn 29 fail
+> vị trí text đổi → **golden ảnh cũ lệch**. Đây là nguyên nhân gốc của phần lớn 16 fail
 > còn lại — **không** phải regression.
 >
 > **Mâu thuẫn spec đã được giải quyết:** trước đây `test/cart_bloc_test.dart` và

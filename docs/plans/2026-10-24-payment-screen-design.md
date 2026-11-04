@@ -6,6 +6,14 @@
 **Figma node:** `202:2956` ("4.3 - D - Payment"), 393 x 852 frame
 **Local reference:** `assets/Food Delivery App UI Kit .../4.3 - D - Payment.png`
 
+> **⚠️ Cập nhật 2026-11-04 — payOS đã bị xoá khỏi project.**
+> Toàn bộ tích hợp payOS (gateway, QR VietQR trong app, web checkout, App Link,
+> backend Vercel) đã được gỡ bỏ. Checkout giờ **chỉ có `CASH`**: bấm "Pay Now"
+> → tạo đơn ngay → khách trả tiền mặt khi tài xế giao.
+> Phí giao hàng tính theo **khoảng cách đường thực** (OSRM) qua
+> `CartPricing.deliveryFeeVnd(distanceKm)`.
+> Các đoạn mô tả payOS bên dưới là **lịch sử thiết kế** — không còn áp dụng.
+
 ---
 
 ## 1. Decisions taken
