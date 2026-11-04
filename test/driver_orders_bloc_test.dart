@@ -38,8 +38,8 @@ class _MockOrdersService implements OrdersService {
     final match = availableOrders.firstWhere((o) => o.id == orderId);
     availableOrders.removeWhere((o) => o.id == orderId);
     assignedOrders.add(match.copyWith(
-      deliveryId: deliveryId,
-      deliveryName: deliveryName,
+      deliveryUserId: deliveryId,
+      deliveryUserName: deliveryName,
       status: 'DISPATCHED',
     ));
   }
@@ -106,8 +106,8 @@ void main() {
       paymentMethod: 'CASH PAYMENT',
       amount: 25.50,
       status: 'DISPATCHED',
-      deliveryId: 'driver-1',
-      deliveryName: 'John Driver',
+      deliveryUserId: 'driver-1',
+      deliveryUserName: 'John Driver',
       products: const [],
       createdAt: DateTime(2026, 1, 1),
     );

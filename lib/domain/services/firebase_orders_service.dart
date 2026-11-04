@@ -189,7 +189,7 @@ class FirebaseOrdersService implements OrdersService {
             entry.key.toString(),
             Map<dynamic, dynamic>.from(entry.value as Map),
           );
-          if (record.deliveryId == deliveryId) {
+          if (record.deliveryUserId == deliveryId) {
             list.add(record);
           }
         }
@@ -218,8 +218,7 @@ class FirebaseOrdersService implements OrdersService {
             entry.key.toString(),
             Map<dynamic, dynamic>.from(entry.value as Map),
           );
-          final isUnassigned =
-              record.deliveryId == null || record.deliveryId!.trim().isEmpty;
+          final isUnassigned = record.deliveryUserId.trim().isEmpty;
           final isEligible = record.status == OrderRecord.statusPaidOut ||
               record.status.trim().toUpperCase() == 'PENDING';
           if (isUnassigned && isEligible) {
@@ -248,7 +247,7 @@ class FirebaseOrdersService implements OrdersService {
             entry.key.toString(),
             Map<dynamic, dynamic>.from(entry.value as Map),
           );
-          if (record.deliveryId == deliveryId) {
+          if (record.deliveryUserId == deliveryId) {
             list.add(record);
           }
         }
@@ -274,8 +273,7 @@ class FirebaseOrdersService implements OrdersService {
             entry.key.toString(),
             Map<dynamic, dynamic>.from(entry.value as Map),
           );
-          final isUnassigned =
-              record.deliveryId == null || record.deliveryId!.trim().isEmpty;
+          final isUnassigned = record.deliveryUserId.trim().isEmpty;
           final isEligible = record.status == OrderRecord.statusPaidOut ||
               record.status.trim().toUpperCase() == 'PENDING';
           if (isUnassigned && isEligible) {
@@ -302,7 +300,7 @@ class FirebaseOrdersService implements OrdersService {
     }
     try {
       final updates = <String, dynamic>{
-        'deliveryId': deliveryId,
+        'deliveryUserId': deliveryId,
         'status': OrderRecord.statusDispatched,
         'shipperLocation': {
           'latitude': Environment.restaurantLatitude,
@@ -311,7 +309,7 @@ class FirebaseOrdersService implements OrdersService {
         },
       };
       if (deliveryName != null) {
-        updates['deliveryName'] = deliveryName;
+        updates['deliveryUserName'] = deliveryName;
       }
       await ref.child(orderId).update(updates);
     } catch (e) {
@@ -331,10 +329,11 @@ class FirebaseOrdersService implements OrdersService {
       }
       final snap = await ref.child(orderId).get();
       final val = snap.value;
-      if (val is Map && val['deliveryId'] == deliveryId) {
+      if (val is Map &&
+          (val['deliveryUserId'] ?? val['deliveryId']) == deliveryId) {
         await ref.child(orderId).update({
-          'deliveryId': '',
-          'deliveryName': '',
+          'deliveryUserId': '',
+          'deliveryUserName': '',
           'status': OrderRecord.statusPaidOut,
         });
       }

@@ -743,6 +743,11 @@ class _DeliveryStepTracker extends StatelessWidget {
       case DeliveryStatus.pending:
         currentIndex = -1;
         break;
+      case DeliveryStatus.preparing:
+        // The kitchen has the order but no courier yet — same "before the
+        // driver" position as [DeliveryStatus.pending].
+        currentIndex = -1;
+        break;
       case DeliveryStatus.accepted:
         currentIndex = 0;
         break;

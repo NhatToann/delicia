@@ -85,8 +85,8 @@ void main() {
     paymentMethod: 'CASH PAYMENT',
     amount: 19.99,
     status: 'DISPATCHED',
-    deliveryId: 'driver-test-uid',
-    deliveryName: 'Alex Driver',
+    deliveryUserId: 'driver-test-uid',
+    deliveryUserName: 'Alex Driver',
     products: const [],
     createdAt: DateTime(2026, 1, 1),
   );
@@ -269,8 +269,8 @@ void main() {
       paymentMethod: 'CASH PAYMENT',
       amount: 25.00,
       status: OrderRecord.statusDelivered,
-      deliveryId: 'driver-test-uid',
-      deliveryName: 'Alex Driver',
+      deliveryUserId: 'driver-test-uid',
+      deliveryUserName: 'Alex Driver',
       products: const [],
       createdAt: DateTime(2026, 1, 1),
     );

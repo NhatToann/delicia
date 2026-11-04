@@ -37,7 +37,9 @@ class User {
       image: map['image']?.toString(),
       rolId: map['rolId'] is int
           ? map['rolId']
-          : int.tryParse(map['rolId']?.toString() ?? '2') ?? 2,
+          // A missing / unparsable role must never escalate to Admin.
+          // 1 = Client, 2 = Admin, 3 = Delivery (see AGENTS.md §4).
+          : int.tryParse(map['rolId']?.toString() ?? '1') ?? 1,
       dateOfBirth: map['dateOfBirth']?.toString(), // Đọc ngày sinh từ Firebase
     );
   }

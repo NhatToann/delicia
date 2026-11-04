@@ -47,6 +47,9 @@ enum AdminOrderFilter {
         return const <String>{
           OrderRecord.statusDispatched,
           OrderRecord.statusOnWay,
+          // `PICKED UP` is a real driver milestone. Without it an order in
+          // that state appears in NONE of the admin tabs.
+          'PICKED UP',
         };
       case AdminOrderFilter.completed:
         return const <String>{OrderRecord.statusDelivered};

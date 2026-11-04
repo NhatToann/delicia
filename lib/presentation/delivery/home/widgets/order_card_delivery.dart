@@ -32,6 +32,8 @@ class OrderCardDelivery extends StatelessWidget {
     switch (status) {
       case DeliveryStatus.pending:
         return Colors.orange;
+      case DeliveryStatus.preparing:
+        return Colors.orange.shade700;
       case DeliveryStatus.accepted:
         return Colors.blue;
       case DeliveryStatus.pickedUp:

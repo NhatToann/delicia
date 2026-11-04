@@ -107,6 +107,13 @@ enum OrderStage {
         return OrderStage.dispatched;
       case 'ON WAY':
       case 'ON THE WAY':
+      // `PICKED UP` is the driver's "picked up at the shop" milestone. The
+      // client timeline has no separate step for it, so it maps onto the
+      // "on the way" stage instead of silently falling back to
+      // [OrderStage.preparing] (which would show the order as still in the
+      // kitchen after the courier already has it).
+      case 'PICKED UP':
+      case 'PICKED_UP':
         return OrderStage.onTheWay;
       case 'DELIVERED':
         return OrderStage.delivered;

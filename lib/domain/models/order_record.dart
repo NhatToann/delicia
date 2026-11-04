@@ -18,8 +18,6 @@ class OrderRecord {
   final String status;
   final List<OrderItem> products;
   final DateTime createdAt;
-  final String? deliveryId;
-  final String? deliveryName;
   final String? deliveryPhoto;
   final String? receiverPhone;
   final String? receiverName;
@@ -29,6 +27,11 @@ class OrderRecord {
   ///
   /// Empty until the admin assigns a courier — a freshly paid order has
   /// nobody carrying it yet.
+  ///
+  /// This is the SINGLE source of truth for "who is delivering this order".
+  /// Older rows were written by the driver flow under the legacy key
+  /// `deliveryId`; [OrderRecord.fromMap] falls back to that key so no data
+  /// migration is required, and every writer now uses `deliveryUserId`.
   final String deliveryUserId;
 
   /// Display name of the assigned driver, denormalised so the admin
@@ -64,8 +67,6 @@ class OrderRecord {
     this.deliveryUserName = '',
     this.clientName = '',
     this.clientEmail = '',
-    this.deliveryId,
-    this.deliveryName,
     this.deliveryPhoto,
     this.receiverPhone,
     this.receiverName,
@@ -130,8 +131,6 @@ class OrderRecord {
         if (deliveryUserName.isNotEmpty) 'deliveryUserName': deliveryUserName,
         if (clientName.isNotEmpty) 'clientName': clientName,
         if (clientEmail.isNotEmpty) 'clientEmail': clientEmail,
-        if (deliveryId != null) 'deliveryId': deliveryId,
-        if (deliveryName != null) 'deliveryName': deliveryName,
         if (deliveryPhoto != null) 'deliveryPhoto': deliveryPhoto,
         if (receiverPhone != null) 'receiverPhone': receiverPhone,
         if (receiverName != null) 'receiverName': receiverName,
@@ -139,8 +138,26 @@ class OrderRecord {
           'rejectedBy': {for (final uid in rejectedBy) uid: true},
       };
 
-  factory OrderRecord.fromMap(String id, Map<dynamic, dynamic> map) {
-    final raw = map['products'];
+  /// Reads the assigned courier uid.
+  ///
+  /// `deliveryUserId` is the canonical key. `deliveryId` is the legacy key
+  /// written by the driver flow before the two flows were unified — reading
+  /// it as a fallback keeps historical rows assignable without a data
+  /// migration.
+  static String _readCourierUid(Map<dynamic, dynamic> map) {
+    final canonical = (map['deliveryUserId'] ?? '').toString().trim();
+    if (canonical.isNotEmpty) return canonical;
+    return (map['deliveryId'] ?? '').toString().trim();
+  }
+
+  /// Reads the assigned courier display name (same fallback as the uid).
+  static String _readCourierName(Map<dynamic, dynamic> map) {
+    final canonical = (map['deliveryUserName'] ?? '').toString().trim();
+    if (canonical.isNotEmpty) return canonical;
+    return (map['deliveryName'] ?? '').toString().trim();
+  }
+
+  factory OrderRecord.fromMap(String id, Map<dynamic, dynamic> map) {    final raw = map['products'];
     final items = <OrderItem>[];
     if (raw is List) {
       for (final entry in raw) {
@@ -179,12 +196,10 @@ class OrderRecord {
       createdAt: DateTime.fromMillisecondsSinceEpoch(
         int.tryParse((map['createdAt'] ?? 0).toString()) ?? 0,
       ),
-      deliveryUserId: (map['deliveryUserId'] ?? '').toString(),
-      deliveryUserName: (map['deliveryUserName'] ?? '').toString(),
+      deliveryUserId: _readCourierUid(map),
+      deliveryUserName: _readCourierName(map),
       clientName: (map['clientName'] ?? '').toString(),
       clientEmail: (map['clientEmail'] ?? '').toString(),
-      deliveryId: map['deliveryId']?.toString(),
-      deliveryName: map['deliveryName']?.toString(),
       deliveryPhoto: map['deliveryPhoto']?.toString(),
       receiverPhone: map['receiverPhone']?.toString(),
       receiverName: map['receiverName']?.toString(),
@@ -209,8 +224,6 @@ class OrderRecord {
     String? deliveryUserName,
     String? clientName,
     String? clientEmail,
-    String? deliveryId,
-    String? deliveryName,
     String? deliveryPhoto,
     String? receiverPhone,
     String? receiverName,
@@ -233,8 +246,6 @@ class OrderRecord {
       deliveryUserName: deliveryUserName ?? this.deliveryUserName,
       clientName: clientName ?? this.clientName,
       clientEmail: clientEmail ?? this.clientEmail,
-      deliveryId: deliveryId ?? this.deliveryId,
-      deliveryName: deliveryName ?? this.deliveryName,
       deliveryPhoto: deliveryPhoto ?? this.deliveryPhoto,
       receiverPhone: receiverPhone ?? this.receiverPhone,
       receiverName: receiverName ?? this.receiverName,

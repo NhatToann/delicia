@@ -118,7 +118,8 @@ class FirebaseAdminOrdersService implements AdminOrdersService {
 /// Firebase Realtime Database backed [DeliveryUsersService] (UC-09).
 ///
 /// The delivery drivers live in the shared `users/{uid}` node, told
-/// apart by `rolId == 3`. The `enabled` flag is written next to the
+/// apart by `rolId == 3` (1=Client, 2=Admin, 3=Delivery — see AGENTS.md §4).
+/// The `enabled` flag is written next to the
 /// profile so the admin console can disable a driver without touching
 /// Firebase Auth (the account stays, only the dispatch is blocked).
 class FirebaseDeliveryUsersService implements DeliveryUsersService {
@@ -482,7 +483,7 @@ class _DriverAccount {
 /// Firebase Realtime Database backed [AdminUsersService] (UC-07).
 ///
 /// The customers live in the shared `users/{uid}` node, told apart by
-/// `rolId == 2`.
+/// `rolId == 1` (1=Client, 2=Admin, 3=Delivery — see AGENTS.md §4).
 class FirebaseAdminUsersService implements AdminUsersService {
   FirebaseAdminUsersService({FirebaseDatabase? database})
       : _database = database ?? _defaultDatabase();
@@ -514,7 +515,7 @@ class FirebaseAdminUsersService implements AdminUsersService {
       final out = <CustomerAccount>[];
       value.forEach((key, entry) {
         if (entry is! Map) return;
-        if (int.tryParse((entry['rolId'] ?? '').toString()) != 2) return;
+        if (int.tryParse((entry['rolId'] ?? '').toString()) != 1) return;
         out.add(
           CustomerAccount.fromMap(
             key.toString(),

@@ -5,6 +5,7 @@
 /// (or cancelled from any non-terminal state).
 enum DeliveryStatus {
   pending,
+  preparing,
   accepted,
   pickedUp,
   onTheWay,
@@ -13,6 +14,11 @@ enum DeliveryStatus {
 
   static const Map<DeliveryStatus, List<DeliveryStatus>> _validTransitions = {
     DeliveryStatus.pending: [
+      DeliveryStatus.preparing,
+      DeliveryStatus.accepted,
+      DeliveryStatus.cancelled,
+    ],
+    DeliveryStatus.preparing: [
       DeliveryStatus.accepted,
       DeliveryStatus.cancelled,
     ],
@@ -39,6 +45,7 @@ enum DeliveryStatus {
   bool canTransitionTo(DeliveryStatus next) {
     if (next == DeliveryStatus.delivered) {
       return this != DeliveryStatus.pending &&
+          this != DeliveryStatus.preparing &&
           this != DeliveryStatus.cancelled &&
           this != DeliveryStatus.delivered;
     }
@@ -62,6 +69,8 @@ enum DeliveryStatus {
     switch (this) {
       case DeliveryStatus.pending:
         return DeliveryStatus.accepted;
+      case DeliveryStatus.preparing:
+        return DeliveryStatus.accepted;
       case DeliveryStatus.accepted:
         return DeliveryStatus.pickedUp;
       case DeliveryStatus.pickedUp:
@@ -79,6 +88,8 @@ enum DeliveryStatus {
     switch (this) {
       case DeliveryStatus.pending:
         return 'Pending';
+      case DeliveryStatus.preparing:
+        return 'Preparing';
       case DeliveryStatus.accepted:
         return 'Accepted';
       case DeliveryStatus.pickedUp:
@@ -97,6 +108,8 @@ enum DeliveryStatus {
     switch (this) {
       case DeliveryStatus.pending:
         return 'Chờ nhận đơn';
+      case DeliveryStatus.preparing:
+        return 'Đang chuẩn bị';
       case DeliveryStatus.accepted:
         return 'Đã nhận đơn';
       case DeliveryStatus.pickedUp:
@@ -115,6 +128,8 @@ enum DeliveryStatus {
     switch (this) {
       case DeliveryStatus.pending:
         return 'PAID OUT';
+      case DeliveryStatus.preparing:
+        return 'PREPARING';
       case DeliveryStatus.accepted:
         return 'DISPATCHED';
       case DeliveryStatus.pickedUp:
@@ -135,6 +150,8 @@ enum DeliveryStatus {
       case 'PENDING':
       case 'PAID_OUT':
         return DeliveryStatus.pending;
+      case 'PREPARING':
+        return DeliveryStatus.preparing;
       case 'ACCEPTED':
       case 'DISPATCHED':
         return DeliveryStatus.accepted;

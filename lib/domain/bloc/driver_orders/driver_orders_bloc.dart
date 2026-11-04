@@ -197,8 +197,8 @@ class DriverOrdersBloc extends Bloc<DriverOrdersEvent, DriverOrdersState> {
       }
 
       final updatedOrder = acceptedOrder.copyWith(
-        deliveryId: event.deliveryId,
-        deliveryName: event.deliveryName,
+        deliveryUserId: event.deliveryId,
+        deliveryUserName: event.deliveryName,
         status: DeliveryStatus.accepted.dbStatus,
       );
 
