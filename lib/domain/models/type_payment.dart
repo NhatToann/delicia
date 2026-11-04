@@ -72,15 +72,3 @@ final List<TypePaymentMethod> typePaymentMethods = [
 /// Cash is the default: it needs no gateway, so the order can be created
 /// the instant the user taps "Pay Now".
 final TypePaymentMethod defaultPaymentMethod = typePaymentMethods[1];
-
-/// The payOS gateway method.
-///
-/// It is only offered when [Environment.payosConfigured] is true — see
-/// `lib/data/env/environment.dart`.
-const TypePaymentMethod payOsPaymentMethod = TypePaymentMethod(
-  uid: 'PAYOS',
-  type: 'PAYOS',
-  icon: Icons.qr_code_scanner_rounded,
-  color: Color(0xFFEE2B7B),
-  requiresGateway: true,
-);

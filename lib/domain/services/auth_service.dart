@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_database/firebase_database.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../data/env/environment.dart';
 import '../models/user.dart';
@@ -36,6 +37,34 @@ class AuthService {
   final FirebaseDatabase _database;
 
   DatabaseReference get _usersRef => _database.ref('users');
+
+  /// The Google Sign-In manager.
+  ///
+  /// `google_sign_in` requires a one-off [GoogleSignIn.initialize] before
+  /// any other call. The plugin reads the `serverClientId` it needs from
+  /// `google-services.json` (the web OAuth client, `client_type: 3`), so
+  /// the Firebase Console's "Add app → Web" step has to be done — it is
+  /// what puts that entry in the file.
+  static final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
+
+  bool _googleInitialized = false;
+
+  /// Prepares the Google Sign-In manager.
+  ///
+  /// Safe to call repeatedly: the plugin only needs to be initialized
+  /// once per process, and the second call is a no-op.
+  Future<void> _ensureGoogleInitialized() async {
+    if (_googleInitialized) return;
+    try {
+      await _googleSignIn.initialize();
+      _googleInitialized = true;
+    } catch (e) {
+      throw AuthServiceException(
+        AppFailureCodes.authGoogleUnavailable,
+        '$e',
+      );
+    }
+  }
 
   /// Returns the currently signed-in Firebase user (or `null` if none).
   fb.User? get currentFirebaseUser => _auth.currentUser;
@@ -111,6 +140,76 @@ class AuthService {
     if (fbUser == null) {
       throw const AuthServiceException(AppFailureCodes.authLoginNoUser);
     }
+    return _loadUserProfile(fbUser.uid);
+  }
+
+  /// Signs in with a Google account and returns the resolved [User].
+  ///
+  /// The flow is the standard three steps:
+  ///   1. `google_sign_in` shows the account picker and hands back an
+  ///      OIDC **ID token**;
+  ///   2. that token is exchanged for a Firebase session with
+  ///      [fb.GoogleAuthProvider];
+  ///   3. the Realtime Database profile is read (or created) for the
+  ///      resulting user, exactly like the email/password path.
+  ///
+  /// A Google account that has never used Delicia before is a *new* user:
+  /// Firebase creates the account on the fly and [rolId] defaults to
+  /// 1 (Client), which the role picker then confirms.
+  Future<User> loginWithGoogle() async {
+    await _ensureGoogleInitialized();
+
+    GoogleSignInAccount googleAccount;
+    try {
+      googleAccount = await _googleSignIn.authenticate();
+    } on GoogleSignInException catch (e) {
+      throw _mapGoogleError(e);
+    } catch (e) {
+      throw AuthServiceException(AppFailureCodes.authGoogleFailed, '$e');
+    }
+
+    final idToken = googleAccount.authentication.idToken;
+    if (idToken == null || idToken.isEmpty) {
+      throw const AuthServiceException(AppFailureCodes.authGoogleNoToken);
+    }
+
+    fb.UserCredential credential;
+    try {
+      final googleCredential = fb.GoogleAuthProvider.credential(idToken: idToken);
+      credential = await _auth.signInWithCredential(googleCredential);
+    } on fb.FirebaseAuthException catch (e) {
+      throw _mapAuthError(e);
+    } catch (e) {
+      throw AuthServiceException(AppFailureCodes.authGoogleFailed, '$e');
+    }
+
+    final fbUser = credential.user;
+    if (fbUser == null) {
+      throw const AuthServiceException(AppFailureCodes.authGoogleNoUser);
+    }
+
+    // Keep the Google display name and avatar on the profile so the app
+    // shows the customer's real name instead of a blank form.
+    final displayName = googleAccount.displayName;
+    final photoUrl = googleAccount.photoUrl;
+    if (displayName != null || photoUrl != null) {
+      try {
+        final parts = (displayName ?? '').trim().split(
+          RegExp(r'\s+'),
+        );
+        final first = parts.isEmpty ? fbUser.email : parts.first;
+        final last = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+        await _usersRef.child(fbUser.uid).update(<String, Object?>{
+          'firstName': first,
+          'lastName': last,
+          if (photoUrl != null) 'image': photoUrl,
+        });
+      } catch (_) {
+        // A failed profile refresh must not break the sign-in — the
+        // lazy-upsert path in `_loadUserProfile` fills the gap later.
+      }
+    }
+
     return _loadUserProfile(fbUser.uid);
   }
 
@@ -361,6 +460,33 @@ class AuthService {
         return const AuthServiceException(AppFailureCodes.authNetwork);
       default:
         return AuthServiceException(AppFailureCodes.authUnknown, e.code);
+    }
+  }
+
+  /// Maps a `google_sign_in` failure onto one of our own failure codes.
+  ///
+  /// The wording lives in the translation table, so this method only has to
+  /// decide *what* went wrong, never how to say it.
+  AuthServiceException _mapGoogleError(GoogleSignInException e) {
+    switch (e.code) {
+      case GoogleSignInExceptionCode.canceled:
+        return const AuthServiceException(AppFailureCodes.authGoogleCanceled);
+      case GoogleSignInExceptionCode.interrupted:
+        return const AuthServiceException(AppFailureCodes.authGoogleFailed);
+      case GoogleSignInExceptionCode.uiUnavailable:
+        return const AuthServiceException(AppFailureCodes.authGoogleUnavailable);
+      case GoogleSignInExceptionCode.clientConfigurationError:
+        return const AuthServiceException(
+          AppFailureCodes.authGoogleMisconfigured,
+        );
+      case GoogleSignInExceptionCode.providerConfigurationError:
+        return const AuthServiceException(
+          AppFailureCodes.authGoogleMisconfigured,
+        );
+      case GoogleSignInExceptionCode.userMismatch:
+        return const AuthServiceException(AppFailureCodes.authGoogleFailed);
+      case GoogleSignInExceptionCode.unknownError:
+        return const AuthServiceException(AppFailureCodes.authGoogleFailed);
     }
   }
 }

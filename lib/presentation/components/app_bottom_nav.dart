@@ -26,7 +26,7 @@ class AppBottomNav extends StatelessWidget {
     required this.onTap,
     this.cartCount,
     this.onTapCart,
-    this.showCart = false,
+    this.showCart,
   });
 
   /// Which destination is currently selected.
@@ -49,9 +49,13 @@ class AppBottomNav extends StatelessWidget {
   /// a dead end.
   final VoidCallback? onTapCart;
 
-  /// Whether to render the optional floating cart pill. Kept opt-in so the
-  /// navigation destinations remain evenly spaced by default.
-  final bool showCart;
+  /// Whether to render the optional floating cart pill.
+  ///
+  /// When null the pill follows [onTapCart]: it shows as soon as a screen
+  /// wires up a cart action, and hides when a screen deliberately passes
+  /// `false` (the payment screen — the customer is already checking out,
+  /// so a cart button there would be a dead end).
+  final bool? showCart;
 
   /// Height of the bar itself, excluding the system gesture inset.
   static const double barHeight = 64;
@@ -77,7 +81,7 @@ class AppBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final safeBottom = MediaQuery.of(context).padding.bottom;
     final items = _items(context.l10n);
-    final reserveCart = showCart && onTapCart != null;
+    final reserveCart = _showsCart;
     return Container(
       decoration: BoxDecoration(
         color: ColorsFrave.surfaceColor,
@@ -126,7 +130,7 @@ class AppBottomNav extends StatelessWidget {
                   ],
                 ),
               ),
-              if (showCart && onTapCart != null)
+              if (_showsCart)
                 // The [BlocBuilder] wraps the [Positioned] rather than the
                 // other way round: a [Positioned] hands its child a loose
                 // constraint, and the builder's listener subtree would
@@ -169,6 +173,12 @@ class AppBottomNav extends StatelessWidget {
       return null;
     }
   }
+
+  /// Whether the floating cart pill is on screen.
+  ///
+  /// A screen that wires up [onTapCart] wants the pill; a screen that
+  /// passes `showCart: false` does not.
+  bool get _showsCart => showCart ?? (onTapCart != null);
 }
 
 class _NavItem {

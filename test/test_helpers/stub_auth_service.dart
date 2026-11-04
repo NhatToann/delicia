@@ -48,6 +48,9 @@ class StubAuthService implements AuthService {
       throw UnimplementedError();
 
   @override
+  Future<User> loginWithGoogle() async => throw UnimplementedError();
+
+  @override
   Future<void> forgotPassword(String email) async {}
 
   @override

@@ -13,6 +13,9 @@ class LoginEvent extends AuthEvent {
 
 class CheckLoginEvent extends AuthEvent {}
 
+/// Sign in with a Google account instead of email + password.
+class GoogleLoginEvent extends AuthEvent {}
+
 class ForgotPasswordEvent extends AuthEvent {
   final String email;
   ForgotPasswordEvent(this.email);

@@ -388,8 +388,6 @@
   "paymentMethodPayPal": "PAYPAL",
   "paymentMethodGooglePay": "GOOGLE PAY",
   "paymentMethodMercadoPago": "MERCADO PAGO",
-  "paymentMethodPayOs": "PAYOS",
-  "paymentPayOsUnavailable": "payOS chưa được cấu hình. Vui lòng chọn tiền mặt.",
   "paymentVoucherTitle": "Mã giảm giá",
   "paymentVoucherSelect": "Chọn voucher",
   "paymentVoucherAvailable": "Voucher có sẵn",
@@ -690,17 +688,12 @@
   "@errorPaymentStartDetail": {
     "placeholders": { "detail": { "type": "String" } }
   },
-  "errorPaymentGatewayNotConfigured": "Cổng thanh toán payOS chưa được cấu hình cho bản build này.",
-  "errorPaymentGatewayNoLink": "payOS không trả về liên kết thanh toán.",
-  "errorPaymentGatewayRejected": "payOS đã từ chối yêu cầu.",
-  "errorPaymentGatewayFailed": "Yêu cầu payOS thất bại ({status}).",
-  "@errorPaymentGatewayFailed": {
-    "placeholders": { "status": { "type": "int" } }
-  },
-  "errorPaymentGatewayUnreadable": "payOS trả về phản hồi không đọc được ({status}).",
-  "@errorPaymentGatewayUnreadable": {
-    "placeholders": { "status": { "type": "int" } }
-  },
+  "errorAuthGoogleUnavailable": "Không thể mở hộp thoại chọn tài khoản Google.",
+  "errorAuthGoogleCanceled": "Đã huỷ đăng nhập bằng Google.",
+  "errorAuthGoogleNoToken": "Google không trả về thông tin đăng nhập.",
+  "errorAuthGoogleNoUser": "Google đã chấp nhận thông tin nhưng không trả về người dùng.",
+  "errorAuthGoogleFailed": "Đăng nhập bằng Google thất bại.",
+  "errorAuthGoogleMisconfigured": "Google Sign-In chưa được cấu hình đúng trên Firebase.",
   "errorRouteMalformed": "Dữ liệu tuyến đường không hợp lệ.",
   "errorRouteMalformedDetail": "Dữ liệu tuyến đường không hợp lệ: {detail}",
   "@errorRouteMalformedDetail": {

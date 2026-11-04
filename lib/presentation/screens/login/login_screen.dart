@@ -197,9 +197,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           const SizedBox(height: 20),
 
-                          const AuthSocialRow(
+                          AuthSocialRow(
                             onFacebook: _noOp,
-                            onGoogle: _noOp,
+                            onGoogle: _signInWithGoogle,
                             onApple: _noOp,
                           ),
 
@@ -227,6 +227,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // --- social + validator helpers ----------------------------------------
   static void _noOp() {}
+
+  /// Starts the Google sign-in flow.
+  ///
+  /// The bloc owns the whole exchange — showing the account picker,
+  /// exchanging the ID token for a Firebase session and reading the
+  /// profile — so the screen only has to dispatch the event.
+  void _signInWithGoogle() {
+    FocusScope.of(context).unfocus();
+    context.read<AuthBloc>().add(GoogleLoginEvent());
+  }
 
   String? _emailValidator(String? value) {
     final v = (value ?? '').trim();

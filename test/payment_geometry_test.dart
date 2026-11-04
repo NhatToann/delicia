@@ -15,12 +15,10 @@
 import 'package:delicia/domain/bloc/auth/auth_bloc.dart';
 import 'package:delicia/domain/bloc/cart/cart_bloc.dart';
 import 'package:delicia/domain/bloc/orders/orders_bloc.dart';
-import 'package:delicia/domain/bloc/payment/payment_bloc.dart';
 import 'package:delicia/domain/models/address.dart';
 import 'package:delicia/domain/models/order_record.dart';
 import 'package:delicia/domain/models/product_cart.dart';
 import 'package:delicia/domain/services/orders_service.dart';
-import 'package:delicia/domain/services/payment_gateway.dart';
 import 'package:delicia/presentation/client/payment/payment_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -73,26 +71,6 @@ class _StubOrders implements OrdersService {
 
 }
 
-class _StubGateway implements PaymentGateway {
-  @override
-  String get name => 'stub';
-  @override
-  Future<PaymentLink> createPaymentLink({
-    required double amount,
-    required String orderCode,
-    required String description,
-    required List<ProductCart> products,
-    required String returnUrl,
-    required String cancelUrl,
-    required String? buyerEmail,
-    required String? buyerName,
-  }) async =>
-      const PaymentLink(url: 'https://example.test/pay', reference: 'r1');
-  @override
-  Future<PaymentResult> queryStatus(String reference) async =>
-      const PaymentResult(status: PaymentStatus.paid, amount: 1000);
-}
-
 const ProductCart _shake = ProductCart(
   uidProduct: 'p1',
   imageProduct: 'assets/figma_home/card_best_1.png',
@@ -120,11 +98,9 @@ Future<void> _pump(WidgetTester tester) async {
   final cart = CartBloc();
   final orders = OrdersBloc(ordersService: _StubOrders());
   final auth = AuthBloc(authService: FakeAuthService());
-  final payment = PaymentBloc(gateway: _StubGateway());
   addTearDown(cart.close);
   addTearDown(orders.close);
   addTearDown(auth.close);
-  addTearDown(payment.close);
 
   cart.add(const OnAddProductToCartEvent(_shake));
   cart.add(const OnAddProductToCartEvent(_lasagna));
@@ -137,7 +113,6 @@ Future<void> _pump(WidgetTester tester) async {
           BlocProvider<AuthBloc>.value(value: auth),
           BlocProvider<CartBloc>.value(value: cart),
           BlocProvider<OrdersBloc>.value(value: orders),
-          BlocProvider<PaymentBloc>.value(value: payment),
         ],
         child: const PaymentScreen(),
       ),

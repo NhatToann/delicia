@@ -65,6 +65,13 @@ app.*.map.json
 /ios/Flutter/Generated.xcconfig
 /ios/Flutter/flutter_export_environment.sh
 
+# Firebase CLI local state (hosting cache, deploy metadata).
+.firebase/
+
+# Firebase/Google Cloud — CLI local state
+.firebase/
+**/.firebase/
+
 # Secrets — KHÔNG push thông tin nhạy cảm
 google-services.json
 GoogleService-Info.plist
@@ -74,6 +81,10 @@ GoogleService-Info.plist
 **/firebase-adminsdk-*.json
 **/*.jks
 **/*.keystore
+
+# Build-time secrets (read via `--dart-define-from-file=dart_defines.env`).
+# The repository is PUBLIC — never commit real credentials.
+dart_defines.env
 
 # Tài liệu nội bộ (Agent tasks, AI logs)
 # KHÔNG push lên GitHub — bỏ comment nếu muốn share với team

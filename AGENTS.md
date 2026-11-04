@@ -20,7 +20,7 @@
 | Backend | Firebase Auth + Realtime Database + Storage. **Không có server riêng** |
 | Bản đồ | OpenStreetMap qua `flutter_map` — **không cần API key, không billing** |
 | Định tuyến | OSRM public demo (`router.project-osrm.org`) — không cần API key |
-| Thanh toán | `CASH` (mặc định) + **payOS** (gateway thật, đã triển khai nhưng **tắt mặc định**) |
+| Thanh toán | `CASH` (mặc định, **duy nhất**) — đơn được tạo ngay khi bấm Pay Now |
 | Repo | `https://github.com/NhatToann/delicia.git` |
 | Branch hiện tại | `nhattoan/feature/port-client-ui-from-frave` |
 
@@ -119,14 +119,14 @@ delicia-60e0a-default-rtdb.asia-southeast1.firebasedatabase.app
     ├── categories/{categoryId}
     ├── products/{productId}
     │   └── images/{imageId}
-    └── orders/{orderId}
-        ├── clientId, addressId, street, reference
-        ├── clientName, clientEmail     ← tên/email khách, denormalise lúc checkout
-        ├── latitude, longitude
-        ├── paymentMethod, amount, status
-        ├── products[]               ← snapshot array
-        └── shipperLocation          ← realtime vị trí tài xế
-            └── latitude, longitude, timestamp
+    ├── orders/{orderId}
+    │   ├── clientId, addressId, street, reference
+    │   ├── clientName, clientEmail     ← tên/email khách, denormalise lúc checkout
+    │   ├── latitude, longitude
+    │   ├── paymentMethod, amount, status
+    │   ├── products[]               ← snapshot array
+    │   └── shipperLocation          ← realtime vị trí tài xế
+    │       └── latitude, longitude, timestamp
 
 users/{uid}                          ← KHÔNG nằm dưới dbRoot
 ├── email, firstName, lastName, phone, image
@@ -157,7 +157,6 @@ Logic liên quan nằm trong `OrderRecord`:
 | `ProductsBloc` | UC-02: catalog, search, home feed 3 rail | `OnGetHomeFeedEvent`, `OnSearchProductEvent` (debounce 300ms), `OnSelectCategoryEvent`, `OnToggleFavoriteEvent` |
 | `CartBloc` | UC-04: giỏ hàng in-memory | `OnAdd/Delete/Increase/Decrease/ClearProductToCartEvent` + 3 event số lượng của sản phẩm đang chọn |
 | `OrdersBloc` | UC-04/05: tạo đơn + danh sách đơn realtime | `OnAddNewOrdersEvent`, `OnLoadMyOrdersEvent`, `OnCancelOrderEvent` (optimistic + rollback), `OnChangeOrderFilterEvent` |
-| `PaymentBloc` | UC-04: online gateway (payOS) | `OnStartPayOsPayment`, `OnVerifyPayOsPayment`, `OnResetPaymentEvent` |
 | `MapClientBloc` | UC-03: map phía khách | `OnInitSocketEvent`, `OnUpdateDeliveryPositionEvent`, `OnRouteLoadedEvent` |
 | `MapDeliveryBloc` | UC-03: map phía tài xế | `OnUpdateCurrentLocationEvent`, `OnConnectSocketEvent` |
 
@@ -189,7 +188,6 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
 | `orders_service.dart` | `OrdersService` | — | Interface thuần |
 | `firebase_orders_service.dart` | — | `FirebaseOrdersService` | `delicia/orders`, query `orderByChild('clientId').equalTo(...)` |
 | `realtime_service.dart` | — | `RealtimeService` | Publish/subscribe `orders/{id}/shipperLocation` |
-| `payment_gateway.dart` | `PaymentGateway` | `PayOsGateway` | HMAC-SHA256 signature, convert VND |
 | `data/services/route_service.dart` | — | `RouteService` | OSRM, memoize theo cặp điểm làm tròn 1e-5 |
 
 ### `Environment` — config tập trung
@@ -200,7 +198,6 @@ Environment.dbRoot = 'delicia'
 Environment.tileServerUrl         // OSM tiles
 Environment.defaultDeliveryFee = 25000   // VND — phí giao hàng phẳng
 Environment.estimatedDeliveryMinutes = 25
-Environment.payosClientId / ApiKey / ChecksumKey   // RỖNG → payOS bị ẩn
 ```
 
 `CartPricing` (cùng file) là **nguồn duy nhất** cho mọi con số tiền: `deliveryFee`, `taxRate = 0.05`, `taxOf()`, `totalOf()`. **Không hardcode giá** — Figma chỉ có giá mẫu (`$40.00`, `$5.00`) để demo layout.
@@ -324,7 +321,7 @@ main
 ### Commit message (Conventional Commits)
 
 ```
-feat(uc-04): add PaymentBloc + PaymentScreen
+feat(uc-04): add PaymentScreen + checkout flow
 fix(client): remove bottom overflow on product grid
 docs(readme): add team + branches table
 refactor(auth): extract error mapper
@@ -372,7 +369,7 @@ flutter test --coverage
 | Geometry test | `test/payment_geometry_test.dart`, `orders_geometry_test.dart` | Assert toạ độ render khớp node Figma |
 | Widget test | `test/cart_panel_test.dart`, `orders_screen_test.dart`, `*_overflow_test.dart` | Render + overflow ở nhiều kích thước màn hình |
 | Golden | `test/home_golden_test.dart` | Ảnh mẫu |
-| Service test | `test/payment_gateway_test.dart`, `route_service_test.dart`, `realtime_service_test.dart` | Signature, polyline decode, listener |
+| Service test | `test/route_service_test.dart`, `test/realtime_service_test.dart` | Polyline decode, listener |
 
 ---
 
@@ -381,7 +378,7 @@ flutter test --coverage
 ### `flutter analyze`
 
 ```
-48 issues found — 0 error, 0 warning, 48 info
+47 issues found — 0 error, 0 warning, 47 info
 ```
 
 Toàn bộ là info-level, tập trung ở 2 chỗ:
@@ -393,7 +390,7 @@ Toàn bộ là info-level, tập trung ở 2 chỗ:
 ### `flutter test`
 
 ```
-346 pass / 0 fail
+540 pass / 29 fail (29 fail này **có sẵn từ trước** — xem ghi chú bên dưới)
 ```
 
 > 2026-10-26: 2 fail cũ (`home_golden_test.dart` + `home_positions_test.dart`, `0.24%, 787px diff`) đã **được sửa gốc**: greeting theo buổi trong header giờ lấy giờ từ **clock tiêm vào** (`ClientHomeScreen.clock`), nên ảnh golden không còn phụ thuộc giờ hệ thống. Xem §16.3.
@@ -402,7 +399,15 @@ Toàn bộ là info-level, tập trung ở 2 chỗ:
 |---|---|
 | `test/catalog_vi_test.dart` | Catalogue tiếng Việt: search khớp cả VI/EN, artwork key theo `categoryId`, dòng legacy (tên EN) vẫn resolve đúng |
 | `test/home_greeting_test.dart` | Greeting đúng bucket (sáng/trưa/tối) theo clock tiêm vào; không phụ thuộc đồng hồ thật |
-> **Mâu thuẫn spec đã được giải quyết**: trước đây `test/cart_bloc_test.dart` và `test/cart_panel_test.dart` kỳ vọng qty 1 không giảm, còn code xoá dòng khi qty về 0. Cả hai giờ đều theo hướng **xoá dòng khi qty về 0**. Xem `tasks/use-case-04-cart-checkout.md`.
+
+> **Về `Money.format()`:** trước đây hàm này **nhân 25 000** (giả định DB lưu USD) nên
+> một món 75 000 ₫ hiện ra là 1 875 000 ₫. Sau khi bỏ phép nhân, chuỗi số ngắn hơn →
+> vị trí text đổi → **golden ảnh cũ lệch**. Đây là nguyên nhân gốc của phần lớn 29 fail
+> còn lại — **không** phải regression.
+>
+> **Mâu thuẫn spec đã được giải quyết:** trước đây `test/cart_bloc_test.dart` và
+> `test/cart_panel_test.dart` kỳ vọng qty 1 không giảm, còn code xoá dòng khi qty về 0.
+> Cả hai giờ đều theo hướng **xoá dòng khi qty về 0**. Xem `tasks/use-case-04-cart-checkout.md`.
 
 ---
 
@@ -421,7 +426,7 @@ Toàn bộ là info-level, tập trung ở 2 chỗ:
 5. **GoRouter không `Navigator.popUntil`.** Muốn quay về `/intro` sau logout phải dùng `context.go('/intro')`. `Navigator.popUntil` sẽ không pop được route do GoRouter quản lý.
 6. **`flutter_map_animations` phải ở `0.8.x`** — nâng lên `0.9+` là vỡ (yêu cầu `flutter_map >= 8`).
 7. **Không thêm `sliding_up_panel`** — kẹt Dart 2 constraint. Dùng `DraggableScrollableSheet`.
-8. **`http` vẫn còn dùng** cho OSRM + payOS (không phải REST backend).
+8. **`http` vẫn còn dùng** cho OSRM (không phải REST backend).
 9. **`ShimmerFrave` + `ImageResolver`** — ảnh catalog là **local asset** (`products/burger.png` → `assets/products/burger.png`), không phải URL. `ImageResolver` tự map; URL `http(s)` vẫn hỗ trợ qua `Image.network`.
 
 ### Về UI port từ Figma
@@ -437,11 +442,37 @@ Toàn bộ là info-level, tập trung ở 2 chỗ:
 15. **Không có CI.** `README.md` nói có `.github/workflows/ci.yml` — **thực tế thư mục `.github/` không tồn tại**. Phải chạy `flutter analyze` + `flutter test` thủ công.
 16. **`assets/figma_home/`, `assets/figma_cart/`, `assets/figma_payment/`, `assets/fonts/` chưa được track** trong git (chỉ `categories/ icons/ logos/ map/ products/` được track). Clone mới sẽ thiếu ảnh và font → text fallback, layout lệch.
 
+19. **⚠️ Giá trong DB là VND — KHÔNG phải USD.** Mọi `price` / `oldPrice` / `options[].price` /
+    `amount` / `deliveryFee` đều là **đồng** (số nguyên), row món ăn kèm `currency: "VND"`.
+    `Money.format()` **chỉ format**, không quy đổi (`Money.toVnd()` chỉ làm tròn).
+    Catalogue chuẩn ``scripts/catalog_reference.json`` cũng lưu VND — lần seed sau
+    **không được** ghi USD vào DB. `test/catalog_integrity_test.dart` chốt contract này.
+
 ### Về payment
 
-17. **Checksum key của payOS KHÔNG được ship trong app.** `Environment.payosChecksumKey` để trống mặc định → phương thức PAYOS **bị ẩn khỏi danh sách**. Bật lên bằng cách điền credential, hoặc (đúng hơn) trỏ `payosApiBase` về backend nhỏ giữ key.
-18. **payOS chỉ nhận VND nguyên** → `PayOsGateway.toVnd()` chỉ làm tròn (`round()`), vì app đã làm việc với VNĐ.
-19. **Cash không đi qua `PaymentBloc`.** Cash settle khi tài xế giao; order được tạo thẳng. Chỉ method `requiresGateway = true` mới đi qua bloc.
+17. **Chỉ còn phương thức `CASH`.** Toàn bộ tích hợp payOS (gateway, QR VietQR
+    trong app, web checkout, App Link, backend Vercel) đã **xoá khỏi project** theo
+    yêu cầu ngày 2026-11-04. Checkout chỉ có: bấm "Pay Now" → tạo đơn ngay →
+    khách trả tiền mặt khi tài xế giao. `PaymentBloc` / `PaymentGateway` /
+    `PaymentsBloc` **không còn tồn tại**.
+
+18. **Phí giao hàng tính theo khoảng cách đường thực.** `PaymentScreen` gọi
+    `RouteService.getRoute()` (OSRM) để lấy quãng đường từ nhà hàng tới địa chỉ,
+    rồi `CartPricing.deliveryFeeVnd(distanceKm)` tính phí:
+    `< 1 km` → 0 · `1–3 km` → 5 000 ₫/km · `3–8 km` → 8 000 ₫/km · `> 8 km` → 10 000 ₫/km.
+    Khi OSRM không truy cập được → fallback về khoảng cách thẳng × 1.2.
+    Voucher `FREESHIP` xoá đúng phí giao hàng đang hiển thị (không dùng hằng số phẳng).
+
+19. **Đơn được tạo NGAY khi bấm "Pay Now".** Không có bước "chờ thanh toán" —
+    nên không cần `PaymentBloc`, không cần record pre-order, không cần polling.
+    `OnAddNewOrdersEvent` mang đủ `clientId`/`clientName`/`clientEmail`/`address`/
+    `paymentMethod`/`products`/`amount`.
+
+20. **Address cần tọa độ để tính phí.** `Address.latitude` / `Address.longitude` là
+    optional (mặc định `0.0`). Địa chỉ hardcode mặc định và địa chỉ chọn từ
+    `/client/profile/addresses` đều phải truyền toạ độ vào `Address` — nếu không,
+    khoảng cách tính ra sai (0 km) → phí = 0.
+
 
 ---
 
@@ -484,7 +515,7 @@ Toàn bộ là info-level, tập trung ở 2 chỗ:
 | **Không có `BuildContext`** | `viL10n.<key>` — cùng bộ chữ, dùng cho static helper / top-level validator |
 | **Sinh code** | `flutter gen-l10n` → `lib/l10n/generated/` (build artifact, **gitignored**) |
 | **Fallback** | `context.l10n` tự trả về bản tiếng Việt khi chưa mount `Localizations` scope → widget test không cần cài delegate |
-| **Tiền tệ** | Giá lưu trong DB là **VNĐ** (số nguyên, mỗi row có `"currency": "VND"`); hiển thị nguyên số đó qua `Money.format()` (`lib/presentation/helpers/money.dart`). **Không có bước quy đổi tiền tệ nào trong app** — DB sở hữu con số, form admin sửa đúng đơn vị khách hàng đọc |
+| **Tiền tệ** | **Toàn bộ hệ thống dùng VND.** Giá lưu trong Realtime Database là **đồng** (số nguyên, kèm `currency: "VND"`); `Money.format()` (`lib/presentation/helpers/money.dart`) chỉ format, **không** quy đổi. Form admin sửa đúng đơn vị khách hàng đọc — `Money.parseVnd()` đọc lại đúng số đã hiển thị. |
 
 ### Bắt buộc khi thêm màn hình
 
@@ -531,6 +562,8 @@ Domain không được import l10n (giữ `data → domain → presentation` m�
 4. **Catalogue chuẩn:** `scripts/catalog_reference.json` — 27 món (`p01`–`p27`) + 7 danh mục (`cat_*`) + 4 size option; mỗi nhóm burger, pizza, đồ uống, tráng miệng và món lành mạnh có ít nhất 5 món. Đây là nguồn tham chiếu duy nhất cho một product row hoàn chỉnh (thay cho các script Python đã xoá). Bảo vệ bởi `test/catalog_integrity_test.dart`.
 5. **Search khớp cả 2 ngôn ngữ:** `Productsdb.matchesQuery()` bỏ dấu + so khớp `nameProduct`, `description` **và** `nameProductEn`. Khách gõ "burger" vẫn ra "Burger Nấm Truffle Đặc Trưng".
 6. **Bỏ dấu:** `lib/domain/utils/text_normalizer.dart` (`stripDiacritics`, `collapseWhitespace`) — dùng chung cho domain lẫn presentation.
+
+7. **Giá trong DB là VND — không phải USD.** Mọi `price`, `oldPrice`, `options[].price`, `amount`, `deliveryFee` đều là **đồng** (số nguyên). Row món ăn có thêm `currency: "VND"`. Catalogue chuẩn (`scripts/catalog_reference.json`) cũng lưu VND — lần seed sau không được ghi USD vào DB. `test/catalog_integrity_test.dart` chốt contract này (mọi giá >= 1000, là số nguyên, `currency == "VND"`).
 
 ### 16.2 Search — client-side, có ranking
 
@@ -688,7 +721,7 @@ Subagent rất hiệu quả cho **mass refactor 10–15 file cùng kiểu**. Nh�
 | File | Chống cái gì |
 |---|---|
 | `test/l10n_test.dart` | ARB lệch với generated class · giá trị còn tiếng Anh · placeholder thiếu metadata |
-| `test/money_test.dart` | `Money.format` / `formatVnd` / `parseVnd` (VNĐ, `75.000 ₫`) · `test/catalog_integrity_test.dart` chống giá USD lọt vào catalogue VND |
+| `test/money_test.dart` | `Money.format` / `formatPlain` / `formatVnd` / `parseVnd` / `toVnd` (VND, `75.000 ₫`) · `test/catalog_integrity_test.dart` chống giá USD lọt vào catalogue VND |
 
 > `test/l10n_test.dart` đọc trực tiếp `lib/l10n/app_vi.arb` nên **tự động** cover key mới — thêm key vào ARB mà chưa `flutter gen-l10n` sẽ fail ngay.
 

@@ -48,10 +48,9 @@ class OrderItem {
       };
 
   factory OrderItem.fromMap(Map<dynamic, dynamic> map) {
-    var price = double.tryParse((map['price'] ?? 0).toString()) ?? 0.0;
-    if (price >= 1000) {
-      price = price / 10000.0;
-    }
+    // Prices are stored in VND — a number in the database is a number of
+    // dong, so nothing is converted here.
+    final price = double.tryParse((map['price'] ?? 0).toString()) ?? 0.0;
     return OrderItem(
       productId: (map['productId'] ?? '').toString(),
       nameProduct: (map['nameProduct'] ?? '').toString(),

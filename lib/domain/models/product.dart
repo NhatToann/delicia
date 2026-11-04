@@ -239,18 +239,19 @@ class Productsdb {
         currency: currency ?? this.currency,
       );
 
+  /// Reads a monetary field.
+  ///
+  /// The catalogue stores prices in **VND** — a number in the database is
+  /// a number of dong, full stop. The Figma UI kit drew its sample
+  /// amounts in dollars (`$8.99`), but those described the layout, not
+  /// the price, and the seed data has since been migrated to dong.
+  ///
+  /// Nothing is converted here: a row that says `75000` is a 75 000 ₫
+  /// dish, and that is exactly what the app shows.
   static double _parseDouble(dynamic raw) {
     if (raw == null) return 0.0;
-    double val;
-    if (raw is num) {
-      val = raw.toDouble();
-    } else {
-      val = double.tryParse(raw.toString()) ?? 0.0;
-    }
-    if (val >= 1000) {
-      val = val / 10000.0;
-    }
-    return val;
+    if (raw is num) return raw.toDouble();
+    return double.tryParse(raw.toString()) ?? 0.0;
   }
 
   static int _parseInt(dynamic raw) {

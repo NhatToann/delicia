@@ -88,7 +88,6 @@ void main() {
         'PAYPAL',
         'GOOGLE PAY',
         'MERCADO PAGO',
-        'PAYOS',
       };
       // Vietnamese is written with these diacritics; a value with letters but
       // no diacritic at all is almost certainly still English.

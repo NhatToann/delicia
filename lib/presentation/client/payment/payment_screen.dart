@@ -1,20 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../data/env/environment.dart';
+import '../../../data/services/route_service.dart';
 import '../../../domain/bloc/address/address_bloc.dart';
 import '../../../domain/bloc/auth/auth_bloc.dart';
 import '../../../domain/bloc/cart/cart_bloc.dart';
 import '../../../domain/bloc/orders/orders_bloc.dart';
-import '../../../domain/bloc/payment/payment_bloc.dart';
 import '../../../domain/models/address.dart';
 import '../../../domain/models/client_address.dart';
+import '../../../domain/models/lat_lng_point.dart';
 import '../../../domain/models/product_cart.dart';
 import '../../../domain/models/type_payment.dart';
-import '../../../domain/services/app_failure.dart';
-import '../../../domain/services/payment_gateway.dart';
 import '../../components/app_bottom_nav.dart';
 import '../../components/app_nav_destination.dart';
 import '../../helpers/error_message.dart';
@@ -42,9 +40,21 @@ class PaymentScreen extends StatefulWidget {
 
 class _PaymentScreenState extends State<PaymentScreen> {
   final TextEditingController _voucherController = TextEditingController();
+  final RouteService _routeService = RouteService();
 
   /// Address the user is delivering to.
   Address _address = Address.hardcodedDefault;
+
+  /// Road distance in km from the restaurant to the delivery address.
+  ///
+  /// The delivery fee is derived from it, so it is recalculated whenever
+  /// the address changes.
+  double _distanceKm = 0.0;
+  bool _calculatingDistance = false;
+
+  /// Whether the address carries usable coordinates. When it does not, the
+  /// flat default fee applies instead of a distance-based one.
+  bool _hasCoordinates = false;
 
   /// The payment method currently selected.
   late TypePaymentMethod _method = widget.initialMethod ?? defaultPaymentMethod;
@@ -60,7 +70,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   final List<TypePaymentMethod> _methods = <TypePaymentMethod>[
     defaultPaymentMethod,
-    payOsPaymentMethod,
   ];
 
   @override
@@ -76,12 +85,73 @@ class _PaymentScreenState extends State<PaymentScreen> {
         addressBloc.add(OnLoadAddressesEvent(uid: uid));
       }
     });
+    // The distance lookup touches the network, so it runs after the first
+    // frame — calling setState from initState is not allowed.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _calculateDistanceAndFee(_address);
+    });
   }
 
   @override
   void dispose() {
+    _routeService.dispose();
     _voucherController.dispose();
     super.dispose();
+  }
+
+  /// The delivery fee for the current distance, in dong.
+  ///
+  /// The app and the database both speak VND, so the fee is returned in
+  /// the unit it is charged in — no conversion happens here.
+  double get _deliveryFeeVnd => _hasCoordinates
+      ? CartPricing.deliveryFeeVnd(_distanceKm)
+      : Environment.defaultDeliveryFee;
+
+  /// Works out how far the delivery address is from the restaurant.
+  ///
+  /// The road distance comes from OSRM; when the public demo server is
+  /// unreachable the straight-line distance is used instead, so the screen
+  /// always shows a fee.
+  Future<void> _calculateDistanceAndFee(Address address) async {
+    // An address without coordinates cannot be routed — fall back to the
+    // flat default fee instead of pretending the customer is on the
+    // other side of the planet.
+    if (!mounted) return;
+    if (address.latitude == 0.0 && address.longitude == 0.0) {
+      setState(() {
+        _distanceKm = 0.0;
+        _hasCoordinates = false;
+        _calculatingDistance = false;
+      });
+      return;
+    }
+    setState(() => _calculatingDistance = true);
+    double distKm = 0.0;
+    const origin = LatLngPoint(
+      latitude: Environment.restaurantLatitude,
+      longitude: Environment.restaurantLongitude,
+    );
+    final dest = LatLngPoint(
+      latitude: address.latitude,
+      longitude: address.longitude,
+    );
+    try {
+      final route = await _routeService.getRoute(
+        origin: origin,
+        destination: dest,
+      );
+      distKm = route.distanceMeters / 1000.0;
+    } catch (_) {
+      // Fallback: great-circle distance * 1.2
+      final directMeters = RouteService.distanceMeters(origin, dest);
+      distKm = (directMeters * 1.2) / 1000.0;
+    }
+    if (!mounted) return;
+    setState(() {
+      _distanceKm = distKm;
+      _hasCoordinates = true;
+      _calculatingDistance = false;
+    });
   }
 
   void _applyVoucher(String rawCode) {
@@ -151,8 +221,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   double _amountToPay(double subtotal) {
     final discountedSubtotal = subtotal - (_voucher?.subtotalDiscount(subtotal) ?? 0);
-    final total = CartPricing.totalOf(discountedSubtotal);
-    return _voucher?.isFreeShipping == true ? total - CartPricing.deliveryFee : total;
+    final delivery = _voucher?.isFreeShipping == true ? 0.0 : _deliveryFeeVnd;
+    return CartPricing.totalOf(discountedSubtotal, delivery: delivery);
   }
 
   @override
@@ -182,6 +252,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
         id: defaultAddr.id,
         street: cleanStreet,
         reference: defaultAddr.reference,
+        latitude: defaultAddr.latitude,
+        longitude: defaultAddr.longitude,
       );
     }
 
@@ -226,6 +298,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           voucher: _voucher,
                           voucherController: _voucherController,
                           voucherError: _voucherError,
+                          deliveryFee: _deliveryFeeVnd,
+                          calculatingDistance: _calculatingDistance,
                           onPickAddress: _pickAddress,
                           onPickMethod: _pickMethod,
                           onEditItems: _editItems,
@@ -236,10 +310,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       ),
                       _PayNowBar(
                         enabled: products.isNotEmpty,
-                        busy: orderState.isLoading ||
-                            context.select<PaymentBloc, bool>(
-                                  (bloc) => bloc.state.isBusy,
-                            ),
+                        busy: orderState.isLoading,
                         onPressed: () => _pay(
                           orders,
                           auth.user?.uid ?? '',
@@ -276,7 +347,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
       id: picked.id,
       street: cleanStreet,
       reference: picked.reference,
+      latitude: picked.latitude,
+      longitude: picked.longitude,
     ));
+    await _calculateDistanceAndFee(_address);
   }
 
   Future<void> _pickMethod() async {
@@ -304,75 +378,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
       return;
     }
 
-    if (!_method.requiresGateway) {
-      _createOrder(orders, clientId, total, products);
-      return;
-    }
-
-    if (!Environment.payosConfigured) {
-      errorTextSnack(context, context.l10n.paymentPayOsUnavailable);
-      return;
-    }
-
-    final bloc = context.read<PaymentBloc>();
-    bloc.add(
-      OnStartPayOsPayment(
-        amount: total,
-        orderCode: _orderCode(),
-        description: context.l10n.paymentOrderDescription,
-        products: products,
-        returnUrl: 'https://delicia.app/payment/success',
-        cancelUrl: 'https://delicia.app/payment/cancel',
-        buyerEmail: context.read<AuthBloc>().state.user?.email,
-        buyerName: context.read<AuthBloc>().state.user?.fullName,
-      ),
-    );
-
-    await bloc.stream.firstWhere((state) {
-      final status = state.status;
-      return status == PaymentStatus.awaitingUser || status == PaymentStatus.failed;
-    });
-
-    if (!mounted) return;
-    final state = bloc.state;
-    if (state.status == PaymentStatus.failed) {
-      errorMessageSnack(
-        context,
-        state.error ?? const AppFailure(AppFailureCodes.paymentStart),
-      );
-      return;
-    }
-    final url = state.checkoutUrl;
-    if (url == null) return;
-
-    final opened = await _openExternally(url);
-    if (!opened || !mounted) return;
-
-    bloc.add(OnVerifyPayOsPayment());
-    await bloc.stream.firstWhere((s) {
-      final status = s.status;
-      return status == PaymentStatus.paid ||
-          status == PaymentStatus.failed ||
-          status == PaymentStatus.cancelled;
-    });
-
-    if (!mounted) return;
-    final finalState = bloc.state;
-    if (finalState.status == PaymentStatus.paid) {
-      _createOrder(orders, clientId, total, products);
-      return;
-    }
-    if (finalState.error != null) {
-      errorMessageSnack(context, finalState.error!);
-    }
-  }
-
-  Future<bool> _openExternally(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      return launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-    return false;
+    // Cash is the only method the checkout offers: it settles when the
+    // courier hands the order over, so the order exists from the start.
+    _createOrder(orders, clientId, total, products);
   }
 
   void _createOrder(
@@ -396,8 +404,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
       ),
     );
   }
-
-  String _orderCode() => DateTime.now().millisecondsSinceEpoch.toString().substring(5);
 }
 
 enum _PaymentVoucherKind { percent, freeShipping }
@@ -418,8 +424,12 @@ class _PaymentVoucher {
 
   double subtotalDiscount(double subtotal) => isFreeShipping ? 0 : subtotal * percent / 100;
 
-  double savings(double subtotal) =>
-      isFreeShipping ? CartPricing.deliveryFee : subtotalDiscount(subtotal);
+  /// What the voucher saves.
+  ///
+  /// A free-shipping voucher saves exactly the delivery fee that was
+  /// charged, which depends on the distance — so the fee is passed in.
+  double savings(double subtotal, {double deliveryFee = 0}) =>
+      isFreeShipping ? deliveryFee : subtotalDiscount(subtotal);
 }
 
 String _voucherDescription(BuildContext context, _PaymentVoucher voucher) =>
@@ -435,6 +445,8 @@ class _PaymentBody extends StatelessWidget {
     required this.voucher,
     required this.voucherController,
     required this.voucherError,
+    required this.deliveryFee,
+    required this.calculatingDistance,
     required this.onPickAddress,
     required this.onPickMethod,
     required this.onEditItems,
@@ -449,6 +461,12 @@ class _PaymentBody extends StatelessWidget {
   final _PaymentVoucher? voucher;
   final TextEditingController voucherController;
   final String? voucherError;
+
+  /// The delivery fee, in dong — derived from the road distance.
+  final double deliveryFee;
+
+  /// Whether the distance (and therefore the fee) is still being worked out.
+  final bool calculatingDistance;
   final VoidCallback onPickAddress;
   final VoidCallback onPickMethod;
   final VoidCallback onEditItems;
@@ -573,9 +591,7 @@ class _PaymentBody extends StatelessWidget {
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            method.uid == 'CASH'
-                                ? l10n.paymentPayWhenReceive
-                                : l10n.paymentMethodPayOs,
+                            l10n.paymentPayWhenReceive,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: FraveText.regular(
@@ -725,13 +741,14 @@ class _PaymentBody extends StatelessWidget {
           const SizedBox(height: 8),
           _PaymentBreakdownRow(
             label: l10n.cartSummaryDelivery,
-            amount: voucher?.isFreeShipping == true ? 0 : CartPricing.deliveryFee,
+            amount: voucher?.isFreeShipping == true ? 0 : deliveryFee,
+            loading: calculatingDistance,
           ),
           if (voucher != null) ...[
             const SizedBox(height: 8),
             _PaymentBreakdownRow(
               label: l10n.paymentVoucherDiscount(voucher!.code),
-              amount: -voucher!.savings(_subtotal),
+              amount: -voucher!.savings(_subtotal, deliveryFee: deliveryFee),
               isDiscount: true,
             ),
           ],
@@ -752,8 +769,8 @@ class _PaymentBody extends StatelessWidget {
                   Money.format(
                     CartPricing.totalOf(
                       _subtotal - (voucher?.subtotalDiscount(_subtotal) ?? 0),
-                    ) -
-                        (voucher?.isFreeShipping == true ? CartPricing.deliveryFee : 0),
+                      delivery: voucher?.isFreeShipping == true ? 0 : deliveryFee,
+                    ),
                   ),
                   textAlign: TextAlign.end,
                   maxLines: 1,
@@ -774,11 +791,16 @@ class _PaymentBreakdownRow extends StatelessWidget {
     required this.label,
     required this.amount,
     this.isDiscount = false,
+    this.loading = false,
   });
 
   final String label;
   final double amount;
   final bool isDiscount;
+
+  /// Whether the amount is still being computed — the row shows a dash
+  /// instead of a number until it is known.
+  final bool loading;
 
   @override
   Widget build(BuildContext context) => Row(
@@ -794,7 +816,7 @@ class _PaymentBreakdownRow extends StatelessWidget {
       ),
       const SizedBox(width: 8),
       Text(
-        Money.format(amount),
+        loading ? '—' : Money.format(amount),
         textAlign: TextAlign.end,
         style: FraveText.medium(
           14,

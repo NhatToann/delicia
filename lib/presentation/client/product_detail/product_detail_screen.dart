@@ -40,6 +40,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   String? _selectedOptionId;
   ProductsBloc? _productsBloc;
   bool _addingToCart = false;
+
+  /// Drives the "added to cart" confirmation that fades back after a
+  /// moment.
   Timer? _confirmationTimer;
 
   @override

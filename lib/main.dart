@@ -11,7 +11,6 @@ import 'domain/bloc/driver_orders/driver_orders_bloc.dart';
 import 'domain/bloc/map_client/map_client_bloc.dart';
 import 'domain/bloc/map_delivery/map_delivery_bloc.dart';
 import 'domain/bloc/orders/orders_bloc.dart';
-import 'domain/bloc/payment/payment_bloc.dart';
 import 'domain/bloc/products/products_bloc.dart';
 import 'domain/bloc/user/user_bloc.dart';
 import 'domain/services/admin_catalog_service.dart';
@@ -24,7 +23,6 @@ import 'domain/services/firebase_admin_catalog_service.dart';
 import 'domain/services/firebase_admin_orders_service.dart';
 import 'domain/services/firebase_orders_service.dart';
 import 'domain/services/orders_service.dart';
-import 'domain/services/payment_gateway.dart';
 import 'domain/services/products_service.dart'
     show FirebaseCategoryService, FirebaseProductsService;
 import 'domain/services/realtime_service.dart';
@@ -102,9 +100,6 @@ class DeliciaApp extends StatelessWidget {
             create: (_) => DriverOrdersBloc(ordersService: ordersService),
           ),
           // UC-04 — checkout / payment (Leader).
-          BlocProvider<PaymentBloc>(
-            create: (_) => PaymentBloc(gateway: PayOsGateway()),
-          ),
           // UC-05 — read-side orders (list / detail / realtime / cancel).
           // Held separately from the Leader's OrdersBloc so checkout is
           // untouched.

@@ -49,18 +49,14 @@ class ProductOption {
         'price': price,
       };
 
+  /// Reads the option's absolute price.
+  ///
+  /// Prices are stored in **VND** — a number in the database is a number
+  /// of dong. Nothing is converted here.
   static double _parseDouble(dynamic raw) {
     if (raw == null) return 0.0;
-    double val;
-    if (raw is num) {
-      val = raw.toDouble();
-    } else {
-      val = double.tryParse(raw.toString()) ?? 0.0;
-    }
-    if (val >= 1000) {
-      val = val / 10000.0;
-    }
-    return val;
+    if (raw is num) return raw.toDouble();
+    return double.tryParse(raw.toString()) ?? 0.0;
   }
 
   @override

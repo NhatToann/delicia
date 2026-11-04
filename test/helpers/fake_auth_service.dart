@@ -55,6 +55,20 @@ class FakeAuthService implements AuthService {
   );
 
   @override
+  Future<User> loginWithGoogle() async {
+    if (shouldThrow) {
+      throw const AuthServiceException(AppFailureCodes.authGoogleFailed);
+    }
+    return user ??
+        User(
+          uid: 'u-google',
+          email: 'google@test.com',
+          firstName: 'Google',
+          lastName: 'User',
+          rolId: 2,
+        );
+  }
+
   @override
   Stream<fb.User?> get authStateChanges => const Stream<fb.User?>.empty();
   @override

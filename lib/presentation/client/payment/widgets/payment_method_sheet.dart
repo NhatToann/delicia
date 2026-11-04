@@ -24,8 +24,6 @@ String paymentMethodLabel(AppLocalizations l10n, TypePaymentMethod method) {
       return l10n.paymentMethodGooglePay;
     case 'MERCADO_PAGO':
       return l10n.paymentMethodMercadoPago;
-    case 'PAYOS':
-      return l10n.paymentMethodPayOs;
     default:
       return method.type;
   }

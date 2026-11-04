@@ -17,6 +17,7 @@ import '../../themes/colors_frave.dart';
 import '../../themes/type_frave.dart';
 import '../cart/cart_screen.dart';
 import '../home/widgets/profile_menu.dart';
+import 'widgets/highlighted_text.dart';
 
 /// Discover tab styled after Figma 5.1-A. Home filters pass their selected
 /// category through the route so Discover opens already scoped to that group.
@@ -43,13 +44,18 @@ class _SearchForCategoryScreenState extends State<SearchForCategoryScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      final category = widget.category;
       context.read<ProductsBloc>()
         ..add(const OnGetCategoriesEvent())
         ..add(
+          // The home screen and the search screen share this bloc, so the
+          // search screen opens with a clean slate instead of inheriting the
+          // category the customer happened to tap on the home screen.
+          // A category that was *asked for* (the route carries one) is
+          // still honoured.
           OnStartSearchEvent(
-            categoryId: widget.category?.id ?? 'cat_burger',
-            categoryName:
-                widget.category?.category ?? context.l10n.categorySnacks,
+            categoryId: category?.id,
+            categoryName: category?.category,
           ),
         );
     });
@@ -265,27 +271,35 @@ class _SearchForCategoryScreenState extends State<SearchForCategoryScreen> {
                     padding: const EdgeInsets.fromLTRB(22, 16, 22, 8),
                     child: Row(
                       children: [
-                        Text(
-                          context.l10n.discoverSortBy,
-                          style: FraveText.regular(
-                            13,
-                            color: ColorsFrave.greyText,
+                        Flexible(
+                          child: Text(
+                            context.l10n.discoverSortBy,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: FraveText.regular(
+                              13,
+                              color: ColorsFrave.greyText,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 5),
-                        InkWell(
-                          borderRadius: BorderRadius.circular(16),
-                          onTap: _showSortSheet,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 5,
-                              vertical: 4,
-                            ),
-                            child: Text(
-                              _sortLabel(context, _sort),
-                              style: FraveText.semiBold(
-                                13,
-                                color: ColorsFrave.navOrange,
+                        Flexible(
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(16),
+                            onTap: _showSortSheet,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                                vertical: 4,
+                              ),
+                              child: Text(
+                                _sortLabel(context, _sort),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: FraveText.semiBold(
+                                  13,
+                                  color: ColorsFrave.navOrange,
+                                ),
                               ),
                             ),
                           ),
@@ -317,6 +331,19 @@ class _SearchForCategoryScreenState extends State<SearchForCategoryScreen> {
                     ),
                   ),
                 ),
+                if (!state.isLoadingSearch && products.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(34, 0, 34, 10),
+                      child: Text(
+                        context.l10n.searchResultCount(products.length),
+                        style: FraveText.regular(
+                          13,
+                          color: ColorsFrave.greyText,
+                        ),
+                      ),
+                    ),
+                  ),
                 if (state.isLoadingSearch)
                   const SliverFillRemaining(
                     hasScrollBody: false,
@@ -342,6 +369,7 @@ class _SearchForCategoryScreenState extends State<SearchForCategoryScreen> {
                       separatorBuilder: (_, _) => const SizedBox(height: 22),
                       itemBuilder: (context, index) => _DiscoverProductCard(
                         product: products[index],
+                        highlightQuery: state.searchQuery,
                         onTap: () => context.push(
                           '/client/details-product/${products[index].id}',
                         ),
@@ -667,10 +695,19 @@ class _CategoryCircle extends StatelessWidget {
 }
 
 class _DiscoverProductCard extends StatelessWidget {
-  const _DiscoverProductCard({required this.product, required this.onTap});
+  const _DiscoverProductCard({
+    required this.product,
+    required this.onTap,
+    this.highlightQuery,
+  });
 
   final Productsdb product;
   final VoidCallback onTap;
+
+  /// When set, every occurrence of this query inside the product name is
+  /// highlighted. Pass the raw search query; the card handles the
+  /// accent-insensitive matching.
+  final String? highlightQuery;
 
   @override
   Widget build(BuildContext context) => Material(
@@ -729,12 +766,7 @@ class _DiscoverProductCard extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: Text(
-                    product.nameProduct,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: FraveText.semiBold(15, color: ColorsFrave.ink),
-                  ),
+                  child: _title(),
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -758,6 +790,27 @@ class _DiscoverProductCard extends StatelessWidget {
       ),
     ),
   );
+
+  /// The dish name, with the search terms highlighted when the card is
+  /// rendered inside the search results.
+  Widget _title() {
+    final style = FraveText.semiBold(15, color: ColorsFrave.ink);
+    final query = highlightQuery?.trim() ?? '';
+    if (query.isEmpty) {
+      return Text(
+        product.nameProduct,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: style,
+      );
+    }
+    return HighlightedText(
+      text: product.nameProduct,
+      query: query,
+      style: style,
+      maxLines: 1,
+    );
+  }
 }
 
 class _DiscoverEmpty extends StatelessWidget {
@@ -774,7 +827,7 @@ class _DiscoverEmpty extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            hasQuery ? Icons.search_off_rounded : Icons.restaurant_menu,
+            hasQuery ? Icons.search_off : Icons.restaurant_menu,
             size: 46,
             color: ColorsFrave.greyText,
           ),

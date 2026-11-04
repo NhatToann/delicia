@@ -19,6 +19,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     : _authService = authService,
       super(const AuthState()) {
     on<LoginEvent>(_onLogin);
+    on<GoogleLoginEvent>(_onGoogleLogin);
     on<CheckLoginEvent>(_onCheckLogin);
     on<ForgotPasswordEvent>(_onForgotPassword);
     on<RegisterEvent>(_onRegister);
@@ -33,6 +34,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(LoadingAuthState());
     try {
       final user = await _authService.login(event.email, event.password);
+      emit(AuthState(user: user, rolId: user.rolId.toString()));
+    } on AuthServiceException catch (e) {
+      emit(FailureAuthState(e));
+    } catch (e) {
+      emit(FailureAuthState(asFailure(e)));
+    }
+  }
+
+  Future<void> _onGoogleLogin(
+    GoogleLoginEvent event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(LoadingAuthState());
+    try {
+      final user = await _authService.loginWithGoogle();
       emit(AuthState(user: user, rolId: user.rolId.toString()));
     } on AuthServiceException catch (e) {
       emit(FailureAuthState(e));

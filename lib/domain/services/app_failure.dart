@@ -27,6 +27,29 @@ class AppFailureCodes {
   static const String authUnexpectedRegister = 'auth.unexpectedRegister';
   static const String authUnexpectedForgot = 'auth.unexpectedForgot';
 
+  // ---- Google sign-in -----------------------------------------------------
+  /// The Google account picker could not be shown at all.
+  static const String authGoogleUnavailable = 'auth.googleUnavailable';
+
+  /// The customer dismissed the account picker — not an error worth a
+  /// red banner, but the bloc still needs a code for it.
+  static const String authGoogleCanceled = 'auth.googleCanceled';
+
+  /// Google returned no ID token, so Firebase could not be given a
+  /// credential.
+  static const String authGoogleNoToken = 'auth.googleNoToken';
+
+  /// Firebase accepted the credential but returned no user.
+  static const String authGoogleNoUser = 'auth.googleNoUser';
+
+  /// The Google sign-in attempt failed.
+  static const String authGoogleFailed = 'auth.googleFailed';
+
+  /// The app is not wired up for Google sign-in — usually a missing web
+  /// OAuth client in `google-services.json` or a SHA-1 that is not
+  /// registered in the Firebase Console.
+  static const String authGoogleMisconfigured = 'auth.googleMisconfigured';
+
   // ---- Firebase bootstrap --------------------------------------------------
   static const String firebaseNotInitialised = 'firebase.notInitialised';
   static const String firebaseNotInitialisedHint =
@@ -71,12 +94,6 @@ class AppFailureCodes {
   static const String paymentCancelled = 'payment.cancelled';
   static const String paymentVerifyDetail = 'payment.verifyDetail';
   static const String paymentStartDetail = 'payment.startDetail';
-  static const String paymentGatewayNotConfigured =
-      'payment.gatewayNotConfigured';
-  static const String paymentGatewayNoLink = 'payment.gatewayNoLink';
-  static const String paymentGatewayRejected = 'payment.gatewayRejected';
-  static const String paymentGatewayFailed = 'payment.gatewayFailed';
-  static const String paymentGatewayUnreadable = 'payment.gatewayUnreadable';
 
   // ---- Routing -------------------------------------------------------------
   static const String routeMalformed = 'route.malformed';

@@ -39,6 +39,8 @@ class FirebaseOrdersService implements OrdersService {
     required String paymentMethod,
     required List<ProductCart> products,
     required double amount,
+    String? payosOrderCode,
+    String? transactionId,
   }) async {
     if (products.isEmpty) {
       throw OrdersServiceException(AppFailureCodes.ordersEmpty);

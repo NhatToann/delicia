@@ -729,6 +729,8 @@ class _SelectAddressScreenState extends State<SelectAddressScreen> {
       reference: _pickedDetails.isEmpty
           ? context.l10n.mapSelectedOnMap
           : _pickedDetails,
+      latitude: point.latitude,
+      longitude: point.longitude,
     );
     await _saveToHistory(address);
     if (!mounted) return;

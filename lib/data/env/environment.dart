@@ -79,11 +79,13 @@ class Environment {
       ? '© OpenStreetMap contributors'
       : 'Map tiles by CARTO (CC BY 3.0) · OpenStreetMap (ODbL)';
 
-  /// Default delivery fee, in VND — used by CheckoutScreen as the
-  /// "Delivery fee" line item until the backend returns it dynamically.
+  /// Fallback delivery fee in VND — used by the cart summary as the
+  /// "Delivery fee" line item before the real distance-based fee is
+  /// known.
   ///
-  /// 25 000 ₫ is the flat fee the restaurant charges; every order in the
-  /// Realtime Database carries exactly this amount on top of its subtotal.
+  /// The app's currency is VND, so this is a number of dong, not a
+  /// number of dollars. The checkout screen replaces it with
+  /// [CartPricing.deliveryFeeVnd] once the road distance is known.
   static const double defaultDeliveryFee = 25000;
 
   /// The restaurant / store location coordinates (Bếp Delicia, Quận 1, TP. Hồ Chí Minh).
@@ -96,32 +98,14 @@ class Environment {
   /// known once an order is dispatched, so this is the restaurant's
   /// advertised lead time until then.
   static const int estimatedDeliveryMinutes = 25;
-
-  // ---- payOS (optional online gateway) ------------------------------------
-  //
-  // payOS needs a client id, an api key and a checksum key, and every
-  // request has to be signed with HMAC-SHA256. The checksum key must
-  // never ship inside a client app, so the credentials are empty by
-  // default and the PayOS method stays hidden until they are filled in.
-  //
-  // For production, point [payosApiBase] at a small backend that holds
-  // the checksum key and forwards the request.
-  static const String payosClientId = '';
-  static const String payosApiKey = '';
-  static const String payosChecksumKey = '';
-
-  /// Merchant API host. Swappable so a self-hosted proxy can be used.
-  static const String payosApiBase = 'https://api-merchant.payos.vn';
-
-  /// Whether enough credentials are present to talk to payOS.
-  static bool get payosConfigured =>
-      payosClientId.isNotEmpty &&
-      payosApiKey.isNotEmpty &&
-      payosChecksumKey.isNotEmpty;
 }
 
 /// Single source of truth for every money figure the Cart and Checkout
 /// screens display.
+///
+/// **Every amount in this class is in VND.** The app's currency is the
+/// Vietnamese dong and the Realtime Database stores dong, so nothing in
+/// the pricing pipeline converts between currencies.
 ///
 /// The Figma mockups (nodes `202:1358` / `199:1715`) show illustrative
 /// amounts — `$20.00`, `$5.00`, `$3.00`, `$40.00` — for a two-item cart.
@@ -134,7 +118,7 @@ class Environment {
 class CartPricing {
   const CartPricing._();
 
-  /// Flat delivery fee added to every order.
+  /// Flat delivery fee added to every order, in VND.
   ///
   /// Kept equal to [Environment.defaultDeliveryFee] so the legacy callers
   /// that still read that constant stay in sync with the new source.
@@ -150,7 +134,11 @@ class CartPricing {
   static double totalOf(double subtotal, {double? delivery}) =>
       subtotal + taxOf(subtotal) + (delivery ?? deliveryFee);
 
-  /// Computes shipping fee in VND based on shortest road distance:
+  /// Computes the shipping fee for a road distance, in VND.
+  ///
+  /// The app's currency is VND and so is the database, so the fee is
+  /// returned in the same unit it is stored in — no conversion.
+  ///
   /// - Under 1km (< 1.0 km): 0 VND (free)
   /// - From 1-3km (1.0 <= km <= 3.0): 5,000 VND / km
   /// - From 3-8km (3.0 < km <= 8.0): 8,000 VND / km

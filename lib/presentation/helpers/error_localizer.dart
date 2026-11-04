@@ -122,16 +122,6 @@ String localizeFailure(AppLocalizations l10n, AppFailure failure) {
       return l10n.errorPaymentVerifyDetail(detail ?? '');
     case AppFailureCodes.paymentStartDetail:
       return l10n.errorPaymentStartDetail(detail ?? '');
-    case AppFailureCodes.paymentGatewayNotConfigured:
-      return l10n.errorPaymentGatewayNotConfigured;
-    case AppFailureCodes.paymentGatewayNoLink:
-      return l10n.errorPaymentGatewayNoLink;
-    case AppFailureCodes.paymentGatewayRejected:
-      return l10n.errorPaymentGatewayRejected;
-    case AppFailureCodes.paymentGatewayFailed:
-      return l10n.errorPaymentGatewayFailed(int.tryParse(detail ?? '') ?? 0);
-    case AppFailureCodes.paymentGatewayUnreadable:
-      return l10n.errorPaymentGatewayUnreadable(int.tryParse(detail ?? '') ?? 0);
 
     // ---- Routing -----------------------------------------------------------
     case AppFailureCodes.routeMalformed:
