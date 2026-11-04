@@ -7,6 +7,7 @@ import 'domain/bloc/address/address_bloc.dart';
 import 'domain/bloc/auth/auth_bloc.dart';
 import 'domain/bloc/cart/cart_bloc.dart';
 import 'domain/bloc/client_orders/client_orders_bloc.dart';
+import 'domain/bloc/driver_orders/driver_orders_bloc.dart';
 import 'domain/bloc/map_client/map_client_bloc.dart';
 import 'domain/bloc/map_delivery/map_delivery_bloc.dart';
 import 'domain/bloc/orders/orders_bloc.dart';
@@ -94,6 +95,11 @@ class DeliciaApp extends StatelessWidget {
           ),
           BlocProvider<OrdersBloc>(
             create: (_) => OrdersBloc(ordersService: ordersService),
+          ),
+          // UC-10 / UC-11 — delivery home, available orders and the
+          // per-order delivery state machine.
+          BlocProvider<DriverOrdersBloc>(
+            create: (_) => DriverOrdersBloc(ordersService: ordersService),
           ),
           // UC-04 — checkout / payment (Leader).
           BlocProvider<PaymentBloc>(

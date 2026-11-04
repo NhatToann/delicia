@@ -46,6 +46,27 @@ class _StubOrdersService implements OrdersService {
 
   @override
   Future<void> cancelOrder(String orderId, {String? reason}) async {}
+  @override
+  Future<List<OrderRecord>> getOrdersForDelivery(String deliveryId) async => const [];
+
+  @override
+  Future<List<OrderRecord>> getAvailableOrders() async => const [];
+
+  @override
+  Stream<List<OrderRecord>> watchDeliveryOrders(String deliveryId) => Stream.value(const []);
+
+  @override
+  Stream<List<OrderRecord>> watchAvailableOrders() => Stream.value(const []);
+
+  @override
+  Future<void> acceptOrder(String orderId, String deliveryId, {String? deliveryName}) async {}
+
+  @override
+  Future<void> rejectOrder(String orderId, String deliveryId) async {}
+
+  @override
+  Future<void> updateDeliveryStatus(String orderId, String newStatus, {String? deliveryPhoto}) async {}
+
 }
 
 OrderRecord _order({

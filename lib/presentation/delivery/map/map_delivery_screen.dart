@@ -9,12 +9,17 @@ import 'package:latlong2/latlong.dart';
 
 import '../../../data/env/environment.dart';
 import '../../../data/services/map_tile_cache.dart';
+import '../../../domain/bloc/driver_orders/driver_orders_bloc.dart';
+import '../../../domain/models/delivery_status.dart';
+import '../../../domain/models/order_record.dart';
+import '../../components/text_custom.dart';
 import '../../../domain/bloc/map_delivery/map_delivery_bloc.dart';
 import '../../../domain/bloc/orders/orders_bloc.dart';
+import '../../../domain/models/hcmc_location.dart';
 import '../../../domain/models/lat_lng_point.dart';
 import '../../../domain/services/app_failure.dart';
 import '../../../domain/services/realtime_service.dart';
-import '../../components/map/driver_card.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../components/map/eta_bar.dart';
 import '../../components/map/grab_bottom_sheet.dart';
 import '../../components/map/map_attribution.dart';
@@ -63,7 +68,6 @@ class _MapDeliveryScreenState extends State<MapDeliveryScreen>
 
   /// Default fallback: District 1, HCMC.
   static const LatLng _fallbackCenter = LatLng(10.7717, 106.7009);
-  static const double _deliverySeedOffset = 0.01;
 
   /// Auto-fit cadence — matching the client's so both ends of the trip
   /// frame the same way.
@@ -88,11 +92,26 @@ class _MapDeliveryScreenState extends State<MapDeliveryScreen>
       if (!mounted) return;
       await _startTracking();
       if (!mounted) return;
-      final order = context.read<OrdersBloc>().state.lastOrder;
-      final clientLat = order?.latitude ?? _fallbackCenter.latitude;
-      final clientLng = order?.longitude ?? _fallbackCenter.longitude;
-      final deliveryLat = clientLat + _deliverySeedOffset;
-      final deliveryLng = clientLng + _deliverySeedOffset;
+      OrderRecord? order;
+      final deliveryState = context.read<DriverOrdersBloc>().state;
+      for (final o in deliveryState.assignedOrders) {
+        if (o.id == widget.orderId) {
+          order = o;
+          break;
+        }
+      }
+      order ??= context.read<OrdersBloc>().state.lastOrder;
+
+      final clientLat = (order != null &&
+              HcmcLocation.isInHcmc(order.latitude, order.longitude))
+          ? order.latitude
+          : _fallbackCenter.latitude;
+      final clientLng = (order != null &&
+              HcmcLocation.isInHcmc(order.latitude, order.longitude))
+          ? order.longitude
+          : _fallbackCenter.longitude;
+      final deliveryLat = Environment.restaurantLatitude;
+      final deliveryLng = Environment.restaurantLongitude;
       context.read<MapDeliveryBloc>().add(
         OnMarkertsDeliveryEvent(
           LatLngPoint(latitude: clientLat, longitude: clientLng),
@@ -139,12 +158,13 @@ class _MapDeliveryScreenState extends State<MapDeliveryScreen>
             ),
           ).listen((pos) {
             if (!mounted) return;
+            final loc = HcmcLocation.sanitize(pos.latitude, pos.longitude);
             context.read<MapDeliveryBloc>().add(
               OnUpdateCurrentLocationEvent(
                 DeliveryPositionUpdate(
                   orderId: widget.orderId,
-                  latitude: pos.latitude,
-                  longitude: pos.longitude,
+                  latitude: loc.latitude,
+                  longitude: loc.longitude,
                 ),
               ),
             );
@@ -205,7 +225,15 @@ class _MapDeliveryScreenState extends State<MapDeliveryScreen>
 
   @override
   Widget build(BuildContext context) {
-    final order = context.read<OrdersBloc>().state.lastOrder;
+    OrderRecord? order;
+    final deliveryState = context.watch<DriverOrdersBloc>().state;
+    for (final o in deliveryState.assignedOrders) {
+      if (o.id == widget.orderId) {
+        order = o;
+        break;
+      }
+    }
+    order ??= context.read<OrdersBloc>().state.lastOrder;
 
     return Scaffold(
       body: BlocConsumer<MapDeliveryBloc, MapDeliveryState>(
@@ -308,15 +336,19 @@ class _MapDeliveryScreenState extends State<MapDeliveryScreen>
                   ),
                 ),
                 builder: (context, scrollController) {
+                  final customerPhone = order?.receiverPhone?.isNotEmpty == true
+                      ? order!.receiverPhone!
+                      : (order?.reference.isNotEmpty == true ? order!.reference : '');
+
                   return ListView(
                     controller: scrollController,
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                     children: [
-                      DriverCard(driver: state.driver),
-                      const SizedBox(height: 18),
                       _CustomerAddress(
                         street: order?.street ?? '',
                         coordinates: state.markerClient,
+                        customerName: order?.receiverName,
+                        customerPhone: customerPhone,
                       ),
                       const SizedBox(height: 18),
                       Divider(height: 1, color: ColorsFrave.backgroundColor),
@@ -341,10 +373,73 @@ class _MapDeliveryScreenState extends State<MapDeliveryScreen>
     goBack(context, fallback: '/delivery/home');
   }
 
-  /// Stops the realtime broadcast before leaving, so the client's map
-  /// doesn't keep tracking a driver who already arrived.
+  /// Stops the realtime broadcast and records delivery completion in the system.
   void _confirmDelivered() {
-    context.read<MapDeliveryBloc>().add(const OnDisconnectDeliveryEvent());
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const TextCustom('\u0110\u00e3 giao h\u00e0ng?', fontWeight: FontWeight.bold),
+        content: const TextCustom(
+          'X\u00e1c nh\u1eadn \u0111\u01a1n h\u00e0ng \u0111\u00e3 \u0111\u01b0\u1ee3c giao \u0111\u1ebfn tay kh\u00e1ch h\u00e0ng?',
+          color: ColorsFrave.greyText,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const TextCustom('H\u1ee7y', color: ColorsFrave.greyText),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ColorsFrave.successColor,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _executeDeliveryCompletion();
+            },
+            child: const TextCustom('\u0110\u1ed3ng \u00fd', color: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _executeDeliveryCompletion() {
+    // 1. Disconnect map updates
+    _mapDeliveryBloc?.add(const OnDisconnectDeliveryEvent());
+
+    // 2. Identify current status
+    final driverOrdersBloc = context.read<DriverOrdersBloc>();
+    final assignedOrders = driverOrdersBloc.state.assignedOrders;
+    OrderRecord? matchedOrder;
+    for (final o in assignedOrders) {
+      if (o.id == widget.orderId) {
+        matchedOrder = o;
+        break;
+      }
+    }
+    matchedOrder ??= driverOrdersBloc.state.activeOrder ??
+        context.read<OrdersBloc>().state.lastOrder;
+
+    final currentStatus = matchedOrder != null
+        ? DeliveryStatus.fromString(matchedOrder.status)
+        : DeliveryStatus.onTheWay;
+
+    // 3. Update in DeliveryBloc (records status in Firebase Realtime Database)
+    driverOrdersBloc.add(
+      UpdateOrderStatusEvent(
+        orderId: widget.orderId,
+        currentStatus: currentStatus,
+        targetStatus: DeliveryStatus.delivered,
+      ),
+    );
+
+    // 4. Update in OrdersBloc for immediate UI reflection
+    context.read<OrdersBloc>().add(
+      const OnUpdateLastOrderStatusEvent(OrderRecord.statusDelivered),
+    );
+
     _safeBack();
   }
 
@@ -403,54 +498,142 @@ class _MapDeliveryScreenState extends State<MapDeliveryScreen>
 }
 
 /// Drop-off card for the driver: street address plus raw coordinates as a
-/// fallback when the address string is missing.
+/// fallback when the address string is missing, along with quick customer contact.
 class _CustomerAddress extends StatelessWidget {
   final String street;
   final LatLngPoint coordinates;
+  final String? customerName;
+  final String? customerPhone;
 
-  const _CustomerAddress({required this.street, required this.coordinates});
+  const _CustomerAddress({
+    required this.street,
+    required this.coordinates,
+    this.customerName,
+    this.customerPhone,
+  });
+
+  Future<void> _makePhoneCall(String phone) async {
+    final uri = Uri.parse('tel:${phone.replaceAll(' ', '')}');
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _sendSms(String phone) async {
+    final uri = Uri.parse('sms:${phone.replaceAll(' ', '')}');
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      }
+    } catch (_) {}
+  }
 
   @override
   Widget build(BuildContext context) {
     final hasCoords = coordinates.latitude != 0 || coordinates.longitude != 0;
+    final hasPhone = customerPhone != null && customerPhone!.isNotEmpty;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: ColorsFrave.backgroundColor.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(14),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.location_on_outlined, color: ColorsFrave.errorColor),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  context.l10n.mapDeliverTo,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: ColorsFrave.greyText,
-                  ),
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: ColorsFrave.primaryColor.withValues(alpha: 0.15),
+                child: const Icon(
+                  Icons.person,
+                  color: ColorsFrave.primaryColor,
+                  size: 20,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  street.isNotEmpty
-                      ? street
-                      : (hasCoords
-                            ? '${coordinates.latitude.toStringAsFixed(4)}, '
-                                  '${coordinates.longitude.toStringAsFixed(4)}'
-                            : context.l10n.mapAddressUnavailable),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: ColorsFrave.darkText,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextCustom(
+                      customerName ?? 'Khách hàng',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                    const SizedBox(height: 2),
+                    TextCustom(
+                      hasPhone ? customerPhone! : 'Khách nhận đơn',
+                      color: ColorsFrave.greyText,
+                      fontSize: 12,
+                    ),
+                  ],
+                ),
+              ),
+              if (hasPhone) ...[
+                IconButton(
+                  style: IconButton.styleFrom(
+                    backgroundColor: ColorsFrave.successColor.withValues(alpha: 0.15),
+                    padding: const EdgeInsets.all(8),
+                    minimumSize: const Size(36, 36),
                   ),
+                  icon: const Icon(Icons.phone, color: ColorsFrave.successColor, size: 18),
+                  tooltip: 'Gọi khách hàng',
+                  onPressed: () => _makePhoneCall(customerPhone!),
+                ),
+                const SizedBox(width: 6),
+                IconButton(
+                  style: IconButton.styleFrom(
+                    backgroundColor: ColorsFrave.primaryColor.withValues(alpha: 0.15),
+                    padding: const EdgeInsets.all(8),
+                    minimumSize: const Size(36, 36),
+                  ),
+                  icon: const Icon(Icons.message, color: ColorsFrave.primaryColor, size: 18),
+                  tooltip: 'Gửi tin nhắn SMS',
+                  onPressed: () => _sendSms(customerPhone!),
                 ),
               ],
-            ),
+            ],
+          ),
+          const Divider(height: 18),
+          Row(
+            children: [
+              const Icon(Icons.location_on_outlined, color: ColorsFrave.errorColor),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      context.l10n.mapDeliverTo,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: ColorsFrave.greyText,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      street.isNotEmpty
+                          ? street
+                          : (hasCoords
+                              ? '${coordinates.latitude.toStringAsFixed(4)}, '
+                                '${coordinates.longitude.toStringAsFixed(4)}'
+                              : context.l10n.mapAddressUnavailable),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: ColorsFrave.darkText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),

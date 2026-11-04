@@ -26,8 +26,10 @@ import '../presentation/client/profile/address_form_screen.dart';
 import '../presentation/client/profile/address_list_screen.dart';
 import '../presentation/client/profile/profile_screen.dart';
 import '../presentation/client/search/search_for_category_screen.dart';
+import '../presentation/delivery/details/delivery_details_screen.dart';
+import '../presentation/delivery/home/delivery_home_screen.dart';
 import '../presentation/delivery/map/map_delivery_screen.dart';
-import '../presentation/screens/home/home_placeholder.dart';
+import '../presentation/delivery/profile/delivery_profile_screen.dart';
 import '../presentation/screens/home/select_role_screen.dart';
 import '../presentation/screens/intro/launch_first_screen.dart';
 import '../presentation/screens/intro/launch_welcome_screen.dart';
@@ -43,7 +45,7 @@ class AppRouter {
   AppRouter._();
 
   static final GoRouter router = GoRouter(
-    initialLocation: '/splash',
+    initialLocation: '/login',
     routes: [
       // ---- Launch flow (UC-01) ---------------------------------------------
       // Splash ("Launch First") always runs first, then resolves into either
@@ -160,12 +162,27 @@ class AppRouter {
         builder: (_, __) => const MapClientScreen(),
       ),
 
-      // ---- Delivery flow (UC-03) ------------------------------------------
+      // ---- Delivery flow (UC-03 / UC-10 / UC-11) --------------------------
+      GoRoute(
+        path: '/delivery/home',
+        builder: (_, __) => const DeliveryHomeScreen(),
+      ),
+      GoRoute(
+        path: '/delivery/details/:orderId',
+        builder: (_, state) => DeliveryDetailsScreen(
+          orderId: state.pathParameters['orderId'] ?? '',
+          order: state.extra is OrderRecord ? state.extra as OrderRecord : null,
+        ),
+      ),
       GoRoute(
         path: '/delivery/map/:orderId',
         builder: (_, state) => MapDeliveryScreen(
           orderId: state.pathParameters['orderId'] ?? '',
         ),
+      ),
+      GoRoute(
+        path: '/delivery/profile',
+        builder: (_, __) => const DeliveryProfileScreen(),
       ),
 
       // ---- Admin flow (UC-07 / UC-08 / UC-09) ------------------------------
@@ -229,13 +246,6 @@ class AppRouter {
       GoRoute(
         path: '/admin/delivery/new',
         builder: (_, __) => const AdminDriverFormScreen(),
-      ),
-
-      // ---- Placeholders (other members) -----------------------------------
-      GoRoute(
-        path: '/delivery/home',
-        builder: (_, __) =>
-            const HomePlaceholder(label: 'Delivery Home (UC-10)'),
       ),
     ],
   );

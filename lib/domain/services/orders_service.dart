@@ -39,4 +39,13 @@ abstract class OrdersService {
   /// (e.g. only PAID OUT orders can be cancelled); the service just
   /// updates the status in Firebase.
   Future<void> cancelOrder(String orderId, {String? reason});
+
+  // ---- Delivery Flow (UC-10 / UC-11) ----
+  Future<List<OrderRecord>> getOrdersForDelivery(String deliveryId);
+  Future<List<OrderRecord>> getAvailableOrders();
+  Stream<List<OrderRecord>> watchDeliveryOrders(String deliveryId);
+  Stream<List<OrderRecord>> watchAvailableOrders();
+  Future<void> acceptOrder(String orderId, String deliveryId, {String? deliveryName});
+  Future<void> rejectOrder(String orderId, String deliveryId);
+  Future<void> updateDeliveryStatus(String orderId, String newStatus, {String? deliveryPhoto});
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -38,6 +40,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   String? _selectedOptionId;
   ProductsBloc? _productsBloc;
   bool _addingToCart = false;
+  Timer? _confirmationTimer;
 
   @override
   void initState() {
@@ -52,6 +55,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   @override
   void dispose() {
+    _confirmationTimer?.cancel();
     _productsBloc?.add(const OnClearCurrentProductEvent());
     super.dispose();
   }
@@ -159,6 +163,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   void _showAddedToCartConfirmation() {
     setState(() => _addingToCart = true);
+
+    _confirmationTimer?.cancel();
+    _confirmationTimer = Timer(const Duration(milliseconds: 1500), () {
+      if (mounted && _addingToCart) {
+        setState(() => _addingToCart = false);
+      }
+    });
 
     final messenger = ScaffoldMessenger.of(context);
     messenger
@@ -878,7 +889,9 @@ class _StepperButton extends StatelessWidget {
       button: true,
       label: semanticLabel,
       child: Material(
-        color: ColorsFrave.navOrange,
+        color: onTap != null
+            ? ColorsFrave.navOrange
+            : ColorsFrave.navOrange.withValues(alpha: 0.4),
         shape: const CircleBorder(),
         clipBehavior: Clip.antiAlias,
         child: InkWell(

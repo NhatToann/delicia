@@ -7,13 +7,16 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../domain/bloc/auth/auth_bloc.dart';
+import '../../../domain/bloc/cart/cart_bloc.dart';
 import '../../../domain/bloc/user/user_bloc.dart';
 import '../../../domain/bloc/products/products_bloc.dart';
 import '../../../domain/models/category.dart';
 import '../../../domain/models/product.dart';
+import '../../../domain/models/product_cart.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../components/app_bottom_nav.dart';
 import '../../components/app_nav_destination.dart';
+import '../../components/text_custom.dart';
 import '../../helpers/category_assets.dart';
 import '../../helpers/image_resolver.dart';
 import '../../helpers/l10n_extension.dart';
@@ -1566,16 +1569,52 @@ class _MenuCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: ColorsFrave.navOrange,
+                        Material(
+                          color: Colors.transparent,
+                          shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(
-                            Icons.add,
-                            color: ColorsFrave.onOrange,
-                            size: 16,
+                          clipBehavior: Clip.antiAlias,
+                          child: InkWell(
+                            onTap: () {
+                              context.read<CartBloc>().add(
+                                    OnAddProductToCartEvent(
+                                      ProductCart(
+                                        uidProduct: product.id,
+                                        imageProduct: product.picture,
+                                        nameProduct: product.nameProduct,
+                                        price: product.price,
+                                        quantity: 1,
+                                        addedAt: DateTime.now(),
+                                      ),
+                                    ),
+                                  );
+                              ScaffoldMessenger.of(context)
+                                ..hideCurrentSnackBar()
+                                ..showSnackBar(
+                                  SnackBar(
+                                    content: TextCustom(
+                                      'Đã thêm "${product.nameProduct}" vào giỏ hàng',
+                                      color: Colors.white,
+                                    ),
+                                    backgroundColor: ColorsFrave.navOrange,
+                                    duration: const Duration(seconds: 1),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: ColorsFrave.navOrange,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.add,
+                                color: ColorsFrave.onOrange,
+                                size: 16,
+                              ),
+                            ),
                           ),
                         ),
                       ],

@@ -51,8 +51,16 @@ class ProductOption {
 
   static double _parseDouble(dynamic raw) {
     if (raw == null) return 0.0;
-    if (raw is num) return raw.toDouble();
-    return double.tryParse(raw.toString()) ?? 0.0;
+    double val;
+    if (raw is num) {
+      val = raw.toDouble();
+    } else {
+      val = double.tryParse(raw.toString()) ?? 0.0;
+    }
+    if (val >= 1000) {
+      val = val / 10000.0;
+    }
+    return val;
   }
 
   @override

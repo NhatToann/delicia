@@ -4,6 +4,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 
 import '../../data/env/environment.dart';
+import '../models/hcmc_location.dart';
+import '../models/lat_lng_point.dart';
 import 'app_failure.dart';
 
 /// Errors thrown by [RealtimeService] when the Firebase listener cannot
@@ -50,12 +52,26 @@ class RealtimePositionUpdate {
   });
 
   factory RealtimePositionUpdate.fromMap(String orderId, Map<dynamic, dynamic> map) {
+    final rawLat = double.tryParse((map['latitude'] ?? 0).toString()) ?? 0.0;
+    final rawLng = double.tryParse((map['longitude'] ?? 0).toString()) ?? 0.0;
+    final double lat;
+    final double lng;
+    if (rawLat == 0.0 && rawLng == 0.0) {
+      lat = 0.0;
+      lng = 0.0;
+    } else if (!HcmcLocation.isInHcmc(rawLat, rawLng)) {
+      final sanitized = HcmcLocation.sanitize(rawLat, rawLng);
+      lat = sanitized.latitude;
+      lng = sanitized.longitude;
+    } else {
+      lat = rawLat;
+      lng = rawLng;
+    }
     return RealtimePositionUpdate(
       orderId: orderId,
-      latitude: double.tryParse((map['latitude'] ?? 0).toString()) ?? 0.0,
-      longitude: double.tryParse((map['longitude'] ?? 0).toString()) ?? 0.0,
-      timestamp:
-          int.tryParse((map['timestamp'] ?? 0).toString()) ?? 0,
+      latitude: lat,
+      longitude: lng,
+      timestamp: int.tryParse((map['timestamp'] ?? 0).toString()) ?? 0,
     );
   }
 }
@@ -124,10 +140,13 @@ class RealtimeService {
     if (ref == null) {
       throw RealtimeServiceException(AppFailureCodes.firebaseNotInitialised);
     }
+    final point = (latitude == 0.0 && longitude == 0.0)
+        ? const LatLngPoint(latitude: 0, longitude: 0)
+        : HcmcLocation.sanitize(latitude, longitude);
     try {
       await ref.child(orderId).child('shipperLocation').set({
-        'latitude': latitude,
-        'longitude': longitude,
+        'latitude': point.latitude,
+        'longitude': point.longitude,
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       });
     } catch (e) {

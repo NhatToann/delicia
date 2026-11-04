@@ -10,7 +10,7 @@ class User {
   final String? image;
   final String? phone;
   final String? dateOfBirth;
-  final int rolId; // 1=Admin, 2=Client, 3=Delivery
+  final int rolId; // 1=Client, 2=Admin, 3=Delivery
 
   const User({
     required this.uid,
