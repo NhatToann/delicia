@@ -11,6 +11,7 @@ import '../../../domain/bloc/orders/orders_bloc.dart';
 import '../../../domain/models/address.dart';
 import '../../../domain/models/client_address.dart';
 import '../../../domain/models/lat_lng_point.dart';
+import '../../../domain/models/price_breakdown.dart';
 import '../../../domain/models/product_cart.dart';
 import '../../../domain/models/type_payment.dart';
 import '../../components/app_bottom_nav.dart';
@@ -61,6 +62,31 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   _PaymentVoucher? _voucher;
   String? _voucherError;
+
+  /// Whether the default address has already been taken from the profile.
+  ///
+  /// The address used to be re-synced from [AddressBloc] on **every**
+  /// rebuild, which silently reverted a manual pick the moment the screen
+  /// rebuilt (applying a voucher, for instance). The auto-assignment now
+  /// happens exactly once; after that the address belongs to the user.
+  bool _addressResolved = false;
+
+  /// The money breakdown of the current cart.
+  ///
+  /// Every amount the screen prints comes from this one object, and it is
+  /// the same object that gets persisted on the order — so the customer's
+  /// screen, the courier's screen and the database can never disagree.
+  PriceBreakdown breakdownFor(double subtotal) {
+    final discount = _voucher?.subtotalDiscount(subtotal) ?? 0;
+    final discountedSubtotal = subtotal - discount;
+    final delivery = _voucher?.isFreeShipping == true ? 0.0 : _deliveryFeeVnd;
+    return PriceBreakdown.from(
+      subtotal: subtotal,
+      tax: CartPricing.taxOf(discountedSubtotal),
+      deliveryFee: delivery,
+      discount: discount,
+    );
+  }
 
   static const List<_PaymentVoucher> _availableVouchers = [
     _PaymentVoucher.percent(code: 'DIS10', percent: 10),
@@ -117,7 +143,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     // flat default fee instead of pretending the customer is on the
     // other side of the planet.
     if (!mounted) return;
-    if (address.latitude == 0.0 && address.longitude == 0.0) {
+    if (!address.hasCoordinates) {
       setState(() {
         _distanceKm = 0.0;
         _hasCoordinates = false;
@@ -219,12 +245,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
     });
   }
 
-  double _amountToPay(double subtotal) {
-    final discountedSubtotal = subtotal - (_voucher?.subtotalDiscount(subtotal) ?? 0);
-    final delivery = _voucher?.isFreeShipping == true ? 0.0 : _deliveryFeeVnd;
-    return CartPricing.totalOf(discountedSubtotal, delivery: delivery);
-  }
-
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthBloc>().state;
@@ -235,9 +255,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
     final addressBloc = context.watch<AddressBloc?>();
     final products = cart.products ?? const <ProductCart>[];
 
-    // Tự động gán địa chỉ mặc định hoặc địa chỉ đầu tiên từ AddressBloc
+    // Tự động gán địa chỉ mặc định hoặc địa chỉ đầu tiên từ AddressBloc.
+    //
+    // CHỈ làm đúng một lần: trước đây việc này chạy lại ở mỗi rebuild, nên
+    // một địa chỉ mà người dùng chọn tay bị ghi đè bằng địa chỉ mặc định
+    // mỗi khi màn hình dựng lại (ví dụ khi áp voucher).
     final addresses = addressBloc?.state.addresses ?? const <ClientAddress>[];
-    if (addresses.isNotEmpty) {
+    if (!_addressResolved && addresses.isNotEmpty) {
       final defaultAddr = addresses.firstWhere(
             (a) => a.isDefault == true,
         orElse: () => addresses.first,
@@ -255,6 +279,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
         latitude: defaultAddr.latitude,
         longitude: defaultAddr.longitude,
       );
+      _addressResolved = true;
+      _calculateDistanceAndFee(_address);
     }
 
     return BlocConsumer<OrdersBloc, OrdersState>(
@@ -298,6 +324,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           voucher: _voucher,
                           voucherController: _voucherController,
                           voucherError: _voucherError,
+                          breakdown: breakdownFor(cart.total),
                           deliveryFee: _deliveryFeeVnd,
                           calculatingDistance: _calculatingDistance,
                           onPickAddress: _pickAddress,
@@ -314,7 +341,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         onPressed: () => _pay(
                           orders,
                           auth.user?.uid ?? '',
-                          _amountToPay(cart.total),
+                          cart.total,
                           products,
                         ),
                       ),
@@ -335,7 +362,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Future<void> _pickAddress() async {
-    final picked = await context.push<Address>('/client/profile/addresses');
+    // The map picker returns an [Address] that already carries the
+    // coordinates, so the distance-based fee and the courier's navigation
+    // both work. The profile address list is a management screen, not a
+    // picker — it returns no address at all.
+    final picked = await context.push<Address>('/client/select-address');
     if (picked == null || !mounted) return;
 
     // Làm sạch chuỗi street khi người dùng chọn địa chỉ thủ công
@@ -343,13 +374,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
         ? picked.street.split(',').first.trim()
         : picked.street;
 
-    setState(() => _address = Address(
-      id: picked.id,
-      street: cleanStreet,
-      reference: picked.reference,
-      latitude: picked.latitude,
-      longitude: picked.longitude,
-    ));
+    setState(() {
+      _address = Address(
+        id: picked.id,
+        street: cleanStreet,
+        reference: picked.reference,
+        latitude: picked.latitude,
+        longitude: picked.longitude,
+      );
+      // The address now belongs to the user — never overwrite it with the
+      // profile default again.
+      _addressResolved = true;
+    });
     await _calculateDistanceAndFee(_address);
   }
 
@@ -370,7 +406,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   Future<void> _pay(
       OrdersBloc orders,
       String clientId,
-      double total,
+      double subtotal,
       List<ProductCart> products,
       ) async {
     if (products.isEmpty) {
@@ -380,18 +416,19 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
     // Cash is the only method the checkout offers: it settles when the
     // courier hands the order over, so the order exists from the start.
-    _createOrder(orders, clientId, total, products);
+    _createOrder(orders, clientId, subtotal, products);
   }
 
   void _createOrder(
     OrdersBloc orders,
     String clientId,
-    double total,
+    double subtotal,
     List<ProductCart> products,
   ) {
     // The customer details are denormalised onto the order so the admin
     // console can show *who* ordered without a second lookup per row.
     final user = context.read<AuthBloc>().state.user;
+    final breakdown = breakdownFor(subtotal);
     orders.add(
       OnAddNewOrdersEvent(
         clientId: clientId,
@@ -400,7 +437,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
         address: _address,
         paymentMethod: _method.type,
         products: products,
-        amount: total,
+        amount: breakdown.total.toDouble(),
+        quote: breakdown,
+        distanceKm: _distanceKm,
+        receiverPhone: user?.phone,
+        receiverName: user?.fullName,
       ),
     );
   }
@@ -445,6 +486,7 @@ class _PaymentBody extends StatelessWidget {
     required this.voucher,
     required this.voucherController,
     required this.voucherError,
+    required this.breakdown,
     required this.deliveryFee,
     required this.calculatingDistance,
     required this.onPickAddress,
@@ -461,6 +503,12 @@ class _PaymentBody extends StatelessWidget {
   final _PaymentVoucher? voucher;
   final TextEditingController voucherController;
   final String? voucherError;
+
+  /// The itemised money breakdown.
+  ///
+  /// This is the same object that is persisted on the order, so the total
+  /// printed here is exactly the number the courier will collect.
+  final PriceBreakdown breakdown;
 
   /// The delivery fee, in dong — derived from the road distance.
   final double deliveryFee;
@@ -729,19 +777,17 @@ class _PaymentBody extends StatelessWidget {
           const SizedBox(height: 18),
           _PaymentBreakdownRow(
             label: l10n.cartSummarySubtotal,
-            amount: _subtotal,
+            amount: breakdown.subtotal.toDouble(),
           ),
           const SizedBox(height: 8),
           _PaymentBreakdownRow(
             label: l10n.cartSummaryTax,
-            amount: CartPricing.taxOf(
-              _subtotal - (voucher?.subtotalDiscount(_subtotal) ?? 0),
-            ),
+            amount: breakdown.tax.toDouble(),
           ),
           const SizedBox(height: 8),
           _PaymentBreakdownRow(
             label: l10n.cartSummaryDelivery,
-            amount: voucher?.isFreeShipping == true ? 0 : deliveryFee,
+            amount: breakdown.delivery.toDouble(),
             loading: calculatingDistance,
           ),
           if (voucher != null) ...[
@@ -766,12 +812,7 @@ class _PaymentBody extends StatelessWidget {
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
-                  Money.format(
-                    CartPricing.totalOf(
-                      _subtotal - (voucher?.subtotalDiscount(_subtotal) ?? 0),
-                      delivery: voucher?.isFreeShipping == true ? 0 : deliveryFee,
-                    ),
-                  ),
+                  Money.format(breakdown.total),
                   textAlign: TextAlign.end,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

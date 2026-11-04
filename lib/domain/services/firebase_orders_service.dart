@@ -5,6 +5,7 @@ import '../../../data/env/environment.dart';
 import '../models/address.dart';
 import '../models/order_item.dart';
 import '../models/order_record.dart';
+import '../models/price_breakdown.dart';
 import '../models/product_cart.dart';
 import 'app_failure.dart';
 import 'orders_service.dart';
@@ -39,6 +40,10 @@ class FirebaseOrdersService implements OrdersService {
     required String paymentMethod,
     required List<ProductCart> products,
     required double amount,
+    PriceBreakdown? quote,
+    double distanceKm = 0.0,
+    String? receiverPhone,
+    String? receiverName,
   }) async {
     if (products.isEmpty) {
       throw OrdersServiceException(AppFailureCodes.ordersEmpty);
@@ -76,9 +81,17 @@ class FirebaseOrdersService implements OrdersService {
         street: address.street,
         reference: address.reference,
         paymentMethod: paymentMethod,
-        latitude: 0.0, // Giá trị mặc định vì Address không còn lưu tọa độ
-        longitude: 0.0, // Giá trị mặc định vì Address không còn lưu tọa độ
+        // The drop-off coordinates are what makes the order routable: the
+        // driver's map, the courier's pay and the distance-based fee all
+        // derive from them. They used to be written as 0.0, which silently
+        // disabled every one of those three features.
+        latitude: address.latitude,
+        longitude: address.longitude,
         amount: amount,
+        quote: quote,
+        distanceKm: distanceKm,
+        receiverPhone: receiverPhone,
+        receiverName: receiverName,
         status: OrderRecord.statusPaidOut,
         products: items,
         createdAt: DateTime.now(),

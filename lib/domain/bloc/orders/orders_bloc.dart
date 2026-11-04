@@ -7,6 +7,7 @@ import '../../models/address.dart';
 import '../../models/order_filter.dart';
 import '../../models/order_item.dart';
 import '../../models/order_record.dart';
+import '../../models/price_breakdown.dart';
 import '../../models/product_cart.dart';
 import '../../services/app_failure.dart';
 import '../../services/orders_service.dart';
@@ -73,6 +74,10 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
         paymentMethod: event.paymentMethod,
         products: event.products,
         amount: event.amount,
+        quote: event.quote,
+        distanceKm: event.distanceKm,
+        receiverPhone: event.receiverPhone,
+        receiverName: event.receiverName,
       );
       emit(state.copyWith(isLoading: false, lastOrder: order));
       // After checkout the My-Orders stream might already contain this

@@ -1,5 +1,6 @@
 import '../models/address.dart';
 import '../models/order_record.dart';
+import '../models/price_breakdown.dart';
 import '../models/product_cart.dart';
 import 'app_failure.dart';
 
@@ -24,6 +25,10 @@ abstract class OrdersService {
     required String paymentMethod,
     required List<ProductCart> products,
     required double amount,
+    PriceBreakdown? quote,
+    double distanceKm = 0.0,
+    String? receiverPhone,
+    String? receiverName,
   });
 
   /// Live view of every order belonging to [clientId]. Implementations

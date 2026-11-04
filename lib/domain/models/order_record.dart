@@ -1,4 +1,5 @@
 import 'order_item.dart';
+import 'price_breakdown.dart';
 
 /// Top-level order document (UC-04).
 ///
@@ -50,6 +51,36 @@ class OrderRecord {
   /// Contact email of the customer who placed the order.
   final String clientEmail;
 
+  /// The itemised money breakdown, persisted at checkout.
+  ///
+  /// Checkout is **cash on delivery**: the courier physically collects the
+  /// money at the door. The breakdown is therefore the contract between
+  /// the three sides — it says exactly how much the customer was quoted,
+  /// how much of it is tax, how much is the courier's fee and how much
+  /// belongs to the restaurant. Without it the courier has to re-derive
+  /// the number from a single `amount`, and the restaurant's revenue
+  /// number silently includes tax and the courier's cut.
+  ///
+  /// Null for orders written before this field existed.
+  final PriceBreakdown? quote;
+
+  /// Road distance (km) between the restaurant and the drop-off point.
+  ///
+  /// Persisted so the courier's pay is derived from the *same* number the
+  /// customer was quoted — recomputing it from the order coordinates
+  /// gives a different (straight-line) distance.
+  final double distanceKm;
+
+  /// Whether the courier has collected the cash for this order.
+  ///
+  /// This is the only record of the money movement in a cash-on-delivery
+  /// app: without it the restaurant cannot tell the difference between
+  /// cash it has and cash it is owed.
+  final bool cashCollected;
+
+  /// When the cash was collected (ms since epoch). Zero when not yet.
+  final int cashCollectedAt;
+
   const OrderRecord({
     required this.id,
     required this.clientId,
@@ -67,6 +98,10 @@ class OrderRecord {
     this.deliveryUserName = '',
     this.clientName = '',
     this.clientEmail = '',
+    this.quote,
+    this.distanceKm = 0.0,
+    this.cashCollected = false,
+    this.cashCollectedAt = 0,
     this.deliveryPhoto,
     this.receiverPhone,
     this.receiverName,
@@ -131,6 +166,10 @@ class OrderRecord {
         if (deliveryUserName.isNotEmpty) 'deliveryUserName': deliveryUserName,
         if (clientName.isNotEmpty) 'clientName': clientName,
         if (clientEmail.isNotEmpty) 'clientEmail': clientEmail,
+        if (quote != null) 'quote': quote!.toMap(),
+        if (distanceKm > 0) 'distanceKm': distanceKm,
+        'cashCollected': cashCollected,
+        if (cashCollectedAt > 0) 'cashCollectedAt': cashCollectedAt,
         if (deliveryPhoto != null) 'deliveryPhoto': deliveryPhoto,
         if (receiverPhone != null) 'receiverPhone': receiverPhone,
         if (receiverName != null) 'receiverName': receiverName,
@@ -155,6 +194,15 @@ class OrderRecord {
     final canonical = (map['deliveryUserName'] ?? '').toString().trim();
     if (canonical.isNotEmpty) return canonical;
     return (map['deliveryName'] ?? '').toString().trim();
+  }
+
+  /// Reads the persisted money breakdown, if the row has one.
+  ///
+  /// Orders written before the breakdown existed simply have no quote.
+  static PriceBreakdown? _readQuote(Map<dynamic, dynamic> map) {
+    final raw = map['quote'];
+    if (raw is! Map) return null;
+    return PriceBreakdown.fromMap(Map<dynamic, dynamic>.from(raw));
   }
 
   factory OrderRecord.fromMap(String id, Map<dynamic, dynamic> map) {    final raw = map['products'];
@@ -200,6 +248,10 @@ class OrderRecord {
       deliveryUserName: _readCourierName(map),
       clientName: (map['clientName'] ?? '').toString(),
       clientEmail: (map['clientEmail'] ?? '').toString(),
+      quote: _readQuote(map),
+      distanceKm: double.tryParse((map['distanceKm'] ?? '0').toString()) ?? 0.0,
+      cashCollected: map['cashCollected'] == true,
+      cashCollectedAt: int.tryParse((map['cashCollectedAt'] ?? '0').toString()) ?? 0,
       deliveryPhoto: map['deliveryPhoto']?.toString(),
       receiverPhone: map['receiverPhone']?.toString(),
       receiverName: map['receiverName']?.toString(),
@@ -224,6 +276,10 @@ class OrderRecord {
     String? deliveryUserName,
     String? clientName,
     String? clientEmail,
+    PriceBreakdown? quote,
+    double? distanceKm,
+    bool? cashCollected,
+    int? cashCollectedAt,
     String? deliveryPhoto,
     String? receiverPhone,
     String? receiverName,
@@ -246,6 +302,10 @@ class OrderRecord {
       deliveryUserName: deliveryUserName ?? this.deliveryUserName,
       clientName: clientName ?? this.clientName,
       clientEmail: clientEmail ?? this.clientEmail,
+      quote: quote ?? this.quote,
+      distanceKm: distanceKm ?? this.distanceKm,
+      cashCollected: cashCollected ?? this.cashCollected,
+      cashCollectedAt: cashCollectedAt ?? this.cashCollectedAt,
       deliveryPhoto: deliveryPhoto ?? this.deliveryPhoto,
       receiverPhone: receiverPhone ?? this.receiverPhone,
       receiverName: receiverName ?? this.receiverName,

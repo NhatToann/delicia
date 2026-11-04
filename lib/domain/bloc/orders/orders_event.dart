@@ -14,6 +14,22 @@ class OnAddNewOrdersEvent extends OrdersEvent {
   final List<ProductCart> products;
   final double amount;
 
+  /// The itemised money breakdown shown to the customer at checkout.
+  ///
+  /// Persisted on the order so the courier collects exactly the number the
+  /// customer was quoted (cash on delivery) and the restaurant can tell
+  /// food revenue from tax from the courier's cut.
+  final PriceBreakdown? quote;
+
+  /// Road distance (km) used to compute the delivery fee.
+  final double distanceKm;
+
+  /// Phone number of the customer, so the courier can call them.
+  final String? receiverPhone;
+
+  /// Display name of the customer, so the courier can greet them by name.
+  final String? receiverName;
+
   const OnAddNewOrdersEvent({
     required this.clientId,
     this.clientName = '',
@@ -22,6 +38,10 @@ class OnAddNewOrdersEvent extends OrdersEvent {
     required this.paymentMethod,
     required this.products,
     required this.amount,
+    this.quote,
+    this.distanceKm = 0.0,
+    this.receiverPhone,
+    this.receiverName,
   });
 }
 

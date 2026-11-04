@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../domain/bloc/address/address_bloc.dart';
 import '../../../domain/bloc/auth/auth_bloc.dart';
 import '../../../domain/models/client_address.dart';
+import '../../../data/services/vietnam_geo_resolver.dart';
 import '../../components/figma_header_band.dart';
 import '../../helpers/error_message.dart';
 import '../../helpers/l10n_extension.dart';
@@ -26,70 +27,24 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
   late final TextEditingController _reference;
   late bool _isDefault;
   late String _editingId;
+  /// The resolver over the bundled Vietnamese administrative dataset.
+  ///
+  /// The 2025 reform dropped the district level, so the picker offers
+  /// *province -> ward* and every ward carries a real centroid.
+  final VietnamGeoResolver _resolver = VietnamGeoResolver.instance;
 
   String? _selectedCity;
-  String? _selectedDistrict;
   String? _selectedWard;
 
-  final List<String> _cities = ['Đà Nẵng', 'Hồ Chí Minh', 'Hà Nội'];
-
-  final Map<String, List<String>> _districts = {
-    'Đà Nẵng': [
-      'Hải Châu',
-      'Thanh Khê',
-      'Sơn Trà',
-      'Ngũ Hành Sơn',
-      'Liên Chiểu',
-      'Cẩm Lệ',
-      'Hòa Vang',
-    ],
-    'Hồ Chí Minh': [
-      'Quận 1',
-      'Quận 3',
-      'Quận 4',
-      'Quận 5',
-      'Quận 7',
-      'Quận 10',
-      'Phú Nhuận',
-      'Bình Thạnh',
-      'Tân Bình',
-      'Thủ Đức',
-    ],
-    'Hà Nội': [
-      'Ba Đình',
-      'Hoàn Kiếm',
-      'Đống Đa',
-      'Cầu Giấy',
-      'Thanh Xuân',
-      'Hai Bà Trưng',
-      'Tây Hồ',
-      'Long Biên',
-    ],
-  };
-
-  final Map<String, List<String>> _wards = {
-    'Hải Châu': ['Thạch Thang', 'Hải Châu 1', 'Hải Châu 2', 'Nam Dương', 'Phước Ninh', 'Bình Thuận', 'Bình Hiên', 'Hòa Thuận Đông', 'Hòa Thuận Tây', 'Thuận Phước', 'Hòa Cường Bắc', 'Hòa Cường Nam'],
-    'Thanh Khê': ['Vĩnh Trung', 'Thạc Gián', 'Chính Gián', 'Tân Chính', 'An Khê', 'Hòa Khê', 'Thanh Khê Đông', 'Thanh Khê Tây', 'Xuân Hà', 'Tam Thuận'],
-    'Sơn Trà': ['Thọ Quang', 'Nại Hiên Đông', 'Mân Thái', 'An Hải Bắc', 'An Hải Tây', 'An Hải Đông', 'Phước Mỹ'],
-    'Ngũ Hành Sơn': ['Mỹ An', 'Khuê Mỹ', 'Hòa Hải', 'Hòa Quý'],
-    'Liên Chiểu': ['Hòa Minh', 'Hòa Khánh Nam', 'Hòa Khánh Bắc', 'Hòa Hiệp Nam', 'Hòa Hiệp Bắc'],
-    'Cẩm Lệ': ['Khuê Trung', 'Hòa An', 'Hòa Phát', 'Hòa Thọ Đông', 'Hòa Thọ Tây', 'Hòa Xuân'],
-    'Hòa Vang': ['Hòa Bắc', 'Hòa Liên', 'Hòa Nhơn', 'Hòa Ninh', 'Hòa Phong', 'Hòa Phú', 'Hòa Phước', 'Hòa Sơn', 'Hòa Tiến'],
-    'Quận 1': ['Bến Nghé', 'Bến Thành', 'Cầu Kho', 'Cầu Ông Lãnh', 'Cô Giang', 'Đa Kao', 'Nguyễn Cư Trinh', 'Nguyễn Thái Bình', 'Phạm Ngũ Lão', 'Tân Định'],
-    'Quận 3': ['Phường 01', 'Phường 02', 'Phường 03', 'Phường 04', 'Phường 05', 'Phường 09', 'Phường 10', 'Phường 11', 'Phường 12', 'Phường 13', 'Phường 14', 'Võ Thị Sáu'],
-    'Quận 7': ['Bình Thuận', 'Phú Mỹ', 'Phú Thuận', 'Tân Hưng', 'Tân Kiểng', 'Tân Phong', 'Tân Phú', 'Tân Quy', 'Tân Thuận Đông', 'Tân Thuận Tây'],
-    'Thủ Đức': ['Bình Chiểu', 'Bình Thọ', 'Hiệp Bình Chánh', 'Hiệp Bình Phước', 'Linh Chiểu', 'Linh Đông', 'Linh Tây', 'Linh Trung', 'Tam Bình', 'Tam Phú', 'Tường Thọ'],
-    'Ba Đình': ['Cống Vị', 'Điện Biên', 'Đội Cấn', 'Giảng Võ', 'Kim Mã', 'Liễu Giai', 'Ngọc Hà', 'Ngọc Khánh', 'Phúc Xá', 'Quán Thánh', 'Thành Công', 'Trúc Bạch'],
-    'Hoàn Kiếm': ['Cửa Đông', 'Cửa Nam', 'Đồng Xuân', 'Hàng Bạc', 'Hàng Bài', 'Hàng Bồ', 'Hàng Bông', 'Hàng Buồm', 'Hàng Đào', 'Hàng Gai', 'Hàng Mã', 'Hàng Trống', 'Lý Thái Tổ', 'Phan Chu Trinh', 'Tràng Tiền'],
-    'Cầu Giấy': ['Dịch Vọng', 'Dịch Vọng Hậu', 'Mai Dịch', 'Nghĩa Đô', 'Nghĩa Tân', 'Quan Hoa', 'Trung Hòa', 'Yên Hòa'],
-  };
+  /// The province names, loaded asynchronously from the dataset.
+  List<String> _provinceNames = const <String>[];
 
   @override
   void initState() {
     super.initState();
     final a = widget.existingAddress;
     if (a != null && a.street.isNotEmpty) {
-      // Chỉ lấy phần tên đường/số nhà đầu tiên trước dấu phẩy để tránh dồn rác phường/quận cũ
+      // Chi lay phan ten duong/so nha dau tien truoc dau phay de tranh don rac phuong/quan cu
       final streetOnly = a.street.split(',').first.trim();
       _street = TextEditingController(text: streetOnly);
     } else {
@@ -100,9 +55,26 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
     _isDefault = a?.isDefault ?? false;
     _editingId = a?.id ?? '';
 
-    _selectedCity = _cities.first;
-    _selectedDistrict = _districts[_selectedCity]?.first;
-    _selectedWard = _wards[_selectedDistrict]?.first ?? 'Phường/Xã';
+    _loadProvinces();
+  }
+
+  /// Loads the province list and pre-selects the first one.
+  Future<void> _loadProvinces() async {
+    await _resolver.ensureLoaded();
+    if (!mounted) return;
+    final provinces = _resolver.provinces.map((p) => p.name).toList();
+    setState(() {
+      _provinceNames = provinces;
+      _selectedCity = provinces.isEmpty ? null : provinces.first;
+      _selectedWard = _firstWardOf(_selectedCity);
+    });
+  }
+
+  /// The first ward of a province, or `null` when the province is empty.
+  String? _firstWardOf(String? province) {
+    if (province == null) return null;
+    final wards = _resolver.wardsOf(province);
+    return wards.isEmpty ? null : wards.first.name;
   }
 
   @override
@@ -219,43 +191,16 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                               onTap: () {
                                 _openSelectorModal(
                                   title: 'Chọn Tỉnh / Thành phố',
-                                  items: _cities,
+                                  items: _provinceNames,
                                   selectedItem: _selectedCity,
                                   onSelected: (val) {
                                     setState(() {
                                       _selectedCity = val;
-                                      final districtsList = _districts[val];
-                                      _selectedDistrict = (districtsList != null && districtsList.isNotEmpty)
-                                          ? districtsList.first
-                                          : null;
-                                      final wardsList = _selectedDistrict != null ? _wards[_selectedDistrict] : null;
-                                      _selectedWard = (wardsList != null && wardsList.isNotEmpty)
-                                          ? wardsList.first
-                                          : 'Chọn Phường/Xã';
-                                    });
-                                  },
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 14),
-                            _buildSelectorField(
-                              label: 'Quận / Huyện',
-                              value: _selectedDistrict ?? 'Chọn Quận/Huyện',
-                              onTap: () {
-                                final List<String> districts = _selectedCity != null
-                                    ? (_districts[_selectedCity] ?? <String>[])
-                                    : <String>[];
-                                _openSelectorModal(
-                                  title: 'Chọn Quận / Huyện',
-                                  items: districts,
-                                  selectedItem: _selectedDistrict,
-                                  onSelected: (val) {
-                                    setState(() {
-                                      _selectedDistrict = val;
-                                      final List<String>? wardsList = _wards[val];
-                                      _selectedWard = (wardsList != null && wardsList.isNotEmpty)
-                                          ? wardsList.first
-                                          : 'Không có phường/xã';
+                                      // The 2025 reform dropped the
+                                      // district level, so picking a
+                                      // province resets the ward to its
+                                      // first entry.
+                                      _selectedWard = _firstWardOf(val);
                                     });
                                   },
                                 );
@@ -266,9 +211,12 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                               label: 'Phường / Xã',
                               value: _selectedWard ?? 'Chọn Phường/Xã',
                               onTap: () {
-                                final List<String> wards = _selectedDistrict != null
-                                    ? (_wards[_selectedDistrict] ?? <String>['Chọn Phường/Xã'])
-                                    : <String>['Chọn Phường/Xã'];
+                                final List<String> wards = _selectedCity == null
+                                    ? const <String>[]
+                                    : _resolver
+                                          .wardsOf(_selectedCity!)
+                                          .map((w) => w.name)
+                                          .toList();
                                 _openSelectorModal(
                                   title: 'Chọn Phường / Xã',
                                   items: wards,
@@ -425,8 +373,16 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
 
     final fullStreet = '${_street.text.trim()}, '
         '${_selectedWard ?? ""}, '
-        '${_selectedDistrict ?? ""}, '
         '${_selectedCity ?? ""}';
+
+    // Resolve the coordinates *before* saving: the delivery fee is
+    // distance-based and the courier navigates to a point, so an address
+    // stored at 0.0/0.0 would produce a zero fee and a broken route.
+    final resolver = await _resolver.ensureLoaded();
+    final point = resolver.resolve(
+      ward: _selectedWard,
+      province: _selectedCity,
+    );
 
     final isEditing = _editingId.isNotEmpty;
     final bloc = context.read<AddressBloc>();
@@ -439,8 +395,8 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
             id: '',
             street: fullStreet,
             reference: _reference.text.trim(),
-            latitude: 0.0,
-            longitude: 0.0,
+            latitude: point?.latitude ?? 0.0,
+            longitude: point?.longitude ?? 0.0,
             isDefault: _isDefault,
           ),
         ),
@@ -453,8 +409,8 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
             id: _editingId,
             street: fullStreet,
             reference: _reference.text.trim(),
-            latitude: 0.0,
-            longitude: 0.0,
+            latitude: point?.latitude ?? 0.0,
+            longitude: point?.longitude ?? 0.0,
             isDefault: _isDefault,
           ),
         ),

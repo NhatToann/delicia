@@ -13,6 +13,7 @@ import 'package:delicia/domain/models/address.dart';
 import 'package:delicia/domain/models/order_filter.dart';
 import 'package:delicia/domain/models/order_item.dart';
 import 'package:delicia/domain/models/order_record.dart';
+import 'package:delicia/domain/models/price_breakdown.dart';
 import 'package:delicia/domain/models/product_cart.dart';
 import 'package:delicia/domain/services/app_failure.dart';
 import 'package:delicia/domain/services/orders_service.dart';
@@ -35,6 +36,10 @@ class _FakeOrdersService implements OrdersService {
     required String paymentMethod,
     required List<ProductCart> products,
     required double amount,
+    PriceBreakdown? quote,
+    double distanceKm = 0.0,
+    String? receiverPhone,
+    String? receiverName,
   }) async {
     if (throwOnCreate) {
       throw OrdersServiceException(AppFailureCodes.ordersCreate, 'boom');
@@ -150,6 +155,10 @@ class _ScriptedOrdersService implements OrdersService {
     required String paymentMethod,
     required List<ProductCart> products,
     required double amount,
+    PriceBreakdown? quote,
+    double distanceKm = 0.0,
+    String? receiverPhone,
+    String? receiverName,
   }) async {
     throw OrdersServiceException('not used in this test');
   }

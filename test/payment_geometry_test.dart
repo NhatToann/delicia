@@ -17,6 +17,7 @@ import 'package:delicia/domain/bloc/cart/cart_bloc.dart';
 import 'package:delicia/domain/bloc/orders/orders_bloc.dart';
 import 'package:delicia/domain/models/address.dart';
 import 'package:delicia/domain/models/order_record.dart';
+import 'package:delicia/domain/models/price_breakdown.dart';
 import 'package:delicia/domain/models/product_cart.dart';
 import 'package:delicia/domain/services/orders_service.dart';
 import 'package:delicia/presentation/client/payment/payment_screen.dart';
@@ -44,6 +45,10 @@ class _StubOrders implements OrdersService {
     required String paymentMethod,
     required List<ProductCart> products,
     required double amount,
+    PriceBreakdown? quote,
+    double distanceKm = 0.0,
+    String? receiverPhone,
+    String? receiverName,
   }) async =>
       throw OrdersServiceException('x');
   @override

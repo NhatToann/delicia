@@ -1,4 +1,6 @@
 /// App-wide configuration constants.
+import '../../domain/models/price_breakdown.dart';
+
 class Environment {
   Environment._();
 
@@ -164,4 +166,24 @@ class CartPricing {
     }
     return deliveryFeeVnd(distanceKm) * 0.90;
   }
+
+  /// Builds the itemised breakdown of an order.
+  ///
+  /// This is the single place where a cart becomes a price: the subtotal,
+  /// the tax and the delivery fee are each rounded **once**, and the total
+  /// is their sum. Because checkout is cash on delivery, the courier
+  /// collects exactly [PriceBreakdown.total] — so the customer's screen and
+  /// the courier's screen can never disagree by a rounding dong.
+  ///
+  /// [deliveryFee] is the *already computed* fee (distance-based, or 0 when
+  /// a voucher covers the shipping).
+  static PriceBreakdown breakdownOf(
+    double subtotal, {
+    double? deliveryFee,
+  }) =>
+      PriceBreakdown.from(
+        subtotal: subtotal,
+        tax: taxOf(subtotal),
+        deliveryFee: deliveryFee ?? 0,
+      );
 }
