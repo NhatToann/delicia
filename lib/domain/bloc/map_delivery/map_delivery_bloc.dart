@@ -44,6 +44,17 @@ class MapDeliveryBloc extends Bloc<MapDeliveryEvent, MapDeliveryState> {
     on<OnDeliveryRouteLoadedEvent>(_onDeliveryRouteLoaded);
     on<OnDeliveryRouteFailedEvent>(_onDeliveryRouteFailed);
     on<OnDeliveryPublishErrorEvent>(_onDeliveryPublishError);
+    on<OnWatchClientLocationEvent>(_onWatchClientLocation);
+    on<OnUnwatchClientLocationEvent>(_onUnwatchClientLocation);
+    on<OnUpdateClientLocationEvent>(_onUpdateClientLocation);
+    on<OnClientLocationWatchFailedEvent>(
+      (event, emit) => emit(state.copyWith(
+        error: AppFailure(
+          AppFailureCodes.realtimeListener,
+          'Client location listener error: ${event.reason}',
+        ),
+      )),
+    );
   }
 
   final RealtimeService _realtimeService;
@@ -59,6 +70,10 @@ class MapDeliveryBloc extends Bloc<MapDeliveryEvent, MapDeliveryState> {
   /// Endpoints the currently displayed route was built from.
   LatLngPoint? _routeOrigin;
   LatLngPoint? _routeDestination;
+
+  /// Subscription to the client's live position (the destination pin).
+  RealtimeSubscription? _clientLocationSub;
+  StreamSubscription<RealtimePositionUpdate>? _clientLocationStreamSub;
 
   void _onMapReady(OnMapReadyEvent event, Emitter<MapDeliveryState> emit) {
     emit(state.copyWith(isReadyMapDelivery: true));
@@ -208,6 +223,60 @@ class MapDeliveryBloc extends Bloc<MapDeliveryEvent, MapDeliveryState> {
     }
   }
 
+  /// Subscribes to the client's position and mirrors it into
+  /// `markerClient` — that's the destination the driver navigates to.
+  Future<void> _onWatchClientLocation(
+    OnWatchClientLocationEvent event,
+    Emitter<MapDeliveryState> emit,
+  ) async {
+    await _clientLocationSub?.cancel();
+    _clientLocationSub = null;
+    await _clientLocationStreamSub?.cancel();
+    _clientLocationStreamSub = null;
+    try {
+      final sub = _realtimeService.subscribeClientLocation(event.orderId);
+      _clientLocationSub = sub;
+      _clientLocationStreamSub = sub.stream.listen(
+            (update) {
+              add(OnUpdateClientLocationEvent(
+                LatLngPoint(
+                  latitude: update.latitude,
+                  longitude: update.longitude,
+                ),
+              ));
+            },
+            onError: (Object e) {
+              add(OnClientLocationWatchFailedEvent('$e'));
+            },
+            cancelOnError: false,
+          );
+    } catch (e) {
+      emit(state.copyWith(
+        error: AppFailure(
+          AppFailureCodes.realtimeListener,
+          'Cannot watch client location: $e',
+        ),
+      ));
+    }
+  }
+
+  void _onUpdateClientLocation(
+    OnUpdateClientLocationEvent event,
+    Emitter<MapDeliveryState> emit,
+  ) {
+    emit(state.copyWith(markerClient: event.position));
+  }
+
+  Future<void> _onUnwatchClientLocation(
+    OnUnwatchClientLocationEvent event,
+    Emitter<MapDeliveryState> emit,
+  ) async {
+    await _clientLocationStreamSub?.cancel();
+    _clientLocationStreamSub = null;
+    await _clientLocationSub?.cancel();
+    _clientLocationSub = null;
+  }
+
   @override
   Future<void> close() async {
     _emitTimer?.cancel();
@@ -215,6 +284,8 @@ class MapDeliveryBloc extends Bloc<MapDeliveryEvent, MapDeliveryState> {
     _routeTimer?.cancel();
     _routeTimer = null;
     _routeService.dispose();
+    await _clientLocationStreamSub?.cancel();
+    await _clientLocationSub?.cancel();
     return super.close();
   }
 }

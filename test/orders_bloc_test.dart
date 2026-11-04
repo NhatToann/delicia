@@ -47,8 +47,8 @@ class _FakeOrdersService implements OrdersService {
       addressId: address.id,
       street: address.street,
       reference: address.reference,
-      latitude: address.latitude,
-      longitude: address.longitude,
+      latitude: 0.0,
+      longitude: 0.0,
       paymentMethod: paymentMethod,
       amount: amount,
       status: OrderRecord.statusPaidOut,
@@ -89,7 +89,7 @@ class _ScriptedOrdersService implements OrdersService {
   final Object? scriptedError;
 
   final StreamController<List<OrderRecord>> _controller =
-      StreamController<List<OrderRecord>>.broadcast();
+  StreamController<List<OrderRecord>>.broadcast();
 
   void emit(List<OrderRecord> orders) => _controller.add(orders);
   void error(Object e) => _controller.addError(e);
@@ -163,8 +163,8 @@ OrderRecord _order({
     addressId: 'a',
     street: '',
     reference: '',
-    latitude: 0,
-    longitude: 0,
+    latitude: 0.0,
+    longitude: 0.0,
     paymentMethod: 'CASH PAYMENT',
     amount: 10,
     status: status,
@@ -246,7 +246,7 @@ void main() {
       ),
       expect: () => [
         isA<OrdersState>().having(
-          (s) => s.lastOrder?.status,
+              (s) => s.lastOrder?.status,
           'status',
           'ON WAY',
         ),
@@ -301,7 +301,7 @@ void main() {
         );
         // kick an error after the empty initial emit
         Future<void>.delayed(const Duration(milliseconds: 50),
-            () => service.error('firebase offline'));
+                () => service.error('firebase offline'));
         return OrdersBloc(ordersService: service);
       },
       act: (bloc) => bloc.add(const OnLoadMyOrdersEvent('user-1')),
@@ -341,7 +341,7 @@ void main() {
       )),
       expect: () => [
         isA<OrdersState>().having(
-          (s) => s.filter,
+              (s) => s.filter,
           'filter',
           OrderFilter.completed,
         ),

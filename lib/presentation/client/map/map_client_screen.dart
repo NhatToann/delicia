@@ -74,6 +74,10 @@ class _MapClientScreenState extends State<MapClientScreen>
 
   Timer? _autoFitTimer;
   Timer? _simulationTimer;
+
+  /// Subscription to the device's GPS stream.  The client's *own* live
+  /// position is published to the realtime backend so the delivery driver
+  /// can render the destination on their map.
   StreamSubscription<Position>? _positionSub;
   LatLng? _myLocation;
   bool _locationStarted = false;
@@ -168,6 +172,8 @@ class _MapClientScreenState extends State<MapClientScreen>
       ),
     );
     bloc.add(OnInitSocketEvent(order.id));
+    // Publish our own position to the driver (UC-03, client tracking).
+    _startClientTracking(order.id);
     _centered = false;
   }
 
@@ -200,6 +206,15 @@ class _MapClientScreenState extends State<MapClientScreen>
           ).listen((position) {
             if (mounted) {
               _updateMyLocation(LatLng(position.latitude, position.longitude));
+              // Feed the bloc so the driver sees the customer move.
+              context.read<MapClientBloc>().add(
+                    OnUpdateClientPositionEvent(
+                      LatLngPoint(
+                        latitude: position.latitude,
+                        longitude: position.longitude,
+                      ),
+                    ),
+                  );
             }
           });
       final current = await Geolocator.getCurrentPosition(
@@ -316,6 +331,29 @@ class _MapClientScreenState extends State<MapClientScreen>
     );
   }
 
+  /// Starts publishing the client's own position so the delivery driver
+  /// sees the destination move on their map.
+  ///
+  /// The GPS stream itself is owned by [_startCurrentLocation] — this
+  /// method only kicks off the bloc-side publisher and seeds it with the
+  /// position we already know, so we never open a second geolocation
+  /// subscription.
+  void _startClientTracking(String orderId) {
+    if (orderId.isEmpty) return;
+    context.read<MapClientBloc>().add(OnStartClientTrackingEvent(orderId));
+    final location = _myLocation;
+    if (location != null) {
+      context.read<MapClientBloc>().add(
+            OnUpdateClientPositionEvent(
+              LatLngPoint(
+                latitude: location.latitude,
+                longitude: location.longitude,
+              ),
+            ),
+          );
+    }
+  }
+
   @override
   void dispose() {
     _autoFitTimer?.cancel();
@@ -324,6 +362,7 @@ class _MapClientScreenState extends State<MapClientScreen>
     _mapClientBloc?.add(const OnClearSocketEvent());
     // Disposes the internally-created MapController as well.
     _mapController.dispose();
+    context.read<MapClientBloc>().add(const OnStopClientTrackingEvent());
     super.dispose();
   }
 

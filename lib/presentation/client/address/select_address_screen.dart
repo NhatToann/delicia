@@ -138,9 +138,9 @@ class _SelectAddressScreenState extends State<SelectAddressScreen> {
       final next = <Address>[
         address,
         ..._history.where(
-          (saved) =>
-              (saved.latitude - address.latitude).abs() > 0.00005 ||
-              (saved.longitude - address.longitude).abs() > 0.00005,
+              (saved) =>
+          saved.street != address.street ||
+              saved.reference != address.reference,
         ),
       ].take(8).toList(growable: false);
       await preferences.setString(
@@ -511,7 +511,18 @@ class _SelectAddressScreenState extends State<SelectAddressScreen> {
   }
 
   void _selectHistoryAddress(Address address) {
-    final point = LatLng(address.latitude, address.longitude);
+    LatLng? point;
+    // Cố gắng parse tọa độ từ chuỗi street nếu có định dạng "lat, lng"
+    final parts = address.street.split(',');
+    if (parts.length == 2) {
+      final lat = double.tryParse(parts[0].trim());
+      final lng = double.tryParse(parts[1].trim());
+      if (lat != null && lng != null) {
+        point = LatLng(lat, lng);
+      }
+    }
+    point ??= const LatLng(16.0544, 108.2022); // Fallback mặc định (ví dụ: Đà Nẵng)
+
     setState(() {
       _pickedPoint = point;
       _searchOrigin = point;
@@ -713,13 +724,11 @@ class _SelectAddressScreenState extends State<SelectAddressScreen> {
       id: 'user-${DateTime.now().millisecondsSinceEpoch}',
       street: _pickedStreet.isEmpty
           ? '${point.latitude.toStringAsFixed(4)}, '
-                '${point.longitude.toStringAsFixed(4)}'
+          '${point.longitude.toStringAsFixed(4)}'
           : _pickedStreet,
       reference: _pickedDetails.isEmpty
           ? context.l10n.mapSelectedOnMap
           : _pickedDetails,
-      latitude: point.latitude,
-      longitude: point.longitude,
     );
     await _saveToHistory(address);
     if (!mounted) return;

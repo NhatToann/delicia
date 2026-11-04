@@ -16,7 +16,6 @@ import '../../helpers/money.dart';
 import '../../themes/colors_frave.dart';
 import '../../themes/type_frave.dart';
 import '../cart/cart_screen.dart';
-import '../profile/my_profile_screen.dart';
 import '../home/widgets/profile_menu.dart';
 
 /// Discover tab styled after Figma 5.1-A. Home filters pass their selected
@@ -373,6 +372,7 @@ class _SearchForCategoryScreenState extends State<SearchForCategoryScreen> {
     final myProfileLabel = context.l10n.profileMyProfile;
     final signOutLabel = context.l10n.profileSignOut;
     final signInLabel = context.l10n.profileSignIn;
+    final addressLabel = context.l10n.profileDeliveryAddress;
     ProfileMenuOverlay.show(
       context,
       onItemTap: (label) {
@@ -384,11 +384,9 @@ class _SearchForCategoryScreenState extends State<SearchForCategoryScreen> {
         } else if (label == ordersLabel) {
           context.push('/client/orders');
         } else if (label == myProfileLabel) {
-          Navigator.of(context).push<void>(
-            MaterialPageRoute<void>(
-              builder: (_) => const MyProfileScreen(),
-            ),
-          );
+          context.push('/client/profile');
+        } else if (label == addressLabel) {
+          context.push('/client/profile/addresses');
         }
       },
     );
@@ -617,15 +615,16 @@ class _CategoryCircle extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
-    this.icon,
-    this.iconAsset,
+    required this.iconAsset,
   });
 
   final String label;
   final bool selected;
   final VoidCallback onTap;
-  final IconData? icon;
-  final String? iconAsset;
+
+  /// Always resolves — [CategoryAssets.iconFor] falls back to a default
+  /// artwork, so the circle never renders without a glyph.
+  final String iconAsset;
 
   @override
   Widget build(BuildContext context) => SizedBox(
@@ -648,13 +647,11 @@ class _CategoryCircle extends StatelessWidget {
                   : null,
             ),
             alignment: Alignment.center,
-            child: iconAsset == null
-                ? Icon(icon, color: ColorsFrave.navOrange, size: 20)
-                : SvgPicture.asset(
-                    'assets/figma_home/$iconAsset',
-                    width: 28,
-                    height: 28,
-                  ),
+            child: SvgPicture.asset(
+              'assets/figma_home/$iconAsset',
+              width: 28,
+              height: 28,
+            ),
           ),
           const SizedBox(height: 3),
           Text(

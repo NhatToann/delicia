@@ -58,14 +58,14 @@ class FirebaseOrdersService implements OrdersService {
       final items = products
           .map(
             (p) => OrderItem(
-              productId: p.uidProduct,
-              nameProduct: p.nameProduct,
-              picture: p.imageProduct,
-              price: p.price,
-              quantity: p.quantity,
-              optionLabel: p.optionLabel,
-            ),
-          )
+          productId: p.uidProduct,
+          nameProduct: p.nameProduct,
+          picture: p.imageProduct,
+          price: p.price,
+          quantity: p.quantity,
+          optionLabel: p.optionLabel,
+        ),
+      )
           .toList();
       final record = OrderRecord(
         id: id,
@@ -75,9 +75,9 @@ class FirebaseOrdersService implements OrdersService {
         addressId: address.id,
         street: address.street,
         reference: address.reference,
-        latitude: address.latitude,
-        longitude: address.longitude,
         paymentMethod: paymentMethod,
+        latitude: 0.0, // Giá trị mặc định vì Address không còn lưu tọa độ
+        longitude: 0.0, // Giá trị mặc định vì Address không còn lưu tọa độ
         amount: amount,
         status: OrderRecord.statusPaidOut,
         products: items,
@@ -115,10 +115,10 @@ class FirebaseOrdersService implements OrdersService {
         .child(id)
         .onValue
         .map((event) {
-          final value = event.snapshot.value;
-          if (value is! Map) return null;
-          return OrderRecord.fromMap(id, Map<dynamic, dynamic>.from(value));
-        })
+      final value = event.snapshot.value;
+      if (value is! Map) return null;
+      return OrderRecord.fromMap(id, Map<dynamic, dynamic>.from(value));
+    })
         .handleError((Object e) {
       throw OrdersServiceException(AppFailureCodes.ordersWatch, '$e');
     });
@@ -128,30 +128,25 @@ class FirebaseOrdersService implements OrdersService {
   Stream<List<OrderRecord>> watchMyOrders(String clientId) {
     final ref = _ref;
     if (ref == null) return Stream<List<OrderRecord>>.value(<OrderRecord>[]);
-    // `orderByChild + equalTo` lets the database hand us only the orders
-    // for this user — far cheaper than scanning every order on every
-    // change. The index is configured by the same code that writes to
-    // the orders node.
     return ref
         .orderByChild('clientId')
         .equalTo(clientId)
         .onValue
         .map((event) {
-          final value = event.snapshot.value;
-          if (value is! Map) return const <OrderRecord>[];
-          final out = <OrderRecord>[];
-          value.forEach((key, entry) {
-            if (entry is Map) {
-              out.add(OrderRecord.fromMap(
-                key?.toString() ?? '',
-                Map<dynamic, dynamic>.from(entry),
-              ));
-            }
-          });
-          // Newest first — keeps the My Orders list visually chronological.
-          out.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          return out;
-        })
+      final value = event.snapshot.value;
+      if (value is! Map) return const <OrderRecord>[];
+      final out = <OrderRecord>[];
+      value.forEach((key, entry) {
+        if (entry is Map) {
+          out.add(OrderRecord.fromMap(
+            key?.toString() ?? '',
+            Map<dynamic, dynamic>.from(entry),
+          ));
+        }
+      });
+      out.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return out;
+    })
         .handleError((Object e) {
       throw OrdersServiceException(AppFailureCodes.ordersLoad, '$e');
     });

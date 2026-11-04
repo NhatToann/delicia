@@ -23,6 +23,25 @@ class User {
     required this.rolId,
   });
 
+  /// Factory constructor to create a User from a Map (e.g., Firebase snapshot).
+  /// Hỗ trợ cả 2 cách gọi:
+  /// 1. User.fromMap(map) -> tự lấy uid bên trong map
+  /// 2. User.fromMap(map, uid) -> truyền trực tiếp uid ở tham số thứ 2
+  factory User.fromMap(Map<dynamic, dynamic> map, [String? explicitUid]) {
+    return User(
+      uid: explicitUid ?? map['uid']?.toString() ?? '',
+      email: map['email']?.toString() ?? '',
+      firstName: map['firstName']?.toString() ?? '',
+      lastName: map['lastName']?.toString() ?? '',
+      phone: map['phone']?.toString(),
+      image: map['image']?.toString(),
+      rolId: map['rolId'] is int
+          ? map['rolId']
+          : int.tryParse(map['rolId']?.toString() ?? '2') ?? 2,
+      dateOfBirth: map['dateOfBirth']?.toString(), // Đọc ngày sinh từ Firebase
+    );
+  }
+
   String get fullName => '$firstName $lastName'.trim();
 
   User copyWith({
@@ -31,6 +50,7 @@ class User {
     String? image,
     String? phone,
     String? dateOfBirth,
+    int? rolId,
   }) => User(
     uid: uid,
     email: email,
@@ -39,30 +59,17 @@ class User {
     image: image ?? this.image,
     phone: phone ?? this.phone,
     dateOfBirth: dateOfBirth ?? this.dateOfBirth,
-    rolId: rolId,
+    rolId: rolId ?? this.rolId,
   );
 
-  factory User.fromMap(Map<dynamic, dynamic> map) {
-    return User(
-      uid: (map['uid'] ?? '') as String,
-      email: (map['email'] ?? '') as String,
-      firstName: (map['firstName'] ?? '') as String,
-      lastName: (map['lastName'] ?? '') as String,
-      image: map['image'] as String?,
-      phone: map['phone'] as String?,
-      dateOfBirth: map['dateOfBirth'] as String?,
-      rolId: int.tryParse((map['rolId'] ?? '2').toString()) ?? 2,
-    );
-  }
-
   Map<String, dynamic> toMap() => {
-        'uid': uid,
-        'email': email,
-        'firstName': firstName,
-        'lastName': lastName,
-        'image': image,
-        'phone': phone,
-        'dateOfBirth': dateOfBirth,
-        'rolId': rolId,
-      };
+    'uid': uid,
+    'email': email,
+    'firstName': firstName,
+    'lastName': lastName,
+    'image': image,
+    'phone': phone,
+    'dateOfBirth': dateOfBirth,
+    'rolId': rolId,
+  };
 }

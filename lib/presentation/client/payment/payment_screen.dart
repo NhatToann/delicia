@@ -4,11 +4,13 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../data/env/environment.dart';
+import '../../../domain/bloc/address/address_bloc.dart';
 import '../../../domain/bloc/auth/auth_bloc.dart';
 import '../../../domain/bloc/cart/cart_bloc.dart';
 import '../../../domain/bloc/orders/orders_bloc.dart';
 import '../../../domain/bloc/payment/payment_bloc.dart';
 import '../../../domain/models/address.dart';
+import '../../../domain/models/client_address.dart';
 import '../../../domain/models/product_cart.dart';
 import '../../../domain/models/type_payment.dart';
 import '../../../domain/services/app_failure.dart';
@@ -22,22 +24,16 @@ import '../../helpers/money.dart';
 import '../../themes/colors_frave.dart';
 import '../../themes/type_frave.dart';
 import 'payment_geometry.dart';
+import 'widgets/pay_now_button.dart';
 import 'widgets/payment_header.dart';
 import 'widgets/payment_method_glyph.dart';
 import 'widgets/payment_method_sheet.dart';
-import 'widgets/pay_now_button.dart';
 
 /// PaymentScreen — address, order summary, payment method and total.
 /// The summary scrolls independently from the pinned payment action.
 class PaymentScreen extends StatefulWidget {
   const PaymentScreen({super.key, this.initialMethod});
 
-  /// The method selected when the screen opens.
-  ///
-  /// Defaults to [defaultPaymentMethod] — cash, which needs no gateway and
-  /// can be settled the moment the order is created. The design frames use
-  /// the credit card instead, so this exists to let a preview or a test
-  /// reproduce them.
   final TypePaymentMethod? initialMethod;
 
   @override
@@ -47,8 +43,7 @@ class PaymentScreen extends StatefulWidget {
 class _PaymentScreenState extends State<PaymentScreen> {
   final TextEditingController _voucherController = TextEditingController();
 
-  /// Address the user is delivering to. Seeded with the default one and
-  /// replaced when the picker returns a new one.
+  /// Address the user is delivering to.
   Address _address = Address.hardcodedDefault;
 
   /// The payment method currently selected.
@@ -63,13 +58,25 @@ class _PaymentScreenState extends State<PaymentScreen> {
     _PaymentVoucher.freeShipping(code: 'FREESHIP'),
   ];
 
-  /// The methods the user can pick from.
-  ///
-  /// The checkout offers only cash and payOS.
   final List<TypePaymentMethod> _methods = <TypePaymentMethod>[
     defaultPaymentMethod,
     payOsPaymentMethod,
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final uid = context.read<AuthBloc>().state.user?.uid ?? '';
+      // AddressBloc là tuỳ chọn — nếu app chưa mount nó thì bỏ qua việc nạp
+      // danh sách địa chỉ, màn hình vẫn dùng địa chỉ mặc định hardcoded.
+      final addressBloc = context.read<AddressBloc?>();
+      if (uid.isNotEmpty && addressBloc != null) {
+        addressBloc.add(OnLoadAddressesEvent(uid: uid));
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -88,9 +95,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
     setState(() {
       _voucher = selected;
-      _voucherError = selected == null
-          ? context.l10n.paymentVoucherInvalid
-          : null;
+      _voucherError = selected == null ? context.l10n.paymentVoucherInvalid : null;
       if (selected != null) _voucherController.text = selected.code;
     });
   }
@@ -145,12 +150,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   double _amountToPay(double subtotal) {
-    final discountedSubtotal =
-        subtotal - (_voucher?.subtotalDiscount(subtotal) ?? 0);
+    final discountedSubtotal = subtotal - (_voucher?.subtotalDiscount(subtotal) ?? 0);
     final total = CartPricing.totalOf(discountedSubtotal);
-    return _voucher?.isFreeShipping == true
-        ? total - CartPricing.deliveryFee
-        : total;
+    return _voucher?.isFreeShipping == true ? total - CartPricing.deliveryFee : total;
   }
 
   @override
@@ -158,13 +160,34 @@ class _PaymentScreenState extends State<PaymentScreen> {
     final auth = context.watch<AuthBloc>().state;
     final cart = context.watch<CartBloc>().state;
     final orders = context.read<OrdersBloc>();
+    // AddressBloc là tuỳ chọn — app thường mount nó, nhưng widget test / màn
+    // hình nhúng có thể không có. Khi thiếu thì dùng địa chỉ mặc định.
+    final addressBloc = context.watch<AddressBloc?>();
     final products = cart.products ?? const <ProductCart>[];
+
+    // Tự động gán địa chỉ mặc định hoặc địa chỉ đầu tiên từ AddressBloc
+    final addresses = addressBloc?.state.addresses ?? const <ClientAddress>[];
+    if (addresses.isNotEmpty) {
+      final defaultAddr = addresses.firstWhere(
+            (a) => a.isDefault == true,
+        orElse: () => addresses.first,
+      );
+      // Map sang model Address chính thức của domain, CHỈ LẤY PHẦN TÊN ĐƯỜNG/SỐ NHÀ GỐC (trước dấu phẩy đầu tiên)
+      // để tránh lỗi dồn ứ chuỗi lặp lại dài dằng dặc.
+      final cleanStreet = defaultAddr.street.contains(',')
+          ? defaultAddr.street.split(',').first.trim()
+          : defaultAddr.street;
+
+      _address = Address(
+        id: defaultAddr.id,
+        street: cleanStreet,
+        reference: defaultAddr.reference,
+      );
+    }
 
     return BlocConsumer<OrdersBloc, OrdersState>(
       listenWhen: (a, b) =>
-          a.isLoading != b.isLoading ||
-          a.error != b.error ||
-          a.lastOrder != b.lastOrder,
+      a.isLoading != b.isLoading || a.error != b.error || a.lastOrder != b.lastOrder,
       listener: (context, state) async {
         if (!context.mounted) return;
         if (state.isLoading) return;
@@ -180,8 +203,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
       },
       builder: (context, orderState) {
         return Scaffold(
-          // The yellow bleeds behind the white content sheet so the sheet's
-          // 30 px rounded top corners read exactly like the Figma frame.
           backgroundColor: ColorsFrave.headerYellow,
           body: Column(
             children: <Widget>[
@@ -213,13 +234,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           onRemoveVoucher: _removeVoucher,
                         ),
                       ),
-                      // Pinned CTA.
                       _PayNowBar(
                         enabled: products.isNotEmpty,
-                        busy:
-                            orderState.isLoading ||
+                        busy: orderState.isLoading ||
                             context.select<PaymentBloc, bool>(
-                              (bloc) => bloc.state.isBusy,
+                                  (bloc) => bloc.state.isBusy,
                             ),
                         onPressed: () => _pay(
                           orders,
@@ -237,9 +256,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
           bottomNavigationBar: AppBottomNav(
             currentIndex: AppNavDestination.home,
             onTap: (index) => AppNavDestination.go(context, index),
-            // The customer is already at checkout — a cart button here
-            // would be a dead end, so the bar shows the four destinations
-            // only.
             showCart: false,
           ),
         );
@@ -247,14 +263,22 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  /// Opens the address picker and uses whatever comes back.
   Future<void> _pickAddress() async {
-    final picked = await context.push<Address>('/client/select-address');
+    final picked = await context.push<Address>('/client/profile/addresses');
     if (picked == null || !mounted) return;
-    setState(() => _address = picked);
+
+    // Làm sạch chuỗi street khi người dùng chọn địa chỉ thủ công
+    final cleanStreet = picked.street.contains(',')
+        ? picked.street.split(',').first.trim()
+        : picked.street;
+
+    setState(() => _address = Address(
+      id: picked.id,
+      street: cleanStreet,
+      reference: picked.reference,
+    ));
   }
 
-  /// Opens the method sheet and applies the choice.
   Future<void> _pickMethod() async {
     final picked = await PaymentMethodSheet.show(
       context,
@@ -265,22 +289,16 @@ class _PaymentScreenState extends State<PaymentScreen> {
     setState(() => _method = picked);
   }
 
-  /// Lets the user change the items from the cart.
   Future<void> _editItems() async {
     await context.push('/client/cart');
   }
 
-  /// Runs the payment.
-  ///
-  /// Cash creates the order straight away. A gateway method first opens the
-  /// hosted checkout page and only creates the order once the gateway
-  /// confirms the money arrived.
   Future<void> _pay(
-    OrdersBloc orders,
-    String clientId,
-    double total,
-    List<ProductCart> products,
-  ) async {
+      OrdersBloc orders,
+      String clientId,
+      double total,
+      List<ProductCart> products,
+      ) async {
     if (products.isEmpty) {
       errorTextSnack(context, context.l10n.cartEmptyPeriod);
       return;
@@ -312,8 +330,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
     await bloc.stream.firstWhere((state) {
       final status = state.status;
-      return status == PaymentStatus.awaitingUser ||
-          status == PaymentStatus.failed;
+      return status == PaymentStatus.awaitingUser || status == PaymentStatus.failed;
     });
 
     if (!mounted) return;
@@ -331,8 +348,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
     final opened = await _openExternally(url);
     if (!opened || !mounted) return;
 
-    // The user comes back from the gateway — ask it whether the money
-    // arrived before creating the order.
     bloc.add(OnVerifyPayOsPayment());
     await bloc.stream.firstWhere((s) {
       final status = s.status;
@@ -352,10 +367,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
-  /// Opens [url] in the system browser.
-  ///
-  /// Returns false when no browser could handle it, so the caller can tell
-  /// the user instead of silently doing nothing.
   Future<bool> _openExternally(String url) async {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
@@ -386,20 +397,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  /// A numeric order code the gateway accepts.
-  String _orderCode() =>
-      DateTime.now().millisecondsSinceEpoch.toString().substring(5);
+  String _orderCode() => DateTime.now().millisecondsSinceEpoch.toString().substring(5);
 }
 
 enum _PaymentVoucherKind { percent, freeShipping }
 
 class _PaymentVoucher {
   const _PaymentVoucher.percent({required this.code, required this.percent})
-    : kind = _PaymentVoucherKind.percent;
+      : kind = _PaymentVoucherKind.percent;
 
   const _PaymentVoucher.freeShipping({required this.code})
-    : kind = _PaymentVoucherKind.freeShipping,
-      percent = 0;
+      : kind = _PaymentVoucherKind.freeShipping,
+        percent = 0;
 
   final String code;
   final _PaymentVoucherKind kind;
@@ -407,8 +416,7 @@ class _PaymentVoucher {
 
   bool get isFreeShipping => kind == _PaymentVoucherKind.freeShipping;
 
-  double subtotalDiscount(double subtotal) =>
-      isFreeShipping ? 0 : subtotal * percent / 100;
+  double subtotalDiscount(double subtotal) => isFreeShipping ? 0 : subtotal * percent / 100;
 
   double savings(double subtotal) =>
       isFreeShipping ? CartPricing.deliveryFee : subtotalDiscount(subtotal);
@@ -416,11 +424,9 @@ class _PaymentVoucher {
 
 String _voucherDescription(BuildContext context, _PaymentVoucher voucher) =>
     voucher.isFreeShipping
-    ? context.l10n.paymentVoucherFreeShipping
-    : context.l10n.paymentVoucherPercentOff(voucher.percent);
+        ? context.l10n.paymentVoucherFreeShipping
+        : context.l10n.paymentVoucherPercentOff(voucher.percent);
 
-/// Responsive payment summary. Rows use available width so Vietnamese labels
-/// and VND amounts stay inside the card on narrow devices.
 class _PaymentBody extends StatelessWidget {
   const _PaymentBody({
     required this.products,
@@ -452,12 +458,13 @@ class _PaymentBody extends StatelessWidget {
 
   double get _subtotal => products.fold(
     0,
-    (sum, product) => sum + product.price * product.quantity,
+        (sum, product) => sum + (product.price * product.quantity),
   );
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
       child: Column(
@@ -718,9 +725,7 @@ class _PaymentBody extends StatelessWidget {
           const SizedBox(height: 8),
           _PaymentBreakdownRow(
             label: l10n.cartSummaryDelivery,
-            amount: voucher?.isFreeShipping == true
-                ? 0
-                : CartPricing.deliveryFee,
+            amount: voucher?.isFreeShipping == true ? 0 : CartPricing.deliveryFee,
           ),
           if (voucher != null) ...[
             const SizedBox(height: 8),
@@ -746,12 +751,9 @@ class _PaymentBody extends StatelessWidget {
                 child: Text(
                   Money.format(
                     CartPricing.totalOf(
-                          _subtotal -
-                              (voucher?.subtotalDiscount(_subtotal) ?? 0),
-                        ) -
-                        (voucher?.isFreeShipping == true
-                            ? CartPricing.deliveryFee
-                            : 0),
+                      _subtotal - (voucher?.subtotalDiscount(_subtotal) ?? 0),
+                    ) -
+                        (voucher?.isFreeShipping == true ? CartPricing.deliveryFee : 0),
                   ),
                   textAlign: TextAlign.end,
                   maxLines: 1,
@@ -880,7 +882,6 @@ class _PaymentDivider extends StatelessWidget {
       const Divider(height: 1, thickness: 1, color: ColorsFrave.dividerOrange);
 }
 
-/// The pinned payment action, sized for a comfortable tap target.
 class _PayNowBar extends StatelessWidget {
   const _PayNowBar({
     required this.enabled,

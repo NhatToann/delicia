@@ -38,6 +38,12 @@ class Money {
   /// customer therefore always agree on what a dish costs.
   static String formatVndPlain(num vnd) => formatPlain(vnd);
 
+  /// Returns the amount as whole dong.
+  ///
+  /// The database already stores whole dong, so this only rounds — there
+  /// is no exchange rate involved any more.
+  static int toVnd(num vnd) => vnd.round();
+
   /// Parses a Vietnamese-formatted amount (`180.000`, `180 000`, `180000`)
   /// into whole VND.
   ///

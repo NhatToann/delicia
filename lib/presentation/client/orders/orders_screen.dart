@@ -175,7 +175,7 @@ class _OrdersHeader extends StatelessWidget {
     final topInset = MediaQuery.paddingOf(context).top;
     final bandHeight =
         (topInset > figmaStatusBarHeight ? topInset : figmaStatusBarHeight) +
-        bandContentHeight;
+            bandContentHeight;
 
     return SizedBox(
       height: bandHeight,

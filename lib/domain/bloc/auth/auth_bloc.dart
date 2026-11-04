@@ -23,6 +23,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<ForgotPasswordEvent>(_onForgotPassword);
     on<RegisterEvent>(_onRegister);
     on<LogOutEvent>(_onLogOut);
+    on<OnSyncLocalUserEvent>(_onSyncLocalUser);
     on<UpdateProfileEvent>(_onUpdateProfile);
   }
 
@@ -71,6 +72,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   Future<void> _onLogOut(LogOutEvent event, Emitter<AuthState> emit) async {
     await _authService.logout();
     emit(LogOutAuthState());
+  }
+
+  /// Swaps the cached user for a fresher copy (UC-06 profile save).
+  ///
+  /// Only the in-memory state changes — the write itself already happened
+  /// through the profile service.
+  void _onSyncLocalUser(OnSyncLocalUserEvent event, Emitter<AuthState> emit) {
+    emit(state.copyWith(user: event.user, rolId: event.user.rolId.toString()));
   }
 
   Future<void> _onUpdateProfile(

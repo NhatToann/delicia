@@ -7,6 +7,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../domain/bloc/auth/auth_bloc.dart';
+import '../../../domain/bloc/user/user_bloc.dart';
 import '../../../domain/bloc/products/products_bloc.dart';
 import '../../../domain/models/category.dart';
 import '../../../domain/models/product.dart';
@@ -20,7 +21,6 @@ import '../../helpers/money.dart';
 import '../../themes/colors_frave.dart';
 import '../../themes/type_frave.dart';
 import '../cart/cart_screen.dart';
-import '../profile/my_profile_screen.dart';
 import 'widgets/profile_menu.dart';
 
 /// Signature of the clock that decides the time-of-day greeting.
@@ -184,14 +184,25 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
   }
 
   /// Tapping the person tile (action_3, Figma x332) opens the slide-out
-  /// profile menu. "My Orders" is wired to the real screen; the other rows
-  /// are still inert (per the brief: cancel / track land in a later
-  /// use-case).
+  /// profile menu. "My Orders" and "My Profile" / "Delivery Address" are
+  /// wired to the real screens (UC-05 / UC-06); the remaining rows are
+  /// still placeholders.
   void _openProfile() {
+    final authState = context.read<AuthBloc>().state;
+    final uid = authState.user?.uid ?? '';
+    // UserBloc là tuỳ chọn — nếu app chưa mount nó thì bỏ qua phần làm mới
+    // profile, panel vẫn mở được bằng dữ liệu trong AuthBloc.
+    final userBloc = context.read<UserBloc?>();
+    if (uid.isNotEmpty && userBloc != null) {
+      // Đảm bảo luôn lấy Avatar/Profile mới nhất từ UserBloc khi mở menu cam
+      userBloc.add(OnLoadUserProfileEvent(uid: uid));
+    }
+
     final ordersLabel = context.l10n.navOrders;
     final myProfileLabel = context.l10n.profileMyProfile;
     final signOutLabel = context.l10n.profileSignOut;
     final signInLabel = context.l10n.profileSignIn;
+    final addressLabel = context.l10n.profileDeliveryAddress;
     ProfileMenuOverlay.show(
       context,
       onItemTap: (label) {
@@ -211,15 +222,13 @@ class _ClientHomeScreenState extends State<ClientHomeScreen> {
           return;
         }
         if (label == myProfileLabel) {
-          Navigator.of(context).push<void>(
-            MaterialPageRoute<void>(
-              builder: (_) => const MyProfileScreen(),
-            ),
-          );
+          context.push('/client/profile');
           return;
         }
-        // Still a placeholder — show which row was tapped so the
-        // team can see the wiring while the screen is built.
+        if (label == addressLabel) {
+          context.push('/client/profile/addresses');
+          return;
+        }
         debugPrint('ProfileMenu: "$label" is not wired up yet');
       },
     );

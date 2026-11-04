@@ -1,6 +1,8 @@
 import 'package:go_router/go_router.dart';
 
 import '../../domain/models/category.dart';
+import '../../domain/models/client_address.dart';
+import '../../domain/models/order_record.dart';
 import '../presentation/admin/categories/category_form_screen.dart';
 import '../presentation/admin/categories/category_list_screen.dart';
 import '../presentation/admin/dashboard/dashboard_screen.dart';
@@ -15,10 +17,14 @@ import '../presentation/client/address/select_address_screen.dart';
 import '../presentation/client/cart/cart_screen.dart';
 import '../presentation/client/home/home_screen.dart';
 import '../presentation/client/map/map_client_screen.dart';
+import '../presentation/client/orders/order_detail_screen.dart';
+import '../presentation/client/orders/orders_list_screen.dart';
 import '../presentation/client/orders/orders_screen.dart';
 import '../presentation/client/payment/payment_screen.dart';
 import '../presentation/client/product_detail/product_detail_screen.dart';
-import '../presentation/client/profile/my_profile_screen.dart';
+import '../presentation/client/profile/address_form_screen.dart';
+import '../presentation/client/profile/address_list_screen.dart';
+import '../presentation/client/profile/profile_screen.dart';
 import '../presentation/client/search/search_for_category_screen.dart';
 import '../presentation/delivery/map/map_delivery_screen.dart';
 import '../presentation/screens/home/home_placeholder.dart';
@@ -31,9 +37,8 @@ import '../presentation/screens/login/login_screen.dart';
 import '../presentation/screens/login/register_client_screen.dart';
 
 /// App router (GoRouter). Wires the UC-01 auth flow plus the Leader's
-/// UC-02/03/04 client/delivery screens and Member B's UC-07/08/09
-/// admin screens. The delivery role home stays a placeholder until
-/// Member C merges UC-10.
+/// UC-02/03/04 client/delivery screens, the UC-05/06 client screens and the
+/// UC-07/08/09 admin screens.
 class AppRouter {
   AppRouter._();
 
@@ -69,7 +74,7 @@ class AppRouter {
         builder: (_, __) => const SelectRoleScreen(),
       ),
 
-      // ---- Client flow (UC-02 / UC-04 / UC-03) -----------------------------
+      // ---- Client flow (UC-02 / UC-03 / UC-04 / UC-05 / UC-06) -----------
       GoRoute(
         path: '/client/home',
         builder: (_, __) => const ClientHomeScreen(),
@@ -97,14 +102,55 @@ class AppRouter {
         path: '/client/payment',
         builder: (_, __) => const PaymentScreen(),
       ),
+      // UC-05 — orders list (the Figma-aligned screen that ships in main).
       GoRoute(
         path: '/client/orders',
         builder: (_, __) => const ClientOrdersView(),
       ),
+      // UC-05 — the realtime order list + the order detail screen.
+      GoRoute(
+        path: '/client/orders/list',
+        builder: (_, __) => const OrdersListScreen(),
+      ),
+      GoRoute(
+        path: '/client/orders/detail/:id',
+        builder: (_, state) {
+          final id = state.pathParameters['id'] ?? '';
+          final extra = state.extra;
+          return OrderDetailScreen(
+            orderId: id,
+            initialOrder: extra is OrderRecord ? extra : null,
+          );
+        },
+      ),
+
+      // UC-06 — profile + addresses.
       GoRoute(
         path: '/client/profile',
-        builder: (_, __) => const MyProfileScreen(),
+        builder: (_, __) => const ProfileScreen(),
       ),
+      GoRoute(
+        path: '/client/profile/edit',
+        builder: (_, __) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: '/client/profile/addresses',
+        builder: (_, __) => const AddressListScreen(),
+      ),
+      GoRoute(
+        path: '/client/profile/addresses/new',
+        builder: (_, __) => const AddressFormScreen(),
+      ),
+      GoRoute(
+        path: '/client/profile/addresses/edit/:id',
+        builder: (_, state) {
+          final extra = state.extra;
+          return AddressFormScreen(
+            existingAddress: extra is ClientAddress ? extra : null,
+          );
+        },
+      ),
+
       GoRoute(
         path: '/client/select-address',
         builder: (_, __) => const SelectAddressScreen(),

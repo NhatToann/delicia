@@ -1,7 +1,9 @@
 part of 'auth_bloc.dart';
 
 @immutable
-abstract class AuthEvent {}
+abstract class AuthEvent {
+  const AuthEvent();
+}
 
 class LoginEvent extends AuthEvent {
   final String email;
@@ -33,6 +35,18 @@ class RegisterEvent extends AuthEvent {
 }
 
 class LogOutEvent extends AuthEvent {}
+
+/// Refreshes the locally-cached user without touching Firebase.
+///
+/// The UC-06 profile screen saves through `UserBloc` (its own service
+/// contract). The profile menu also renders the cached user, so after a
+/// successful save the two blocs have to agree — this event lets the
+/// profile screen push the fresh user into `AuthBloc` through the normal
+/// event pipeline instead of calling the protected `emit` directly.
+class OnSyncLocalUserEvent extends AuthEvent {
+  const OnSyncLocalUserEvent(this.user);
+  final User user;
+}
 
 class UpdateProfileEvent extends AuthEvent {
   UpdateProfileEvent({

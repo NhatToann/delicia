@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../domain/bloc/auth/auth_bloc.dart';
+import '../../../../domain/bloc/user/user_bloc.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../helpers/image_resolver.dart';
 import '../../../helpers/l10n_extension.dart';
@@ -24,9 +26,6 @@ import '../../../themes/type_frave.dart';
 ///             Payment Methods y403 · Contact Us y478 · Help & FAQs y552
 ///             Settings y626
 ///   log out   x50  y724  32 px tile + "Log Out" x169 y730 (24 px #F3E9B5)
-///
-/// Rows are decorative for now — tapping one only reports which row it was,
-/// per the brief ("các button thì chưa cần phải làm").
 class ProfileMenu extends StatelessWidget {
   const ProfileMenu({super.key, this.onItemTap});
 
@@ -67,8 +66,8 @@ class ProfileMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, state) {
-        final user = state.user;
+      builder: (context, authState) {
+        final user = authState.user;
         final l10n = context.l10n;
         final menuItems = ProfileMenu.items(l10n);
         // The bottom row follows the session: "Đăng xuất" once signed in,
@@ -156,29 +155,41 @@ class _MenuHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = _readUserField(user, 'fullName');
-    final email = _readUserField(user, 'email');
-    final image = _readUserField(user, 'image');
+    // Lắng nghe thêm UserBloc để lấy Avatar bytes hoặc Image URL mới nhất realtime.
+    // UserBloc là tuỳ chọn: panel vẫn phải render được khi chỉ có AuthBloc
+    // trong scope (đó là trạng thái của các màn hình cũ + widget test).
+    final userState = context.read<UserBloc?>()?.state;
+    final activeUser = userState?.user;
+    final avatarBytes = userState?.avatarBytes;
+
+    final name = (activeUser != null && (activeUser.firstName.isNotEmpty || activeUser.lastName.isNotEmpty))
+        ? '${activeUser.lastName} ${activeUser.firstName}'.trim()
+        : _readUserField(user, 'fullName');
+
+    final email = activeUser?.email ?? _readUserField(user, 'email');
+    final image = activeUser?.image ?? _readUserField(user, 'image');
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
-        // 50 x 50 avatar. The Figma ships a bitmap; we fall back to it and
-        // then to an initials circle so a logged-out user still renders.
+        // 50 x 50 avatar. Ưu tiên hiển thị avatarBytes nếu có, sau đó đến image URL/asset.
         ClipOval(
           child: SizedBox(
             width: 50,
             height: 50,
-            child: image == null || image.toString().trim().isEmpty
+            child: avatarBytes != null && avatarBytes.isNotEmpty
+                ? Image.memory(avatarBytes, fit: BoxFit.cover)
+                : (image == null || image.toString().trim().isEmpty)
                 ? Image.asset(
-                    'assets/figma_home/profile_avatar.png',
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => const _InitialsAvatar(),
-                  )
+              'assets/figma_home/profile_avatar.png',
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => const _InitialsAvatar(),
+            )
                 : ImageResolver.resolveWidget(
-                    image.toString(),
-                    fit: BoxFit.cover,
-                    fallback: 'assets/figma_home/profile_avatar.png',
-                  ),
+              image.toString(),
+              fit: BoxFit.cover,
+              fallback: 'assets/figma_home/profile_avatar.png',
+            ),
           ),
         ),
         const SizedBox(width: 18),
@@ -339,18 +350,32 @@ class ProfileMenuOverlay extends StatefulWidget {
 
   /// Presents the overlay. Call from the profile button's `onTap`.
   static void show(
-    BuildContext context, {
-    void Function(String label)? onItemTap,
-  }) {
-    final bloc = context.read<AuthBloc>();
+      BuildContext context, {
+        void Function(String label)? onItemTap,
+      }) {
+    final authBloc = context.read<AuthBloc>();
+    // UserBloc là tuỳ chọn — panel phải mở được khi app chưa mount nó
+    // (ví dụ trong widget test chỉ dựng AuthBloc).
+    final userBloc = context.read<UserBloc?>();
+
+    // Tự động load lại profile mới nhất từ UserBloc ngay khi mở menu overlay
+    final uid = authBloc.state.user?.uid ?? '';
+    if (uid.isNotEmpty && userBloc != null) {
+      userBloc.add(OnLoadUserProfileEvent(uid: uid));
+    }
+
     showGeneralDialog<void>(
       context: context,
       barrierDismissible: true,
       barrierLabel: context.l10n.profileCloseMenu,
       barrierColor: ProfileMenu.backdropColour,
       transitionDuration: const Duration(milliseconds: 280),
-      pageBuilder: (_, _, _) => BlocProvider<AuthBloc>.value(
-        value: bloc,
+      pageBuilder: (_, _, _) => MultiBlocProvider(
+        providers: [
+          BlocProvider<AuthBloc>.value(value: authBloc),
+          if (userBloc != null)
+            BlocProvider<UserBloc>.value(value: userBloc),
+        ],
         child: ProfileMenuOverlay(onItemTap: onItemTap),
       ),
       transitionBuilder: (_, animation, _, child) {
