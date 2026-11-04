@@ -9,6 +9,8 @@
   "actionLogOut": "Đăng xuất",
   "actionCancel": "Huỷ",
   "actionEdit": "Sửa",
+  "actionDelete": "Xoá",
+  "actionAdd": "Thêm",
   "actionSave": "Lưu",
   "actionConfirm": "Xác nhận",
   "actionBack": "Quay lại",
@@ -253,6 +255,7 @@
     "placeholders": { "label": { "type": "String" } }
   },
   "profileSignOut": "Đăng xuất",
+  "profileSignIn": "Đăng nhập",
 
   "cartTitle": "Giỏ hàng",
   "cartEmpty": "Giỏ hàng của bạn đang trống",
@@ -342,7 +345,7 @@
   "paymentMethodPayPal": "PAYPAL",
   "paymentMethodGooglePay": "GOOGLE PAY",
   "paymentMethodMercadoPago": "MERCADO PAGO",
-  "paymentMethodPayOs": "payOS",
+  "paymentMethodPayOs": "PAYOS",
   "paymentPayOsUnavailable": "payOS chưa được cấu hình. Vui lòng chọn tiền mặt.",
   "paymentVoucherTitle": "Mã giảm giá",
   "paymentVoucherSelect": "Chọn voucher",
@@ -654,6 +657,220 @@
   },
   "errorTrackingStart": "Không thể bắt đầu theo dõi: {detail}",
   "@errorTrackingStart": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+
+  "errorCategoryUpdate": "Không thể cập nhật danh mục: {detail}",
+  "@errorCategoryUpdate": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorProductUpdate": "Không thể cập nhật sản phẩm: {detail}",
+  "@errorProductUpdate": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorImageUpload": "Không thể tải ảnh lên: {detail}",
+  "@errorImageUpload": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorOrdersAssignDelivery": "Không thể gán tài xế: {detail}",
+  "@errorOrdersAssignDelivery": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorOrdersUpdateStatus": "Không thể cập nhật trạng thái đơn hàng: {detail}",
+  "@errorOrdersUpdateStatus": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorDeliveryToggleEnabled": "Không thể thay đổi trạng thái tài xế: {detail}",
+  "@errorDeliveryToggleEnabled": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorDashboardLoad": "Không thể tải dữ liệu bảng điều khiển: {detail}",
+  "@errorDashboardLoad": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+
+  "adminDashboardTitle": "Bảng điều khiển",
+  "adminGreeting": "Xin chào, {name}",
+  "@adminGreeting": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "adminStatRevenueToday": "Doanh thu hôm nay",
+  "adminStatNewOrders": "Đơn hàng mới",
+  "adminStatNewUsers": "Khách hàng mới",
+  "adminStatTotalOrders": "Tổng đơn hàng",
+  "adminStatTotalUsers": "Tổng khách hàng",
+  "adminRevenueChartTitle": "Doanh thu 7 ngày",
+  "adminRevenueChartOrders": "Số đơn 7 ngày",
+  "adminChartEmpty": "Chưa có dữ liệu trong 7 ngày qua",
+  "adminRecentOrdersTitle": "Đơn hàng gần đây",
+  "adminRecentOrdersEmpty": "Chưa có đơn hàng nào",
+  "adminViewAllOrders": "Xem tất cả",
+  "adminQuickActionsTitle": "Thao tác nhanh",
+  "adminQuickCategories": "Danh mục",
+  "adminQuickProducts": "Món ăn",
+  "adminQuickOrders": "Đơn hàng",
+  "adminQuickDelivery": "Tài xế",
+  "adminQuickDashboard": "Thống kê",
+  "adminPullToRefresh": "Kéo để làm mới.",
+
+  "adminNewOrdersTitle": "Đơn hàng mới",
+  "adminNewOrdersEmpty": "Chưa có đơn hàng mới nào",
+  "adminNewOrdersTodayCount": "{count} đơn hôm nay",
+  "@adminNewOrdersTodayCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "adminNewOrdersAllTime": "Tất cả đơn hàng",
+  "adminOrderPlacedAt": "Thời gian đặt",
+  "adminOrderCustomerUnknown": "Khách ẩn danh",
+
+  "adminCategoriesTitle": "Quản lý danh mục",
+  "adminCategoriesEmpty": "Chưa có danh mục nào",
+  "adminCategoryAdd": "Thêm danh mục",
+  "adminCategoryEdit": "Sửa danh mục",
+  "adminCategoryName": "Tên danh mục",
+  "adminCategoryDescription": "Mô tả",
+  "adminCategoryNameRequired": "Vui lòng nhập tên danh mục",
+  "adminCategoryNameTooLong": "Tên danh mục quá dài",
+  "adminCategorySaved": "Đã lưu danh mục",
+  "adminCategoryDeleted": "Đã xoá danh mục",
+  "adminCategoryDeleteTitle": "Xoá danh mục?",
+  "adminCategoryDeleteMessage": "Danh mục \"{name}\" và các món thuộc danh mục này sẽ bị xoá.",
+  "@adminCategoryDeleteMessage": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "adminCategorySearchHint": "Tìm danh mục",
+  "adminCategoryImage": "Ảnh danh mục",
+  "adminCategoryChooseImage": "Chọn ảnh danh mục",
+  "adminCategoryImageRequired": "Vui lòng chọn ảnh cho danh mục",
+  "adminCategoryImagePickFailed": "Không thể mở thư viện ảnh. Vui lòng thử lại.",
+  "adminCategoryImageInvalid": "Ảnh không hợp lệ. Vui lòng chọn JPEG, PNG hoặc WebP.",
+  "adminCategoryImageTooLarge": "Ảnh không được vượt quá 2 MB.",
+
+  "adminProductsTitle": "Quản lý món ăn",
+  "adminProductsEmpty": "Chưa có món ăn nào",
+  "adminProductAdd": "Thêm món ăn",
+  "adminProductEdit": "Sửa món ăn",
+  "adminProductName": "Tên món",
+  "adminProductDescription": "Mô tả",
+  "adminProductPrice": "Giá (VNĐ)",
+  "adminProductCategory": "Danh mục",
+  "adminProductNameRequired": "Vui lòng nhập tên món",
+  "adminProductPriceRequired": "Vui lòng nhập giá hợp lệ",
+  "adminProductCategoryRequired": "Vui lòng chọn danh mục",
+  "adminProductSaved": "Đã lưu món ăn",
+  "adminProductDeleted": "Đã xoá món ăn",
+  "adminProductDeleteTitle": "Xoá món ăn?",
+  "adminProductDeleteMessage": "Món \"{name}\" sẽ bị xoá vĩnh viễn.",
+  "@adminProductDeleteMessage": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "adminProductSearchHint": "Tìm món ăn",
+  "adminProductAllCategories": "Tất cả",
+  "adminProductImage": "Ảnh món ăn",
+  "adminProductChooseImage": "Chọn ảnh món ăn",
+  "adminProductImagePickFailed": "Không thể mở thư viện ảnh. Vui lòng thử lại.",
+  "adminProductImageInvalid": "Ảnh không hợp lệ. Vui lòng chọn JPEG, PNG hoặc WebP.",
+  "adminProductImageTooLarge": "Ảnh không được vượt quá 2 MB.",
+  "adminProductInStock": "Còn hàng",
+  "adminProductSoldOut": "Hết hàng",
+  "adminProductStockCount": "Tồn kho: {count}",
+  "@adminProductStockCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "adminOrdersTitle": "Quản lý đơn hàng",
+  "adminOrdersEmpty": "Chưa có đơn hàng nào",
+  "adminOrderFilterAll": "Tất cả",
+  "adminOrderFilterPending": "Chờ xử lý",
+  "adminOrderFilterPreparing": "Đang chuẩn bị",
+  "adminOrderFilterDelivering": "Đang giao",
+  "adminOrderFilterCompleted": "Hoàn tất",
+  "adminOrderFilterCancelled": "Đã huỷ",
+  "adminOrderDetailTitle": "Chi tiết đơn hàng",
+  "adminOrderAssignDelivery": "Gán tài xế",
+  "adminOrderReassignDelivery": "Đổi tài xế",
+  "adminOrderStartPreparing": "Bắt đầu chuẩn bị",
+  "adminOrderMarkDelivered": "Đã giao thành công",
+  "adminOrderCancel": "Huỷ đơn",
+  "adminOrderNoDelivery": "Chưa gán tài xế",
+  "adminOrderDeliveryAssigned": "Đã gán tài xế {name}",
+  "@adminOrderDeliveryAssigned": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "adminOrderCustomer": "Khách hàng",
+  "adminOrderCustomerEmail": "Email",
+  "adminOrderDeliveryUser": "Tài xế",
+  "adminOrderAddress": "Địa chỉ",
+  "adminOrderItems": "Món ăn",
+  "adminOrderTotal": "Tổng cộng",
+  "adminOrderPaymentMethod": "Thanh toán",
+  "adminOrderStatus": "Trạng thái",
+  "adminOrderId": "Mã đơn",
+  "adminOrderStatusPaidOut": "Chờ xử lý",
+  "adminOrderStatusPreparing": "Đang chuẩn bị",
+  "adminOrderStatusDispatched": "Đã gán tài xế",
+  "adminOrderStatusOnWay": "Đang giao",
+  "adminOrderStatusDelivered": "Hoàn tất",
+  "adminOrderStatusCancelled": "Đã huỷ",
+
+  "adminAssignDeliveryTitle": "Chọn tài xế",
+  "adminAssignDeliveryEmpty": "Không có tài xế nào đang hoạt động",
+  "adminAssignDeliveryConfirm": "Gán tài xế",
+  "adminAssignDeliveryActiveOrders": "Đang giao {count} đơn",
+  "@adminAssignDeliveryActiveOrders": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "adminAssignDeliveryDisabled": "Đã ngừng hoạt động",
+
+  "adminDeliveryTitle": "Quản lý tài xế",
+  "adminDeliveryEmpty": "Chưa có tài xế nào",
+  "adminDeliverySearchHint": "Tìm tài xế",
+  "adminDeliveryEnabled": "Đang hoạt động",
+  "adminDeliveryDisabled": "Đã ngừng",
+  "adminDeliveryEnable": "Cho phép nhận đơn",
+  "adminDeliveryEnabledToast": "Đã kích hoạt tài xế",
+  "adminDeliveryDisabledToast": "Đã ngừng hoạt động tài xế",
+  "adminDeliveryActiveOrders": "Đang giao {count} đơn",
+  "@adminDeliveryActiveOrders": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "adminDeliveryAdd": "Thêm tài xế",
+  "adminDeliveryAddTitle": "Thêm tài xế mới",
+  "adminDeliveryName": "Họ và tên",
+  "adminDeliveryPhone": "Số điện thoại",
+  "adminDeliveryEmail": "Email",
+  "adminDeliveryPassword": "Mật khẩu",
+  "adminDeliveryNameRequired": "Vui lòng nhập họ và tên tài xế",
+  "adminDeliveryPhoneRequired": "Vui lòng nhập số điện thoại",
+  "adminDeliveryPhoneInvalid": "Số điện thoại không hợp lệ",
+  "adminDeliveryEmailRequired": "Vui lòng nhập email",
+  "adminDeliveryEmailInvalid": "Email không hợp lệ",
+  "adminDeliveryPasswordRequired": "Vui lòng nhập mật khẩu",
+  "adminDeliveryPasswordTooShort": "Mật khẩu phải có ít nhất 6 ký tự",
+  "adminDeliveryAdded": "Đã thêm tài xế {name}",
+  "@adminDeliveryAdded": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "adminDeliveryDeleted": "Đã xoá tài xế {name}",
+  "@adminDeliveryDeleted": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "adminDeliveryDeleteTitle": "Xoá tài xế?",
+  "adminDeliveryDeleteMessage": "Tài xế \"{name}\" sẽ bị xoá vĩnh viễn. Các đơn hàng đã gán cho tài xế này vẫn được giữ.",
+  "@adminDeliveryDeleteMessage": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "adminDeliveryDeleteBlocked": "Tài xế đang giao {count} đơn. Vui lòng chuyển đơn sang tài xế khác trước khi xoá.",
+  "@adminDeliveryDeleteBlocked": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "errorDeliveryCreate": "Không thể tạo tài xế: {detail}",
+  "@errorDeliveryCreate": {
+    "placeholders": { "detail": { "type": "String" } }
+  },
+  "errorDeliveryDelete": "Không thể xoá tài xế: {detail}",
+  "@errorDeliveryDelete": {
     "placeholders": { "detail": { "type": "String" } }
   }
 }

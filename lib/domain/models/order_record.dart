@@ -19,6 +19,28 @@ class OrderRecord {
   final List<OrderItem> products;
   final DateTime createdAt;
 
+  /// Uid of the delivery driver assigned to this order (UC-09).
+  ///
+  /// Empty until the admin assigns a courier — a freshly paid order has
+  /// nobody carrying it yet.
+  final String deliveryUserId;
+
+  /// Display name of the assigned driver, denormalised so the admin
+  /// order list does not need a second lookup per row.
+  final String deliveryUserName;
+
+  /// Display name of the customer who placed the order.
+  ///
+  /// Denormalised at checkout time for the same reason as
+  /// [deliveryUserName]: the admin console has to show *who* ordered
+  /// without a second lookup per row. Orders created before this field
+  /// existed keep an empty value — the admin UI falls back to the
+  /// customer id then.
+  final String clientName;
+
+  /// Contact email of the customer who placed the order.
+  final String clientEmail;
+
   const OrderRecord({
     required this.id,
     required this.clientId,
@@ -32,6 +54,10 @@ class OrderRecord {
     required this.status,
     required this.products,
     required this.createdAt,
+    this.deliveryUserId = '',
+    this.deliveryUserName = '',
+    this.clientName = '',
+    this.clientEmail = '',
   });
 
   /// Default "PAID OUT" — the initial status set by the client at checkout.
@@ -43,6 +69,12 @@ class OrderRecord {
   /// Set when the client cancels the order before the restaurant accepts
   /// it. Surfaces on the order history under the Cancelled filter.
   static const String statusCancelled = 'CANCELLED';
+
+  /// The kitchen has started preparing the order (UC-09).
+  ///
+  /// Only the admin console writes this status — it sits between
+  /// [statusPaidOut] and [statusDispatched].
+  static const String statusPreparing = 'PREPARING';
 
   /// Whether the client is allowed to open the live tracking map. Live
   /// tracking is only useful once a driver has been assigned and is on
@@ -57,6 +89,19 @@ class OrderRecord {
   bool get canCancel =>
       status == statusPaidOut;
 
+  /// Whether a delivery driver may be assigned to this order (UC-09).
+  ///
+  /// Only a paid order that has not left the kitchen yet can still get
+  /// a courier — once it is on the way, the courier is fixed.
+  bool get canAssignDelivery =>
+      status == statusPaidOut || status == statusPreparing;
+
+  /// Whether the admin may move the order to the "preparing" stage.
+  bool get canStartPreparing => status == statusPaidOut;
+
+  /// Whether the admin may mark the order as delivered.
+  bool get canComplete => status == statusDispatched || status == statusOnWay;
+
   Map<String, dynamic> toMap() => {
         'clientId': clientId,
         'addressId': addressId,
@@ -69,6 +114,10 @@ class OrderRecord {
         'status': status,
         'products': products.map((p) => p.toMap()).toList(),
         'createdAt': createdAt.millisecondsSinceEpoch,
+        if (deliveryUserId.isNotEmpty) 'deliveryUserId': deliveryUserId,
+        if (deliveryUserName.isNotEmpty) 'deliveryUserName': deliveryUserName,
+        if (clientName.isNotEmpty) 'clientName': clientName,
+        if (clientEmail.isNotEmpty) 'clientEmail': clientEmail,
       };
 
   factory OrderRecord.fromMap(String id, Map<dynamic, dynamic> map) {
@@ -98,6 +147,10 @@ class OrderRecord {
       createdAt: DateTime.fromMillisecondsSinceEpoch(
         int.tryParse((map['createdAt'] ?? 0).toString()) ?? 0,
       ),
+      deliveryUserId: (map['deliveryUserId'] ?? '').toString(),
+      deliveryUserName: (map['deliveryUserName'] ?? '').toString(),
+      clientName: (map['clientName'] ?? '').toString(),
+      clientEmail: (map['clientEmail'] ?? '').toString(),
     );
   }
 }

@@ -23,7 +23,7 @@ class ProductOption {
   /// Human-readable size label, e.g. `Vừa (8 phần)`.
   final String label;
 
-  /// Price of this variant in USD (the catalogue's base currency).
+  /// Price of this variant in VND (the catalogue's currency).
   ///
   /// This is the *absolute* price of the variant, not a delta — the
   /// database owns the number so the screen never has to compute it.

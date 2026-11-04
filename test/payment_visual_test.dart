@@ -33,6 +33,8 @@ class _StubOrders implements OrdersService {
   @override
   Future<OrderRecord> addNewOrder({
     required String clientId,
+    required String clientName,
+    required String clientEmail,
     required Address address,
     required String paymentMethod,
     required List<ProductCart> products,
@@ -67,7 +69,7 @@ const ProductCart _shake = ProductCart(
   uidProduct: 'p1',
   imageProduct: 'assets/figma_home/card_best_1.png',
   nameProduct: 'Strawberry Shake',
-  price: 20.00,
+  price: 500000,
   quantity: 2,
 );
 
@@ -75,7 +77,7 @@ const ProductCart _lasagna = ProductCart(
   uidProduct: 'p2',
   imageProduct: 'assets/figma_home/card_best_2.png',
   nameProduct: 'Broccoli Lasagna',
-  price: 20.00,
+  price: 500000,
   quantity: 1,
 );
 

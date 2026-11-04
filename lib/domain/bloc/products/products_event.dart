@@ -103,3 +103,21 @@ class OnToggleFavoriteEvent extends ProductsEvent {
   final String productId;
   const OnToggleFavoriteEvent(this.productId);
 }
+
+/// A catalogue snapshot that arrived through the live listener.
+///
+/// Internal to the bloc — the screen never dispatches it by hand.
+class _CatalogueUpdated extends ProductsEvent {
+  const _CatalogueUpdated(this.products);
+
+  final List<Productsdb> products;
+}
+
+/// The live listener failed.
+///
+/// Internal to the bloc — the screen never dispatches it by hand.
+class _CatalogueFailed extends ProductsEvent {
+  const _CatalogueFailed(this.error);
+
+  final Object error;
+}

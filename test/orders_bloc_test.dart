@@ -29,6 +29,8 @@ class _FakeOrdersService implements OrdersService {
   @override
   Future<OrderRecord> addNewOrder({
     required String clientId,
+    required String clientName,
+    required String clientEmail,
     required Address address,
     required String paymentMethod,
     required List<ProductCart> products,
@@ -40,6 +42,8 @@ class _FakeOrdersService implements OrdersService {
     createdOrder = OrderRecord(
       id: 'order-1',
       clientId: clientId,
+      clientName: clientName,
+      clientEmail: clientEmail,
       addressId: address.id,
       street: address.street,
       reference: address.reference,
@@ -125,6 +129,8 @@ class _ScriptedOrdersService implements OrdersService {
   @override
   Future<OrderRecord> addNewOrder({
     required String clientId,
+    required String clientName,
+    required String clientEmail,
     required Address address,
     required String paymentMethod,
     required List<ProductCart> products,
@@ -185,6 +191,27 @@ void main() {
             .having((s) => s.isLoading, 'loading', false)
             .having((s) => s.lastOrder?.id, 'order id', 'order-1')
             .having((s) => s.lastOrder?.amount, 'amount', 20.0),
+      ],
+    );
+
+    blocTest<OrdersBloc, OrdersState>(
+      'carries the customer details onto the created order',
+      build: () => OrdersBloc(ordersService: _FakeOrdersService()),
+      act: (bloc) => bloc.add(const OnAddNewOrdersEvent(
+        clientId: 'user-1',
+        clientName: 'Nguyễn Văn A',
+        clientEmail: 'a@delicia.vn',
+        address: Address.hardcodedDefault,
+        paymentMethod: 'CASH PAYMENT',
+        products: [_cartItem],
+        amount: 20.0,
+      )),
+      expect: () => [
+        isA<OrdersState>().having((s) => s.isLoading, 'loading', true),
+        isA<OrdersState>()
+            .having((s) => s.isLoading, 'loading', false)
+            .having((s) => s.lastOrder?.clientName, 'client name', 'Nguyễn Văn A')
+            .having((s) => s.lastOrder?.clientEmail, 'client email', 'a@delicia.vn'),
       ],
     );
 

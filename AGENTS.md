@@ -121,6 +121,7 @@ delicia-60e0a-default-rtdb.asia-southeast1.firebasedatabase.app
     │   └── images/{imageId}
     └── orders/{orderId}
         ├── clientId, addressId, street, reference
+        ├── clientName, clientEmail     ← tên/email khách, denormalise lúc checkout
         ├── latitude, longitude
         ├── paymentMethod, amount, status
         ├── products[]               ← snapshot array
@@ -197,10 +198,9 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
 Environment.firebaseDatabaseUrl  // asia-southeast1 — sai region là app chết
 Environment.dbRoot = 'delicia'
 Environment.tileServerUrl         // OSM tiles
-Environment.defaultDeliveryFee = 2.5
+Environment.defaultDeliveryFee = 25000   // VND — phí giao hàng phẳng
 Environment.estimatedDeliveryMinutes = 25
 Environment.payosClientId / ApiKey / ChecksumKey   // RỖNG → payOS bị ẩn
-Environment.payosVndRate = 25000
 ```
 
 `CartPricing` (cùng file) là **nguồn duy nhất** cho mọi con số tiền: `deliveryFee`, `taxRate = 0.05`, `taxOf()`, `totalOf()`. **Không hardcode giá** — Figma chỉ có giá mẫu (`$40.00`, `$5.00`) để demo layout.
@@ -227,7 +227,10 @@ Environment.payosVndRate = 25000
 | `/client/select-address` | `SelectAddressScreen` | UC-04/06 |
 | `/client/map` | `MapClientScreen` | UC-03 |
 | `/delivery/map/:orderId` | `MapDeliveryScreen` | UC-03 |
-| `/admin/home` · `/delivery/home` | `HomePlaceholder` | **placeholder** |
+| `/admin/home` | `AdminDashboardScreen` | UC-07 |
+| `/admin/orders/new` | `AdminNewOrdersScreen` | UC-07/09 |
+| `/admin/orders` · `/admin/orders/:id` | `AdminOrdersManagementScreen` · `AdminOrderDetailScreen` | UC-09 |
+| `/delivery/home` | `HomePlaceholder` | **placeholder** |
 
 ### Luồng chính
 
@@ -239,6 +242,9 @@ Splash → (session?) → Intro → Login → Select Role
 
 Client: Home → Product Detail → Cart (drawer) → Payment → Order confirmed → /client/orders
                                                                     └─ → /client/map (live track)
+
+Admin:  Dashboard → tile "Đơn hàng mới" → /admin/orders/new → /admin/orders/:id
+        └─ tile "Đơn hàng mới" / quick action "Đơn hàng" → /admin/orders → /admin/orders/:id
 ```
 
 > `/client/checkout` **đã bị xoá** — `PaymentScreen` (Figma 4.3-D) là superset của nó (địa chỉ + summary + phương thức + ETA + Pay Now).
@@ -434,7 +440,7 @@ Toàn bộ là info-level, tập trung ở 2 chỗ:
 ### Về payment
 
 17. **Checksum key của payOS KHÔNG được ship trong app.** `Environment.payosChecksumKey` để trống mặc định → phương thức PAYOS **bị ẩn khỏi danh sách**. Bật lên bằng cách điền credential, hoặc (đúng hơn) trỏ `payosApiBase` về backend nhỏ giữ key.
-18. **payOS chỉ nhận VND nguyên** → `PayOsGateway.toVnd()` nhân với `payosVndRate = 25000`.
+18. **payOS chỉ nhận VND nguyên** → `PayOsGateway.toVnd()` chỉ làm tròn (`round()`), vì app đã làm việc với VNĐ.
 19. **Cash không đi qua `PaymentBloc`.** Cash settle khi tài xế giao; order được tạo thẳng. Chỉ method `requiresGateway = true` mới đi qua bloc.
 
 ---
@@ -478,7 +484,7 @@ Toàn bộ là info-level, tập trung ở 2 chỗ:
 | **Không có `BuildContext`** | `viL10n.<key>` — cùng bộ chữ, dùng cho static helper / top-level validator |
 | **Sinh code** | `flutter gen-l10n` → `lib/l10n/generated/` (build artifact, **gitignored**) |
 | **Fallback** | `context.l10n` tự trả về bản tiếng Việt khi chưa mount `Localizations` scope → widget test không cần cài delegate |
-| **Tiền tệ** | Giá lưu trong DB là **USD**; hiển thị là **VND** qua `Money.format()` (`lib/presentation/helpers/money.dart`), tỉ giá `Environment.payosVndRate = 25000` |
+| **Tiền tệ** | Giá lưu trong DB là **VNĐ** (số nguyên, mỗi row có `"currency": "VND"`); hiển thị nguyên số đó qua `Money.format()` (`lib/presentation/helpers/money.dart`). **Không có bước quy đổi tiền tệ nào trong app** — DB sở hữu con số, form admin sửa đúng đơn vị khách hàng đọc |
 
 ### Bắt buộc khi thêm màn hình
 
@@ -682,7 +688,7 @@ Subagent rất hiệu quả cho **mass refactor 10–15 file cùng kiểu**. Nh�
 | File | Chống cái gì |
 |---|---|
 | `test/l10n_test.dart` | ARB lệch với generated class · giá trị còn tiếng Anh · placeholder thiếu metadata |
-| `test/money_test.dart` | `Money.format` / `formatVnd` / `toVnd` (USD→VND, `322.500 ₫`) |
+| `test/money_test.dart` | `Money.format` / `formatVnd` / `parseVnd` (VNĐ, `75.000 ₫`) · `test/catalog_integrity_test.dart` chống giá USD lọt vào catalogue VND |
 
 > `test/l10n_test.dart` đọc trực tiếp `lib/l10n/app_vi.arb` nên **tự động** cover key mới — thêm key vào ARB mà chưa `flutter gen-l10n` sẽ fail ngay.
 

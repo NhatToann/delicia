@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../domain/bloc/auth/auth_bloc.dart';
 import '../../../domain/bloc/products/products_bloc.dart';
 import '../../../domain/models/category.dart';
 import '../../../domain/models/product.dart';
@@ -370,10 +371,17 @@ class _SearchForCategoryScreenState extends State<SearchForCategoryScreen> {
   void _openProfile() {
     final ordersLabel = context.l10n.navOrders;
     final myProfileLabel = context.l10n.profileMyProfile;
+    final signOutLabel = context.l10n.profileSignOut;
+    final signInLabel = context.l10n.profileSignIn;
     ProfileMenuOverlay.show(
       context,
       onItemTap: (label) {
-        if (label == ordersLabel) {
+        if (label == signOutLabel) {
+          // The global auth listener in `main.dart` handles the redirect.
+          context.read<AuthBloc>().add(LogOutEvent());
+        } else if (label == signInLabel) {
+          context.go('/login');
+        } else if (label == ordersLabel) {
           context.push('/client/orders');
         } else if (label == myProfileLabel) {
           Navigator.of(context).push<void>(

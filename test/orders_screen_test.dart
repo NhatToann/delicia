@@ -42,6 +42,8 @@ class _StubOrdersService implements OrdersService {
   @override
   Future<OrderRecord> addNewOrder({
     required String clientId,
+    required String clientName,
+    required String clientEmail,
     required Address address,
     required String paymentMethod,
     required List<ProductCart> products,
@@ -58,7 +60,7 @@ OrderRecord _order({
   required String id,
   String status = OrderRecord.statusOnWay,
   String name = 'Strawberry shake',
-  double amount = 20.0,
+  double amount = 500000.0,
   int quantity = 2,
   DateTime? createdAt,
 }) {
@@ -78,7 +80,7 @@ OrderRecord _order({
         productId: 'p1',
         nameProduct: name,
         picture: '',
-        price: 10,
+        price: 250000,
         quantity: quantity,
       ),
     ],

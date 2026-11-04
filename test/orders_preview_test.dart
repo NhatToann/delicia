@@ -29,6 +29,8 @@ class _Stub implements OrdersService {
   @override
   Future<OrderRecord> addNewOrder({
     required String clientId,
+    required String clientName,
+    required String clientEmail,
     required Address address,
     required String paymentMethod,
     required List<ProductCart> products,
@@ -62,7 +64,7 @@ OrderRecord _order({
         productId: 'p1',
         nameProduct: name,
         picture: '',
-        price: 10,
+        price: 250000,
         quantity: qty,
       ),
     ],
@@ -126,9 +128,9 @@ void main() {
     await _render(
       tester,
       <OrderRecord>[
-        _order(id: 'o1', name: 'Strawberry shake', amount: 20),
-        _order(id: 'o2', name: 'Classic burger', amount: 34.5, qty: 3),
-        _order(id: 'o3', name: 'Cold lemonade', amount: 12, qty: 1),
+        _order(id: 'o1', name: 'Strawberry shake', amount: 500000),
+        _order(id: 'o2', name: 'Classic burger', amount: 862500, qty: 3),
+        _order(id: 'o3', name: 'Cold lemonade', amount: 250000, qty: 1),
       ],
       'list',
     );

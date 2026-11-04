@@ -114,6 +114,11 @@ scripts/search_*.png
 screenshots/
 tool/
 
+# Local `flutter run` log files and the adb screenshots captured while
+# debugging on the emulator. They are per-machine artifacts.
+.run_out.txt
+.run_err.txt
+
 # The generated l10n classes are produced by `flutter gen-l10n` from
 # `lib/l10n/app_vi.arb`. The ARB file is the source of truth; the
 # generated Dart is a build artifact.

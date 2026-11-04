@@ -370,9 +370,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
     double total,
     List<ProductCart> products,
   ) {
+    // The customer details are denormalised onto the order so the admin
+    // console can show *who* ordered without a second lookup per row.
+    final user = context.read<AuthBloc>().state.user;
     orders.add(
       OnAddNewOrdersEvent(
         clientId: clientId,
+        clientName: user?.fullName ?? '',
+        clientEmail: user?.email ?? '',
         address: _address,
         paymentMethod: _method.type,
         products: products,

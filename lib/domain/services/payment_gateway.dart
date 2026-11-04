@@ -316,8 +316,11 @@ class PayOsGateway implements PaymentGateway {
   }
 
   /// Converts an app amount into integer VND.
-  static int toVnd(double amount) =>
-      (amount * Environment.payosVndRate).round();
+  ///
+  /// The app already works in VND — the catalogue, the cart and the orders
+  /// all store whole dong — so this only rounds to the whole dong payOS
+  /// insists on. There is no currency conversion here.
+  static int toVnd(double amount) => amount.round();
 
   void _requireConfigured() {
     if (!isConfigured) {

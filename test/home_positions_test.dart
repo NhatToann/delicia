@@ -25,25 +25,25 @@ const List<Category> _categories = <Category>[
 
 const Productsdb _burger = Productsdb(
   id: 'p1', nameProduct: 'Big Burger', description: 'Double cheese',
-  price: 18.99, status: 1, picture: '', category: 'Burger', categoryId: '1',
+  price: 474750, status: 1, picture: '', category: 'Burger', categoryId: '1',
   rating: 4.8, ratingCount: 120, sold: 320, isRecommended: true,
-  isBestSeller: true, restaurantName: 'Burger Queen', oldPrice: 24.99);
+  isBestSeller: true, restaurantName: 'Burger Queen', oldPrice: 624750);
 
 const Productsdb _pepsi = Productsdb(
   id: 'p2', nameProduct: 'Pepsi', description: 'Cold drink',
-  price: 4.99, status: 1, picture: '', category: 'Drinks', categoryId: '3',
+  price: 124750, status: 1, picture: '', category: 'Drinks', categoryId: '3',
   rating: 4.6, ratingCount: 86, sold: 540, isRecommended: true,
-  isBestSeller: true, restaurantName: 'Soda Shop', oldPrice: 6.99);
+  isBestSeller: true, restaurantName: 'Soda Shop', oldPrice: 174750);
 
 const Productsdb _pizza = Productsdb(
   id: 'p3', nameProduct: 'Margherita', description: 'Tomato and basil',
-  price: 12.50, status: 1, picture: '', category: 'Pizza', categoryId: '2',
+  price: 312500, status: 1, picture: '', category: 'Pizza', categoryId: '2',
   rating: 4.7, ratingCount: 64, sold: 210, isBestSeller: true,
   restaurantName: 'Pizza House');
 
 const Productsdb _sushi = Productsdb(
   id: 'p4', nameProduct: 'Salmon Roll', description: 'Fresh salmon',
-  price: 15.00, status: 1, picture: '', category: 'Asian', categoryId: '5',
+  price: 375000, status: 1, picture: '', category: 'Asian', categoryId: '5',
   rating: 4.9, ratingCount: 41, sold: 180, isBestSeller: true,
   restaurantName: 'Tokyo Bento');
 

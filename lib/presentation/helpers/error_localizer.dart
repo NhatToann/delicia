@@ -74,6 +74,12 @@ String localizeFailure(AppLocalizations l10n, AppFailure failure) {
       return l10n.errorProductDelete(detail ?? '');
     case AppFailureCodes.productStatusUpdate:
       return l10n.errorProductStatusUpdate(detail ?? '');
+    case AppFailureCodes.categoryUpdate:
+      return l10n.errorCategoryUpdate(detail ?? '');
+    case AppFailureCodes.productUpdate:
+      return l10n.errorProductUpdate(detail ?? '');
+    case AppFailureCodes.imageUpload:
+      return l10n.errorImageUpload(detail ?? '');
 
     // ---- Orders ------------------------------------------------------------
     case AppFailureCodes.ordersLoad:
@@ -90,6 +96,18 @@ String localizeFailure(AppLocalizations l10n, AppFailure failure) {
       return l10n.errorOrderCancel(detail ?? '');
     case AppFailureCodes.ordersWatch:
       return l10n.errorOrderWatch(detail ?? '');
+    case AppFailureCodes.ordersAssignDelivery:
+      return l10n.errorOrdersAssignDelivery(detail ?? '');
+    case AppFailureCodes.ordersUpdateStatus:
+      return l10n.errorOrdersUpdateStatus(detail ?? '');
+    case AppFailureCodes.deliveryToggleEnabled:
+      return l10n.errorDeliveryToggleEnabled(detail ?? '');
+    case AppFailureCodes.deliveryCreate:
+      return l10n.errorDeliveryCreate(detail ?? '');
+    case AppFailureCodes.deliveryDelete:
+      return l10n.errorDeliveryDelete(detail ?? '');
+    case AppFailureCodes.dashboardLoad:
+      return l10n.errorDashboardLoad(detail ?? '');
 
     // ---- Payment -----------------------------------------------------------
     case AppFailureCodes.paymentStart:

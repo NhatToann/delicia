@@ -131,6 +131,7 @@ void main() {
         'isBestSeller',
         'picture',
         'status',
+        'currency',
       ]) {
         for (final entry in readProducts().entries) {
           final row = entry.value as Map<String, dynamic>;
@@ -160,6 +161,31 @@ void main() {
         expect(parsed.isActive, isTrue, reason: '${entry.key} must be active');
         expect(parsed.nameProduct, isNotEmpty);
         expect(parsed.nameProductEn, isNotEmpty);
+      }
+    });
+
+    test('every product is priced in VND', () {
+      // The catalogue was migrated from USD to VND: the prices are whole
+      // dong (`75000`), and a price below a thousand would mean a row
+      // still holds the old USD amount (`12.9`).
+      for (final entry in readProducts().entries) {
+        final row = entry.value as Map<String, dynamic>;
+        expect(
+          row['currency'],
+          'VND',
+          reason: '${entry.key} must declare its currency',
+        );
+        final price = (row['price'] as num).toDouble();
+        expect(
+          price,
+          greaterThanOrEqualTo(1000),
+          reason: '${entry.key} must hold a VND amount, not a USD one',
+        );
+        expect(
+          price,
+          price.roundToDouble(),
+          reason: '${entry.key} must hold whole dong',
+        );
       }
     });
 

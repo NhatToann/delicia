@@ -33,6 +33,8 @@ class FirebaseOrdersService implements OrdersService {
   @override
   Future<OrderRecord> addNewOrder({
     required String clientId,
+    required String clientName,
+    required String clientEmail,
     required Address address,
     required String paymentMethod,
     required List<ProductCart> products,
@@ -68,6 +70,8 @@ class FirebaseOrdersService implements OrdersService {
       final record = OrderRecord(
         id: id,
         clientId: clientId,
+        clientName: clientName,
+        clientEmail: clientEmail,
         addressId: address.id,
         street: address.street,
         reference: address.reference,

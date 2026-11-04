@@ -35,6 +35,8 @@ class _Stub implements OrdersService {
   @override
   Future<OrderRecord> addNewOrder({
     required String clientId,
+    required String clientName,
+    required String clientEmail,
     required Address address,
     required String paymentMethod,
     required List<ProductCart> products,
@@ -55,14 +57,14 @@ OrderRecord _order() {
     latitude: 0,
     longitude: 0,
     paymentMethod: 'CASH PAYMENT',
-    amount: 20,
+    amount: 500000,
     status: OrderRecord.statusPaidOut,
     products: <OrderItem>[
       OrderItem(
         productId: 'p1',
         nameProduct: 'Strawberry shake',
         picture: '',
-        price: 10,
+        price: 250000,
         quantity: 2,
       ),
     ],

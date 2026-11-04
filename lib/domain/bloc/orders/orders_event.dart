@@ -7,6 +7,8 @@ abstract class OrdersEvent {
 
 class OnAddNewOrdersEvent extends OrdersEvent {
   final String clientId;
+  final String clientName;
+  final String clientEmail;
   final Address address;
   final String paymentMethod;
   final List<ProductCart> products;
@@ -14,6 +16,8 @@ class OnAddNewOrdersEvent extends OrdersEvent {
 
   const OnAddNewOrdersEvent({
     required this.clientId,
+    this.clientName = '',
+    this.clientEmail = '',
     required this.address,
     required this.paymentMethod,
     required this.products,
