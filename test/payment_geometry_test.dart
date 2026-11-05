@@ -1,17 +1,22 @@
 // Geometry regression test for the Payment screen.
 //
-// Figma node 202:2956 ("4.3 - D - Payment") pins every element to an exact
-// coordinate on a 393 x 852 frame. This test asserts the rendered positions
-// so a layout change can't silently drift away from the design.
+// Figma node 202:2956 ("4.3 - D - Payment") is the reference design, but
+// the screen has grown past the static frame: it now carries a voucher
+// block and an itemised money breakdown, so its body can no longer be
+// pinned to fixed Figma coordinates (the number of rows is dynamic).
+//
+// The contract this file protects is therefore split in two:
+//
+//   * the **chrome** — the yellow header band, the title and the back
+//     chevron — stays on its exact Figma coordinates, because it never
+//     moves; and
+//   * the **body** — the sheet and everything in it — keeps the design's
+//     horizontal rhythm (a 24 px gutter, a right-aligned money column,
+//     a pinned CTA) and stays in reading order.
 //
 // The frame includes a 32 px system status bar, which the test reproduces
 // via `tester.view.padding` so the absolute Figma coordinates apply
 // directly.
-//
-// The expectations are the *ink* boxes measured off the Figma PNG
-// (`assets/.../4.3 - D - Payment.png`), not the node boxes: Figma's
-// text nodes carry a leading that is often taller than the node, so the
-// glyphs sit outside the node's own box.
 import 'package:delicia/domain/bloc/auth/auth_bloc.dart';
 import 'package:delicia/domain/bloc/cart/cart_bloc.dart';
 import 'package:delicia/domain/bloc/orders/orders_bloc.dart';
@@ -72,12 +77,11 @@ class _StubOrders implements OrdersService {
   Future<void> rejectOrder(String orderId, String deliveryId) async {}
 
   @override
-  Future<void> updateDeliveryStatus(String orderId, String newStatus, {String? deliveryPhoto}) async {}
-
+  Future<void> updateDeliveryStatus(String orderId, String newStatus, {String? deliveryPhoto, bool cashCollected = false, int? collectedAmountVnd}) async {}
 }
 
 const ProductCart _shake = ProductCart(
-  uidProduct: 'p1',
+    uidProduct: 'p1',
   imageProduct: 'assets/figma_home/card_best_1.png',
   nameProduct: 'Strawberry Shake',
   price: 500000,
@@ -129,7 +133,7 @@ Future<void> _pump(WidgetTester tester) async {
 void main() {
   setUpAll(loadAppFonts);
 
-  group('Payment geometry vs Figma 202:2956', () {
+  group('Payment header vs Figma 202:2956', () {
     testWidgets('the title sits at y73 and is centred', (
       WidgetTester tester,
     ) async {
@@ -153,75 +157,64 @@ void main() {
       expect(tester.getSize(arrow).height, 13);
     });
 
-    testWidgets('the address card sits at x35 / y209 and is 323 x 35', (
+    testWidgets('the yellow band ends at y132 and the sheet starts there', (
       WidgetTester tester,
     ) async {
       await _pump(tester);
-      final card = find.byType(InkWell).at(0);
-      final tl = tester.getTopLeft(card);
-      expect(tl.dx, closeTo(35, 1));
-      expect(tl.dy, closeTo(209, 1));
-      expect(tester.getSize(card).width, closeTo(323, 1));
-      expect(tester.getSize(card).height, closeTo(35, 1));
+      // The band covers the 32 px status bar plus 100 px of content.
+      final sheet = find.byType(Container).first;
+      expect(tester.getTopLeft(sheet).dy, closeTo(132, 1));
+    });
+  });
+
+  group('Payment body layout contract', () {
+    testWidgets('the content keeps the 24 px gutter on both sides', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester);
+      final heading = find.text('Địa chỉ giao hàng');
+      expect(tester.getTopLeft(heading).dx, closeTo(24, 1));
+
+      // The address card spans the full content width: 393 - 2 * 24.
+      // It is located through its own label, because the header's back
+      // arrow is an InkWell too.
+      final card = find
+          .ancestor(
+            of: find.text('1 Lê Lợi, Bến Nghé'),
+            matching: find.byType(Material),
+          )
+          .first;
+      expect(tester.getTopLeft(card).dx, closeTo(24, 1));
+      expect(tester.getSize(card).width, closeTo(345, 1));
     });
 
-    testWidgets('the section titles sit on the Figma rows', (
+    testWidgets('the sections keep the Figma reading order', (
       WidgetTester tester,
     ) async {
       await _pump(tester);
-      // Figma draws "Order Summary" at y291, "Payment Method" at y397 and
-      // "Delivery Time" at y499 — each node's own box is 14 px tall and
-      // centred on a taller line box, so the glyphs sit above the node.
-      expect(tester.getTopLeft(find.text('Tóm tắt đơn hàng')).dy, closeTo(291, 1));
-      expect(
+      final order = <double>[
+        tester.getTopLeft(find.text('Địa chỉ giao hàng')).dy,
+        tester.getTopLeft(find.text('Tóm tắt đơn hàng')).dy,
         tester.getTopLeft(find.text('Phương thức thanh toán')).dy,
-        closeTo(397, 1),
-      );
-      expect(tester.getTopLeft(find.text('Thời gian giao hàng')).dy, closeTo(499, 1));
+        tester.getTopLeft(find.text('Thời gian giao hàng')).dy,
+      ];
+      // Every section sits below the previous one.
+      for (var i = 1; i < order.length; i++) {
+        expect(order[i], greaterThan(order[i - 1]));
+      }
     });
 
-    testWidgets('the shipping address title sits at x46 / y166', (
+    testWidgets('the item rows keep the price column right-aligned', (
       WidgetTester tester,
     ) async {
       await _pump(tester);
-      // Figma's node box starts at y172 and is 14 px tall, but its 26 px
-      // leading overflows the box symmetrically — so the line box starts at
-      // y166 and the glyphs at y168.
-      final tl = tester.getTopLeft(find.text('Địa chỉ giao hàng'));
-      expect(tl.dx, closeTo(46, 1));
-      expect(tl.dy, closeTo(166, 1));
-    });
-
-    testWidgets('the item rows sit on the Figma rows', (
-      WidgetTester tester,
-    ) async {
-      await _pump(tester);
-      // Figma: "Strawberry Shake" at x35 / y322, "2 items" right-aligned
-      // so it ends at x189, and the price at x295 / y328.
+      // The item name sits on the 24 px gutter ...
       final name = tester.getTopLeft(find.text('Strawberry Shake'));
-      expect(name.dx, closeTo(35, 1));
-      expect(name.dy, closeTo(322, 1));
+      expect(name.dx, closeTo(24, 1));
 
-      final qty = tester.getTopLeft(find.text('2 món'));
-      expect(qty.dy, closeTo(322, 1));
-      expect(
-        qty.dx + tester.getSize(find.text('2 món')).width,
-        closeTo(189, 1),
-      );
-
-      final price = tester.getTopLeft(find.text('1.000.000 ₫'));
-      expect(price.dx, closeTo(295, 1));
-      expect(price.dy, closeTo(328, 1));
-    });
-
-    testWidgets('the payment method row sits on the Figma row', (
-      WidgetTester tester,
-    ) async {
-      await _pump(tester);
-      // Figma: the method name is at x75, y431.
-      final name = tester.getTopLeft(find.text('THANH TOÁN TIỀN MẶT').first);
-      expect(name.dx, closeTo(75, 1));
-      expect(name.dy, closeTo(431, 1));
+      // ... and the price ends on the right margin (393 - 24).
+      final price = tester.getTopRight(find.text('1.000.000 ₫'));
+      expect(price.dx, closeTo(369, 1));
     });
 
     testWidgets('the delivery estimate shows the configured minutes', (
@@ -230,22 +223,25 @@ void main() {
       await _pump(tester);
       expect(find.text('Giao hàng dự kiến'), findsOneWidget);
       expect(find.text('25 phút'), findsOneWidget);
-      final value = tester.getTopLeft(find.text('25 phút'));
-      expect(value.dx, closeTo(292, 1));
-      expect(value.dy, closeTo(529, 1));
+      // The value is right-aligned on the content's right edge.
+      final value = tester.getTopRight(find.text('25 phút'));
+      expect(value.dx, closeTo(369, 1));
     });
 
-    testWidgets('the Pay Now button is 157 x 38 at x123 / y717', (
+    testWidgets('the Pay Now button is pinned above the navigation bar', (
       WidgetTester tester,
     ) async {
       await _pump(tester);
       final button = find.bySemanticsLabel('Thanh toán ngay');
       final size = tester.getSize(button);
-      expect(size.width, closeTo(157.43, 1));
-      expect(size.height, closeTo(38, 1));
-      final tl = tester.getTopLeft(button);
-      expect(tl.dx, closeTo(123.29, 1));
-      expect(tl.dy, closeTo(717, 1));
+      // The CTA spans the content width and keeps a comfortable height.
+      expect(size.width, closeTo(345, 1));
+      expect(size.height, closeTo(52, 1));
+
+      // It sits above the 64 px navigation bar, so its bottom edge is at
+      // 852 - 64 - 16 = 772.
+      final bottom = tester.getBottomLeft(button).dy;
+      expect(bottom, closeTo(772, 1));
     });
 
     testWidgets('the summary lists both products with their prices', (
@@ -254,18 +250,27 @@ void main() {
       await _pump(tester);
       expect(find.text('Strawberry Shake'), findsOneWidget);
       expect(find.text('Broccoli Lasagna'), findsOneWidget);
-      // Two items of the shake at $20 each.
       expect(find.text('1.000.000 ₫'), findsOneWidget);
       expect(find.text('500.000 ₫'), findsOneWidget);
     });
 
-    testWidgets('the total is derived from the cart', (
+    testWidgets('the breakdown itemises the money and the total matches', (
       WidgetTester tester,
     ) async {
       await _pump(tester);
       expect(find.text('Tổng cộng'), findsOneWidget);
       // 1 500 000 ₫ of food + 5 % tax (75 000) + the flat 25 000 delivery fee.
       expect(find.text('1.600.000 ₫'), findsOneWidget);
+      // The breakdown shows every component, not just the total.
+      expect(find.text('Phí giao hàng'), findsOneWidget);
+    });
+
+    testWidgets('the body scrolls instead of overflowing', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester);
+      expect(tester.takeException(), isNull);
+      expect(find.byType(SingleChildScrollView), findsWidgets);
     });
   });
 }

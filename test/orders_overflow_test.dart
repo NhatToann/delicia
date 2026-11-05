@@ -70,7 +70,7 @@ class _StubOrdersService implements OrdersService {
   Future<void> rejectOrder(String orderId, String deliveryId) async {}
 
   @override
-  Future<void> updateDeliveryStatus(String orderId, String newStatus, {String? deliveryPhoto}) async {}
+  Future<void> updateDeliveryStatus(String orderId, String newStatus, {String? deliveryPhoto, bool cashCollected = false, int? collectedAmountVnd}) async {}
 
 }
 

@@ -1,0 +1,151 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "users": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('rolId').val() == 2",
+      "$uid": {
+        ".read": "auth != null && (auth.uid == $uid || root.child('users').child(auth.uid).child('rolId').val() == 2)",
+        ".write": "auth != null && (auth.uid == $uid || root.child('users').child(auth.uid).child('rolId').val() == 2)",
+        "rolId": {
+          ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || newData.val() == data.val() || (!data.exists() && newData.val() == 1)"
+        },
+        "enabled": {
+          ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || newData.val() == data.val() || (!data.exists() && newData.val() == false)"
+        }
+      }
+    },
+
+    "delicia": {
+      "categories": {
+        ".read": "auth != null",
+        ".write": "auth != null && root.child('users').child(auth.uid).child('rolId').val() == 2",
+        ".indexOn": ["categoryId"]
+      },
+      "products": {
+        ".read": "auth != null",
+        ".write": "auth != null && root.child('users').child(auth.uid).child('rolId').val() == 2",
+        ".indexOn": ["categoryId", "status"]
+      },
+      "orders": {
+        ".read": "auth != null && (root.child('users').child(auth.uid).child('rolId').val() == 2 || root.child('users').child(auth.uid).child('rolId').val() == 3 || (query.orderByChild == 'clientId' && query.equalTo == auth.uid))",
+        ".indexOn": ["clientId", "deliveryUserId", "status"],
+        "$orderId": {
+          ".read": "auth != null && (root.child('users').child(auth.uid).child('rolId').val() == 2 || (root.child('delicia/orders').child($orderId).child('clientId').val() == auth.uid) || (root.child('users').child(auth.uid).child('rolId').val() == 3 && (root.child('delicia/orders').child($orderId).child('deliveryUserId').val() == auth.uid || !root.child('delicia/orders').child($orderId).child('deliveryUserId').exists() || root.child('delicia/orders').child($orderId).child('deliveryUserId').val() == '')))",
+          ".write": "auth != null && ((!newData.exists() && root.child('users').child(auth.uid).child('rolId').val() == 2) || (newData.exists() && (root.child('users').child(auth.uid).child('rolId').val() == 2 || (!root.child('delicia/orders').child($orderId).exists() && newData.child('clientId').val() == auth.uid) || root.child('delicia/orders').child($orderId).child('clientId').val() == auth.uid || (root.child('users').child(auth.uid).child('rolId').val() == 3 && (root.child('delicia/orders').child($orderId).child('deliveryUserId').val() == auth.uid || !root.child('delicia/orders').child($orderId).child('deliveryUserId').exists() || root.child('delicia/orders').child($orderId).child('deliveryUserId').val() == '')))))",
+
+          "clientId": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || newData.val() == data.val() || (!root.child('delicia/orders').child($orderId).exists() && newData.val() == auth.uid)"
+          },
+          "clientName": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || newData.val() == data.val() || !root.child('delicia/orders').child($orderId).exists()"
+          },
+          "clientEmail": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || newData.val() == data.val() || !root.child('delicia/orders').child($orderId).exists()"
+          },
+          "receiverPhone": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || newData.val() == data.val() || !root.child('delicia/orders').child($orderId).exists()"
+          },
+          "receiverName": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || newData.val() == data.val() || !root.child('delicia/orders').child($orderId).exists()"
+          },
+          "addressId": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || newData.val() == data.val() || !root.child('delicia/orders').child($orderId).exists()"
+          },
+          "street": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || newData.val() == data.val() || !root.child('delicia/orders').child($orderId).exists()"
+          },
+          "reference": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || newData.val() == data.val() || !root.child('delicia/orders').child($orderId).exists()"
+          },
+          "latitude": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || newData.val() == data.val() || !root.child('delicia/orders').child($orderId).exists()"
+          },
+          "longitude": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || newData.val() == data.val() || !root.child('delicia/orders').child($orderId).exists()"
+          },
+          "paymentMethod": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || newData.val() == data.val() || !root.child('delicia/orders').child($orderId).exists()"
+          },
+          "amount": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || newData.val() == data.val() || !root.child('delicia/orders').child($orderId).exists()"
+          },
+          "deliveryFee": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || newData.val() == data.val() || !root.child('delicia/orders').child($orderId).exists()"
+          },
+          "quote": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || newData.val() == data.val() || !root.child('delicia/orders').child($orderId).exists()"
+          },
+          "distanceKm": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || newData.val() == data.val() || !root.child('delicia/orders').child($orderId).exists()"
+          },
+          "products": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || newData.val() == data.val() || !root.child('delicia/orders').child($orderId).exists()"
+          },
+          "createdAt": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || newData.val() == data.val() || !root.child('delicia/orders').child($orderId).exists()"
+          },
+          "placedAt": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || newData.val() == data.val() || !root.child('delicia/orders').child($orderId).exists()"
+          },
+
+          "status": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || (root.child('users').child(auth.uid).child('rolId').val() == 3 && root.child('delicia/orders').child($orderId).child('deliveryUserId').val() == auth.uid) || (root.child('users').child(auth.uid).child('rolId').val() == 3 && (newData.val() == 'DISPATCHED') && (!root.child('delicia/orders').child($orderId).child('deliveryUserId').exists() || root.child('delicia/orders').child($orderId).child('deliveryUserId').val() == '')) || (root.child('delicia/orders').child($orderId).child('clientId').val() == auth.uid && data.val() == 'PAID OUT' && newData.val() == 'CANCELLED') || (!root.child('delicia/orders').child($orderId).exists() && newData.val() == 'PAID OUT')"
+          },
+          "cancelReason": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || root.child('delicia/orders').child($orderId).child('clientId').val() == auth.uid || newData.val() == data.val()"
+          },
+          "cancellationReason": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || root.child('delicia/orders').child($orderId).child('clientId').val() == auth.uid || newData.val() == data.val()"
+          },
+          "cancelledAt": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || root.child('delicia/orders').child($orderId).child('clientId').val() == auth.uid || newData.val() == data.val() || !root.child('delicia/orders').child($orderId).exists()"
+          },
+
+          "deliveryUserId": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || (root.child('users').child(auth.uid).child('rolId').val() == 3 && root.child('delicia/orders').child($orderId).child('deliveryUserId').val() == auth.uid) || (root.child('users').child(auth.uid).child('rolId').val() == 3 && newData.val() == auth.uid && (!root.child('delicia/orders').child($orderId).child('deliveryUserId').exists() || root.child('delicia/orders').child($orderId).child('deliveryUserId').val() == '')) || newData.val() == data.val()"
+          },
+          "deliveryUserName": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || (root.child('users').child(auth.uid).child('rolId').val() == 3 && root.child('delicia/orders').child($orderId).child('deliveryUserId').val() == auth.uid) || (root.child('users').child(auth.uid).child('rolId').val() == 3 && (!root.child('delicia/orders').child($orderId).child('deliveryUserId').exists() || root.child('delicia/orders').child($orderId).child('deliveryUserId').val() == '')) || newData.val() == data.val()"
+          },
+          "dispatchedAt": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || (root.child('users').child(auth.uid).child('rolId').val() == 3 && root.child('delicia/orders').child($orderId).child('deliveryUserId').val() == auth.uid) || (root.child('users').child(auth.uid).child('rolId').val() == 3 && (!root.child('delicia/orders').child($orderId).child('deliveryUserId').exists() || root.child('delicia/orders').child($orderId).child('deliveryUserId').val() == '')) || newData.val() == data.val() || !root.child('delicia/orders').child($orderId).exists()"
+          },
+          "onWayAt": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || (root.child('users').child(auth.uid).child('rolId').val() == 3 && root.child('delicia/orders').child($orderId).child('deliveryUserId').val() == auth.uid) || newData.val() == data.val() || !root.child('delicia/orders').child($orderId).exists()"
+          },
+          "deliveredAt": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || (root.child('users').child(auth.uid).child('rolId').val() == 3 && root.child('delicia/orders').child($orderId).child('deliveryUserId').val() == auth.uid) || newData.val() == data.val() || !root.child('delicia/orders').child($orderId).exists()"
+          },
+
+          "shipperLocation": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || (root.child('users').child(auth.uid).child('rolId').val() == 3 && root.child('delicia/orders').child($orderId).child('deliveryUserId').val() == auth.uid) || (root.child('users').child(auth.uid).child('rolId').val() == 3 && (!root.child('delicia/orders').child($orderId).child('deliveryUserId').exists() || root.child('delicia/orders').child($orderId).child('deliveryUserId').val() == '')) || newData.val() == data.val()"
+          },
+          "clientLocation": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || root.child('delicia/orders').child($orderId).child('clientId').val() == auth.uid || newData.val() == data.val()"
+          },
+          "deliveryPhoto": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || (root.child('users').child(auth.uid).child('rolId').val() == 3 && root.child('delicia/orders').child($orderId).child('deliveryUserId').val() == auth.uid) || newData.val() == data.val()"
+          },
+
+          "cashCollected": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || (root.child('users').child(auth.uid).child('rolId').val() == 3 && root.child('delicia/orders').child($orderId).child('deliveryUserId').val() == auth.uid) || newData.val() == data.val() || (!data.exists() && newData.val() == false)"
+          },
+          "cashCollectedAt": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || (root.child('users').child(auth.uid).child('rolId').val() == 3 && root.child('delicia/orders').child($orderId).child('deliveryUserId').val() == auth.uid) || newData.val() == data.val() || !root.child('delicia/orders').child($orderId).exists()"
+          },
+          "collectedAmountVnd": {
+            ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || (root.child('users').child(auth.uid).child('rolId').val() == 3 && root.child('delicia/orders').child($orderId).child('deliveryUserId').val() == auth.uid) || newData.val() == data.val() || !root.child('delicia/orders').child($orderId).exists()"
+          },
+
+          "rejectedBy": {
+            "$driverUid": {
+              ".validate": "root.child('users').child(auth.uid).child('rolId').val() == 2 || (root.child('users').child(auth.uid).child('rolId').val() == 3 && $driverUid == auth.uid) || newData.val() == data.val()"
+            }
+          }
+        }
+      }
+    }
+  }
+}

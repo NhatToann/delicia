@@ -174,4 +174,91 @@ void main() {
       expect(OrderStage.fromStatus('DELIVERED'), OrderStage.delivered);
     });
   });
+
+  group('lifecycle timestamps', () {
+    test('each status maps onto exactly one moment', () {
+      expect(
+        OrderRecord.timestampKeyFor(OrderRecord.statusDispatched),
+        'dispatchedAt',
+      );
+      expect(
+        OrderRecord.timestampKeyFor(OrderRecord.statusOnWay),
+        'onWayAt',
+      );
+      expect(
+        OrderRecord.timestampKeyFor('PICKED UP'),
+        'onWayAt',
+      );
+      expect(
+        OrderRecord.timestampKeyFor(OrderRecord.statusDelivered),
+        'deliveredAt',
+      );
+    });
+
+    test('a status that marks no moment stamps nothing', () {
+      expect(
+        OrderRecord.timestampKeyFor(OrderRecord.statusPaidOut),
+        isNull,
+      );
+      expect(
+        OrderRecord.timestampKeyFor(OrderRecord.statusCancelled),
+        isNull,
+      );
+      expect(OrderRecord.timestampKeyFor('PREPARING'), isNull);
+    });
+
+    test('the timestamps round-trip through the database', () {
+      final record = OrderRecord.fromMap('o1', <String, dynamic>{
+        'createdAt': 1000,
+        'placedAt': 1000,
+        'dispatchedAt': 2000,
+        'onWayAt': 3000,
+        'deliveredAt': 4000,
+      });
+
+      expect(record.placedAt, 1000);
+      expect(record.dispatchedAt, 2000);
+      expect(record.onWayAt, 3000);
+      expect(record.deliveredAt, 4000);
+    });
+
+    test('an order written before the timestamps existed still parses', () {
+      final record = OrderRecord.fromMap('o1', <String, dynamic>{
+        'createdAt': 5000,
+      });
+
+      // `placedAt` falls back to the creation time — the order *was*
+      // placed then. The later stages never happened.
+      expect(record.placedAt, 5000);
+      expect(record.dispatchedAt, 0);
+      expect(record.onWayAt, 0);
+      expect(record.deliveredAt, 0);
+    });
+
+    test('a malformed timestamp falls back instead of throwing', () {
+      final record = OrderRecord.fromMap('o1', <String, dynamic>{
+        'createdAt': 5000,
+        'dispatchedAt': 'not-a-number',
+        'deliveredAt': null,
+      });
+
+      expect(record.dispatchedAt, 0);
+      expect(record.deliveredAt, 0);
+    });
+
+    test('toMap writes the timestamps that happened', () {
+      final record = OrderRecord.fromMap('o1', <String, dynamic>{
+        'createdAt': 1000,
+        'placedAt': 1000,
+        'onWayAt': 3000,
+      });
+
+      final map = record.toMap();
+      expect(map['placedAt'], 1000);
+      expect(map['onWayAt'], 3000);
+      // A stage that never happened is not written at all.
+      expect(map.containsKey('dispatchedAt'), isFalse);
+      expect(map.containsKey('deliveredAt'), isFalse);
+    });
+  });
 }

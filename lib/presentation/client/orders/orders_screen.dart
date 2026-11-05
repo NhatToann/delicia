@@ -9,6 +9,7 @@ import '../../../domain/bloc/orders/orders_bloc.dart';
 import '../../../domain/models/order_record.dart';
 import '../../components/app_bottom_nav.dart';
 import '../../components/app_nav_destination.dart';
+import '../../components/figma_back_arrow.dart';
 import '../../helpers/error_message.dart';
 import '../../helpers/l10n_extension.dart';
 import '../../helpers/navigation_helper.dart';
@@ -183,28 +184,12 @@ class _OrdersHeader extends StatelessWidget {
         color: ColorsFrave.headerYellow,
         child: Stack(
           children: <Widget>[
-            // Keep the Figma-sized arrow, but provide a 48 x 48 px tap target.
+            // The back chevron — the Figma glyph (8 x 13 at x35 / y81)
+            // inside a 48 x 48 touch target.
             Positioned(
               left: gutter - 20,
-              top: 64,
-              child: Semantics(
-                button: true,
-                label: context.l10n.actionBack,
-                child: InkWell(
-                  onTap: () => goBack(context),
-                  borderRadius: BorderRadius.circular(24),
-                  child: const SizedBox.square(
-                    dimension: 48,
-                    child: Center(
-                      child: Icon(
-                        Icons.arrow_back_ios_new,
-                        size: 13,
-                        color: ColorsFrave.ink,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+              top: 63.5,
+              child: FigmaBackArrow(onPressed: () => goBack(context)),
             ),
             // Title — Figma: top y73 on the frame.
             Positioned(

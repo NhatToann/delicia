@@ -1,14 +1,104 @@
 rules_version = '2';
 
+// Firebase Storage rules — Delicia.
+//
+// The paths below are the ones the app really writes (verified by grepping
+// every `folder:` / `path:` argument in `lib/`):
+//
+//   avatars/{uid}.jpg              → client_user_service.dart (avatar upload)
+//   users/{uid}/profile/{file}     → legacy avatar path kept for old builds
+//   delicia/delivery_proofs/{file} → storage_service.dart, folder:
+//                                    'delivery_proofs' (delivery proof photo)
+//   products/{file}.jpg            → product_bloc.dart   (admin catalogue)
+//   categories/{file}.jpg          → category_bloc.dart  (admin catalogue)
+//
+// Roles are read from the Realtime Database (`users/{uid}/rolId`):
+//   1 = Client · 2 = Admin · 3 = Delivery
+// The role lives in the database rather than in a custom claim because the
+// app never calls `setCustomClaims` — see `lib/domain/services/`.
+//
+// NOTE: the delivery-proof folder is flat (`delicia/delivery_proofs/{file}`),
+// so the object path does not carry the uploader's uid. "Owner" therefore
+// means "a delivery driver", not "this particular driver". Fixing that
+// requires a one-line change in `storage_service.dart`
+// (`child('delicia').child(folder).child(fileName)` → add the uid segment);
+// until then the rule below is the tightest that the current paths allow.
+
 service firebase.storage {
   match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // rolId == 2 → restaurant / admin console.
+    function isAdmin() {
+      return signedIn()
+        && database.get('/users/' + request.auth.uid + '/rolId').val() == 2;
+    }
+
+    // rolId == 3 → courier.
+    function isDriver() {
+      return signedIn()
+        && database.get('/users/' + request.auth.uid + '/rolId').val() == 3;
+    }
+
+    // Upload guard: an image, at most `limit` bytes.
+    function validImage(limit) {
+      return request.resource != null
+        && request.resource.size <= limit
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+    }
+
+    // ---- Client avatar --------------------------------------------------
+    // `client_user_service.dart` stores the file as `avatars/{uid}.jpg`.
+    match /avatars/{fileName} {
+      allow read: if signedIn()
+        && (fileName == request.auth.uid + '.jpg' || isAdmin());
+      allow create, update: if signedIn()
+        && fileName == request.auth.uid + '.jpg'
+        && validImage(5 * 1024 * 1024);
+      allow delete: if signedIn()
+        && (fileName == request.auth.uid + '.jpg' || isAdmin());
+    }
+
+    // ---- Legacy profile folder ------------------------------------------
     match /users/{userId}/profile/{fileName} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow create, update: if request.auth != null
+      allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
+      allow create, update: if signedIn()
         && request.auth.uid == userId
-        && request.resource.size <= 5 * 1024 * 1024
-        && request.resource.contentType.matches('^image/(jpeg|png|webp)$');
-      allow delete: if request.auth != null && request.auth.uid == userId;
+        && validImage(5 * 1024 * 1024);
+      allow delete: if signedIn()
+        && (request.auth.uid == userId || isAdmin());
+    }
+
+    // ---- Delivery proof photo -------------------------------------------
+    // Written by the courier when the order is handed over
+    // (`delivery_details_screen.dart` → `folder: 'delivery_proofs'`).
+    // Read by the courier and by the admin console.
+    match /delicia/delivery_proofs/{fileName} {
+      allow read: if signedIn() && (isDriver() || isAdmin());
+      allow create, update: if isDriver() && validImage(5 * 1024 * 1024);
+      allow delete: if signedIn() && (isDriver() || isAdmin());
+    }
+
+    // ---- Admin catalogue imagery ----------------------------------------
+    // `product_bloc.dart` / `category_bloc.dart` upload here through the
+    // admin console only.
+    match /products/{fileName} {
+      allow read: if signedIn();
+      allow create, update: if isAdmin() && validImage(5 * 1024 * 1024);
+      allow delete: if isAdmin();
+    }
+
+    match /categories/{fileName} {
+      allow read: if signedIn();
+      allow create, update: if isAdmin() && validImage(5 * 1024 * 1024);
+      allow delete: if isAdmin();
+    }
+
+    // Anything else in the bucket is closed.
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
   }
 }

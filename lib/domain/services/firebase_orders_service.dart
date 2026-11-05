@@ -95,6 +95,9 @@ class FirebaseOrdersService implements OrdersService {
         status: OrderRecord.statusPaidOut,
         products: items,
         createdAt: DateTime.now(),
+        // The order is placed the moment the customer presses "Pay Now",
+        // so the lifecycle starts here.
+        placedAt: DateTime.now().millisecondsSinceEpoch,
       );
       await newRef.set(record.toMap());
       return record;
@@ -315,6 +318,7 @@ class FirebaseOrdersService implements OrdersService {
       final updates = <String, dynamic>{
         'deliveryUserId': deliveryId,
         'status': OrderRecord.statusDispatched,
+        'dispatchedAt': DateTime.now().millisecondsSinceEpoch,
         'shipperLocation': {
           'latitude': Environment.restaurantLatitude,
           'longitude': Environment.restaurantLongitude,
@@ -360,6 +364,8 @@ class FirebaseOrdersService implements OrdersService {
     String orderId,
     String newStatus, {
     String? deliveryPhoto,
+    bool cashCollected = false,
+    int? collectedAmountVnd,
   }) async {
     final ref = _ref;
     if (ref == null) {
@@ -369,8 +375,26 @@ class FirebaseOrdersService implements OrdersService {
       final updates = <String, dynamic>{
         'status': newStatus,
       };
+      // Stamp the lifecycle moment this status represents, so the
+      // dashboard can tell "delivered today" from "delivered last week".
+      final stampKey = OrderRecord.timestampKeyFor(newStatus);
+      if (stampKey != null) {
+        updates[stampKey] = DateTime.now().millisecondsSinceEpoch;
+      }
       if (deliveryPhoto != null) {
         updates['deliveryPhoto'] = deliveryPhoto;
+      }
+      // The cash-on-delivery settlement is written in the *same* update
+      // as the status change. Splitting it into two writes would open a
+      // window where the order reads DELIVERED but the money was never
+      // recorded — the one state the restaurant cannot detect.
+      if (cashCollected) {
+        updates['cashCollected'] = true;
+        updates['cashCollectedAt'] = DateTime.now().millisecondsSinceEpoch;
+        final collected = collectedAmountVnd ?? 0;
+        if (collected > 0) {
+          updates['collectedAmountVnd'] = collected;
+        }
       }
       await ref.child(orderId).update(updates);
     } catch (e) {

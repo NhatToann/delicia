@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../components/figma_back_arrow.dart';
 import '../../../helpers/l10n_extension.dart';
 import '../../../helpers/navigation_helper.dart';
 import '../../../themes/colors_frave.dart';
@@ -36,14 +37,13 @@ class PaymentHeader extends StatelessWidget {
             // exactly on its node box; the SVG's own stroke padding then
             // puts the ink at x36..41 / y82..92, as in the Figma PNG.
             Positioned(
-              left: 12,
+              left: PaymentGeometry.backArrowLeft - 20,
               top: offset +
                   (PaymentGeometry.backArrowTop - figmaStatusBarHeight) -
                   17.5,
-              child: _BackButton(onPressed: () => goBack(
-                    context,
-                    fallback: '/client/cart',
-                  )),
+              child: FigmaBackArrow(
+                onPressed: () => goBack(context, fallback: '/client/cart'),
+              ),
             ),
             // Title — Figma centres it on the 393 px frame, text box at y73.
             //
@@ -71,35 +71,6 @@ class PaymentHeader extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// The back arrow (Figma node `85:3032`).
-///
-/// The glyph is 8 x 13 at x35 / y81. A larger transparent target sits on
-/// top of it so the control is comfortable to hit, while the visible
-/// glyph keeps its exact Figma position.
-class _BackButton extends StatelessWidget {
-  const _BackButton({required this.onPressed});
-
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 48,
-      height: 48,
-      child: IconButton(
-        tooltip: context.l10n.actionBack,
-        onPressed: onPressed,
-        padding: EdgeInsets.zero,
-        icon: const Icon(
-          Icons.arrow_back_rounded,
-          size: 22,
-          color: ColorsFrave.primaryColor,
         ),
       ),
     );

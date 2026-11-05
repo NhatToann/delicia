@@ -16,6 +16,8 @@ import '../../components/text_custom.dart';
 import '../../helpers/image_resolver.dart';
 import '../../helpers/money.dart';
 import '../../themes/colors_frave.dart';
+import 'widgets/cod_settlement_badge.dart';
+import 'widgets/cod_settlement_sheet.dart';
 import 'widgets/status_action_buttons.dart';
 
 class DeliveryDetailsScreen extends StatefulWidget {
@@ -192,7 +194,7 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
                 onPressed: () {
                   Navigator.pop(ctx);
                   // Complete without photo if needed
-                  _transitionStatus(order, DeliveryStatus.delivered, null);
+                  _confirmCashSettlement(order, null);
                 },
                 child: const TextCustom(
                   'Hoàn tất không cần ảnh',
@@ -226,18 +228,53 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
 
       setState(() => _isUploadingPhoto = false);
 
-      _transitionStatus(order, DeliveryStatus.delivered, photoUrl);
+      _confirmCashSettlement(order, photoUrl);
     } catch (e) {
       setState(() => _isUploadingPhoto = false);
       _showSnack('Tải ảnh xác nhận thất bại: $e');
     }
   }
 
+  /// Asks the courier to confirm the cash settlement, then completes the
+  /// delivery.
+  ///
+  /// The app is cash-on-delivery only, so "the order was delivered" and
+  /// "the money was collected" are two facts about the same moment at the
+  /// customer's door. Writing only the first one leaves the restaurant
+  /// unable to tell cash it has from cash it is owed — which is why the
+  /// settlement is a mandatory step, not an optional extra.
+  Future<void> _confirmCashSettlement(
+    OrderRecord order,
+    String? deliveryPhoto,
+  ) async {
+    final collected = await showModalBottomSheet<int>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => CodSettlementSheet(order: order),
+    );
+
+    // The courier dismissed the sheet — the delivery is not completed.
+    if (collected == null) return;
+
+    _transitionStatus(
+      order,
+      DeliveryStatus.delivered,
+      deliveryPhoto,
+      cashCollected: true,
+      collectedAmountVnd: collected,
+    );
+  }
+
   void _transitionStatus(
     OrderRecord order,
     DeliveryStatus targetStatus,
-    String? deliveryPhoto,
-  ) {
+    String? deliveryPhoto, {
+    bool cashCollected = false,
+    int? collectedAmountVnd,
+  }) {
     final currentStatus = DeliveryStatus.fromString(order.status);
     if (targetStatus == DeliveryStatus.accepted) {
       String driverId = 'driver_demo';
@@ -262,6 +299,8 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
             currentStatus: currentStatus,
             targetStatus: targetStatus,
             deliveryPhoto: deliveryPhoto,
+            cashCollected: cashCollected,
+            collectedAmountVnd: collectedAmountVnd,
           ),
         );
     if (targetStatus == DeliveryStatus.delivered) {
@@ -359,6 +398,12 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
               children: [
                 // Step Progress Tracker
                 _DeliveryStepTracker(currentStatus: status),
+
+                // Cash settlement — the money the courier took at the door.
+                if (order.cashCollected) ...[
+                  const SizedBox(height: 16),
+                  CodSettlementBadge(order: order),
+                ],
 
                 const SizedBox(height: 16),
 
@@ -643,7 +688,7 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
                             fontSize: 16,
                           ),
                           TextCustom(
-                            Money.format(order.amount),
+                            Money.format(order.codAmountVnd),
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
                             color: ColorsFrave.primaryColor,

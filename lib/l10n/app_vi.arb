@@ -498,6 +498,24 @@
     }
   },
 
+  "codSettlementTitle": "Xác nhận thu tiền",
+  "codSettlementSubtitle": "Khách trả tiền mặt khi nhận hàng. Vui lòng kiểm tra số tiền trước khi xác nhận.",
+  "codSettlementAmountDue": "Số tiền khách phải trả",
+  "codSettlementCollectedLabel": "Số tiền đã thu",
+  "codSettlementCollectedHint": "Nhập số tiền thực tế đã thu",
+  "codSettlementMismatch": "Số tiền đã thu khác với số tiền khách phải trả.",
+  "codSettlementInvalidAmount": "Số tiền không hợp lệ.",
+  "codSettlementConfirm": "Xác nhận đã thu tiền",
+  "codSettlementBadge": "Đã thu tiền",
+  "codSettlementCollectedAt": "Thời điểm thu tiền: {time}",
+  "@codSettlementCollectedAt": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "codSettlementCollectedAmount": "Đã thu: {amount}",
+  "@codSettlementCollectedAmount": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+
   "mapDeliverTo": "Giao đến",
   "mapDeliveringToSavedAddress": "Đang giao tới địa chỉ đã lưu",
   "mapSavedAddress": "Địa chỉ đã lưu",

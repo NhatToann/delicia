@@ -144,3 +144,7 @@ assets/figma_raw/
 # E2E test artifacts (uiautomator dumps, screenshots) — local only
 .e2e/
 host
+
+# Course-report exports (the `Reports/` folder holds a separate sample
+# project with its own pubspec — it is not part of this app).
+Reports/

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../helpers/l10n_extension.dart';
 import '../helpers/navigation_helper.dart';
 import '../themes/colors_frave.dart';
 import '../themes/type_frave.dart';
+import 'figma_back_arrow.dart';
 
 /// The yellow header band every Figma client screen opens with.
 ///
@@ -63,29 +63,15 @@ class FigmaHeaderBand extends StatelessWidget {
         color: ColorsFrave.headerYellow,
         child: Stack(
           children: <Widget>[
-            // Keep the Figma-sized chevron but provide a 48 x 48 px tap
-            // target so the back action stays comfortably tappable.
+            // The back chevron — the Figma glyph (8 x 13 at x35 / y81)
+            // inside a 48 x 48 touch target.
             Positioned(
               left: gutter - 20,
-              top: 64,
-              child: Semantics(
-                button: true,
-                label: context.l10n.actionBack,
-                child: InkWell(
-                  onTap:
-                      onBack ?? () => goBack(context, fallback: fallbackRoute),
-                  borderRadius: BorderRadius.circular(24),
-                  child: const SizedBox.square(
-                    dimension: 48,
-                    child: Center(
-                      child: Icon(
-                        Icons.arrow_back_ios_new,
-                        size: 13,
-                        color: ColorsFrave.ink,
-                      ),
-                    ),
-                  ),
-                ),
+              top: 63.5,
+              child: FigmaBackArrow(
+                onPressed:
+                    onBack ?? () => goBack(context, fallback: fallbackRoute),
+                fallbackRoute: fallbackRoute,
               ),
             ),
             // Title — Figma: centred on the frame.

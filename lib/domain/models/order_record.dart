@@ -81,6 +81,29 @@ class OrderRecord {
   /// When the cash was collected (ms since epoch). Zero when not yet.
   final int cashCollectedAt;
 
+  /// How much cash the courier actually collected, in whole VND.
+  ///
+  /// Zero means "not recorded" — which is also the correct value for an
+  /// order that was free (or for a row written before this field existed).
+  /// The number is only meaningful together with [cashCollected]: a
+  /// courier who reports a *different* figure than the customer was
+  /// quoted is the signal that something went wrong at the door.
+  final int collectedAmountVnd;
+
+  /// Lifecycle timestamps (ms since epoch).
+  ///
+  /// An order walks through four moments: the customer paid, the kitchen
+  /// dispatched it, the courier picked it up, and it was delivered. Only
+  /// [createdAt] used to be persisted, which made "orders delivered
+  /// today" and "average delivery time" impossible to compute — the
+  /// dashboard had to guess from a single timestamp.
+  ///
+  /// Zero means "has not happened yet".
+  final int placedAt;
+  final int dispatchedAt;
+  final int onWayAt;
+  final int deliveredAt;
+
   const OrderRecord({
     required this.id,
     required this.clientId,
@@ -102,6 +125,11 @@ class OrderRecord {
     this.distanceKm = 0.0,
     this.cashCollected = false,
     this.cashCollectedAt = 0,
+    this.collectedAmountVnd = 0,
+    this.placedAt = 0,
+    this.dispatchedAt = 0,
+    this.onWayAt = 0,
+    this.deliveredAt = 0,
     this.deliveryPhoto,
     this.receiverPhone,
     this.receiverName,
@@ -150,6 +178,43 @@ class OrderRecord {
   /// Whether the admin may mark the order as delivered.
   bool get canComplete => status == statusDispatched || status == statusOnWay;
 
+  /// How much the customer has to hand over at the door, in whole VND.
+  ///
+  /// The itemised [quote] wins over the flat [amount] because the quote is
+  /// what the customer was actually shown on the payment screen. Orders
+  /// written before the breakdown existed fall back to [amount].
+  ///
+  /// This is the number the courier has to collect — and therefore the
+  /// number the settlement step compares the collected cash against.
+  int get codAmountVnd {
+    final quoted = quote?.total;
+    if (quoted != null && quoted > 0) return quoted;
+    return amount.round();
+  }
+
+  /// The lifecycle timestamp key a status change has to stamp.
+  ///
+  /// Returns `null` for a status that does not mark a moment in the
+  /// lifecycle (e.g. `CANCELLED` — the order never got that far, and the
+  /// time it died is already covered by [placedAt]).
+  ///
+  /// The mapping is the single source of truth, so every writer — the
+  /// admin console, the driver flow and the client — stamps the same key
+  /// for the same status.
+  static String? timestampKeyFor(String status) {
+    switch (status) {
+      case statusDispatched:
+        return 'dispatchedAt';
+      case statusOnWay:
+      case 'PICKED UP':
+        return 'onWayAt';
+      case statusDelivered:
+        return 'deliveredAt';
+      default:
+        return null;
+    }
+  }
+
   Map<String, dynamic> toMap() => {
         'clientId': clientId,
         'addressId': addressId,
@@ -170,6 +235,11 @@ class OrderRecord {
         if (distanceKm > 0) 'distanceKm': distanceKm,
         'cashCollected': cashCollected,
         if (cashCollectedAt > 0) 'cashCollectedAt': cashCollectedAt,
+        if (collectedAmountVnd > 0) 'collectedAmountVnd': collectedAmountVnd,
+        if (placedAt > 0) 'placedAt': placedAt,
+        if (dispatchedAt > 0) 'dispatchedAt': dispatchedAt,
+        if (onWayAt > 0) 'onWayAt': onWayAt,
+        if (deliveredAt > 0) 'deliveredAt': deliveredAt,
         if (deliveryPhoto != null) 'deliveryPhoto': deliveryPhoto,
         if (receiverPhone != null) 'receiverPhone': receiverPhone,
         if (receiverName != null) 'receiverName': receiverName,
@@ -203,6 +273,23 @@ class OrderRecord {
     final raw = map['quote'];
     if (raw is! Map) return null;
     return PriceBreakdown.fromMap(Map<dynamic, dynamic>.from(raw));
+  }
+
+  /// Reads a lifecycle timestamp, tolerating a missing or malformed value.
+  ///
+  /// Rows written before the timestamps existed fall back to `createdAt`
+  /// for [placedAt] — the order *was* placed at that moment — and to 0
+  /// for the later stages, which never happened.
+  static int _readTimestamp(Map<dynamic, dynamic> map, String key) {
+    final raw = map[key];
+    if (raw is num) return raw.toInt();
+    final parsed = int.tryParse(raw?.toString() ?? '');
+    if (parsed != null) return parsed;
+    if (key == 'placedAt') {
+      final created = int.tryParse((map['createdAt'] ?? '0').toString()) ?? 0;
+      return created;
+    }
+    return 0;
   }
 
   factory OrderRecord.fromMap(String id, Map<dynamic, dynamic> map) {    final raw = map['products'];
@@ -252,6 +339,11 @@ class OrderRecord {
       distanceKm: double.tryParse((map['distanceKm'] ?? '0').toString()) ?? 0.0,
       cashCollected: map['cashCollected'] == true,
       cashCollectedAt: int.tryParse((map['cashCollectedAt'] ?? '0').toString()) ?? 0,
+      collectedAmountVnd: int.tryParse((map['collectedAmountVnd'] ?? '0').toString()) ?? 0,
+      placedAt: _readTimestamp(map, 'placedAt'),
+      dispatchedAt: _readTimestamp(map, 'dispatchedAt'),
+      onWayAt: _readTimestamp(map, 'onWayAt'),
+      deliveredAt: _readTimestamp(map, 'deliveredAt'),
       deliveryPhoto: map['deliveryPhoto']?.toString(),
       receiverPhone: map['receiverPhone']?.toString(),
       receiverName: map['receiverName']?.toString(),
@@ -280,6 +372,11 @@ class OrderRecord {
     double? distanceKm,
     bool? cashCollected,
     int? cashCollectedAt,
+    int? collectedAmountVnd,
+    int? placedAt,
+    int? dispatchedAt,
+    int? onWayAt,
+    int? deliveredAt,
     String? deliveryPhoto,
     String? receiverPhone,
     String? receiverName,
@@ -306,6 +403,11 @@ class OrderRecord {
       distanceKm: distanceKm ?? this.distanceKm,
       cashCollected: cashCollected ?? this.cashCollected,
       cashCollectedAt: cashCollectedAt ?? this.cashCollectedAt,
+      collectedAmountVnd: collectedAmountVnd ?? this.collectedAmountVnd,
+      placedAt: placedAt ?? this.placedAt,
+      dispatchedAt: dispatchedAt ?? this.dispatchedAt,
+      onWayAt: onWayAt ?? this.onWayAt,
+      deliveredAt: deliveredAt ?? this.deliveredAt,
       deliveryPhoto: deliveryPhoto ?? this.deliveryPhoto,
       receiverPhone: receiverPhone ?? this.receiverPhone,
       receiverName: receiverName ?? this.receiverName,

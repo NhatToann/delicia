@@ -49,17 +49,28 @@ class RejectOrderEvent extends DriverOrdersEvent {
   });
 }
 
+/// Moves an order to a new status.
+///
+/// [cashCollected] and [collectedAmountVnd] carry the cash-on-delivery
+/// settlement: when the courier confirms they took the money at the door,
+/// [cashCollected] is `true` and [collectedAmountVnd] is the amount they
+/// actually collected (whole VND). Leaving them unset keeps the old
+/// behaviour — a plain status change.
 class UpdateOrderStatusEvent extends DriverOrdersEvent {
   final String orderId;
   final DeliveryStatus currentStatus;
   final DeliveryStatus targetStatus;
   final String? deliveryPhoto;
+  final bool cashCollected;
+  final int? collectedAmountVnd;
 
   const UpdateOrderStatusEvent({
     required this.orderId,
     required this.currentStatus,
     required this.targetStatus,
     this.deliveryPhoto,
+    this.cashCollected = false,
+    this.collectedAmountVnd,
   });
 }
 

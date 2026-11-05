@@ -120,7 +120,9 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         stats: _statsOf(event.orders, now),
         dailyStats: _dailyStatsOf(event.orders, now),
         recentOrders: event.orders.take(recentOrdersLimit).toList(),
-        totalOrders: event.orders.length,
+        totalOrders: event.orders
+            .where((order) => !_isCancelled(order))
+            .length,
       ),
     );
   }
@@ -165,7 +167,13 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
 
     var todayRevenue = 0.0;
     var newOrders = 0;
+    var countableOrders = 0;
     for (final order in orders) {
+      // A cancelled order never became business: the customer walked away
+      // before the courier took the money, so it contributes neither
+      // revenue nor an order to the dashboard.
+      if (_isCancelled(order)) continue;
+      countableOrders++;
       if (order.createdAt.isBefore(startOfToday)) continue;
       if (!order.createdAt.isBefore(endOfToday)) continue;
       todayRevenue += order.amount;
@@ -176,10 +184,14 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       todayRevenue: todayRevenue,
       newOrders: newOrders,
       newUsers: state.stats.newUsers,
-      totalOrders: orders.length,
+      totalOrders: countableOrders,
       totalUsers: state.stats.totalUsers,
     );
   }
+
+  /// Whether the order was cancelled by the client.
+  static bool _isCancelled(OrderRecord order) =>
+      order.status.trim().toUpperCase() == OrderRecord.statusCancelled;
 
   /// Builds the seven-day series, oldest day first.
   ///
@@ -195,6 +207,9 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     };
 
     for (final order in orders) {
+      // Cancelled orders never earned anything — they must not inflate
+      // the revenue chart either.
+      if (_isCancelled(order)) continue;
       final day = DateTime(
         order.createdAt.year,
         order.createdAt.month,

@@ -18,7 +18,9 @@ import 'package:delicia/domain/models/product.dart';
 import 'package:delicia/domain/services/catalog_service.dart';
 import 'package:delicia/presentation/client/cart/widgets/cart_panel.dart';
 import 'package:delicia/presentation/client/home/home_screen.dart';
+import 'package:delicia/presentation/helpers/l10n_extension.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -220,16 +222,30 @@ void main() {
       WidgetTester tester,
     ) async {
       await _pumpHome(tester, const Size(360, 640));
-      for (final label in const <String>[
-        'Trang chủ',
-        'Khám phá',
-        'Đơn hàng',
-        'Yêu thích',
+      // The app-wide bottom bar has four destinations: Home / Discover /
+      // Orders / Live tracking (see `AppNavDestination`). The labels come
+      // from the ARB, so they are read from the same place the widget does
+      // rather than hardcoded here.
+      final l10n = viL10n;
+      for (final label in <String>[
+        l10n.navHome,
+        l10n.navDiscover,
+        l10n.navOrders,
+        l10n.navTracking,
       ]) {
+        final finder = find.text(label);
         expect(
-          find.text(label),
+          finder,
           findsOneWidget,
           reason: 'footer label "$label" must be rendered',
+        );
+        // "Visible and not clipped": the label must fit on one line inside
+        // its destination, so it is never ellipsised away.
+        final paragraph = tester.renderObject<RenderParagraph>(finder.first);
+        expect(
+          paragraph.didExceedMaxLines,
+          isFalse,
+          reason: 'footer label "$label" must not be clipped',
         );
       }
     });

@@ -30,7 +30,10 @@ Productsdb _p(
   return Productsdb(
     id: id,
     nameProduct: name,
-    description: name,
+    // The description is deliberately different from the name: a real row
+    // has a description, and the card renders both.  Keeping them distinct
+    // lets a test count the *title* of a dish unambiguously.
+    description: 'Món $id trong danh mục',
     price: price,
     status: 1,
     picture: '',
@@ -152,6 +155,15 @@ Future<void> _pumpSearch(
   await tester.pumpAndSettle();
 }
 
+/// The search box of the discover screen.
+///
+/// The screen renders a plain [TextField] inside a pill, so the test
+/// addresses it through the stable key the widget carries instead of
+/// guessing the widget type.
+final Finder _searchField = find.byKey(
+  const Key('discover-search-field'),
+);
+
 void main() {
   group('search screen overflow', () {
     testWidgets('no overflow on any common phone size', (
@@ -245,7 +257,7 @@ void main() {
     ) async {
       await _pumpSearch(tester, const Size(393, 852));
 
-      await tester.enterText(find.byType(TextFormField), 'burger');
+      await tester.enterText(_searchField, 'burger');
       await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
 
@@ -264,7 +276,7 @@ void main() {
     ) async {
       await _pumpSearch(tester, const Size(393, 852));
 
-      await tester.enterText(find.byType(TextFormField), 'zzzzz');
+      await tester.enterText(_searchField, 'zzzzz');
       await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
 
@@ -278,7 +290,7 @@ void main() {
     ) async {
       await _pumpSearch(tester, const Size(393, 852), textScale: 1.8);
 
-      await tester.enterText(find.byType(TextFormField), 'burger');
+      await tester.enterText(_searchField, 'burger');
       await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
 

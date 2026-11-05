@@ -18,6 +18,9 @@ analyzer:
     - windows/**
     - macos/**
     - linux/**
+    # The course-report export folder holds a separate sample project
+    # with its own pubspec — it is not part of this app.
+    - Reports/**
 
 linter:
   # The lint rules applied to this project can be customized in the

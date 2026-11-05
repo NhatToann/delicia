@@ -278,13 +278,25 @@ class DriverOrdersBloc extends Bloc<DriverOrdersEvent, DriverOrdersState> {
         event.orderId,
         event.targetStatus.dbStatus,
         deliveryPhoto: event.deliveryPhoto,
+        cashCollected: event.cashCollected,
+        collectedAmountVnd: event.collectedAmountVnd,
       );
+
+      // The settlement stamp is written by the service; mirror it locally
+      // so the driver screen flips to "đã thu tiền" immediately instead of
+      // waiting for the realtime listener to echo the row back.
+      final settledAt = event.cashCollected ? DateTime.now().millisecondsSinceEpoch : 0;
+      final settledAmount = event.collectedAmountVnd ?? 0;
 
       final updatedAssigned = state.assignedOrders.map((o) {
         if (o.id == event.orderId) {
           return o.copyWith(
             status: event.targetStatus.dbStatus,
             deliveryPhoto: event.deliveryPhoto ?? o.deliveryPhoto,
+            cashCollected: event.cashCollected || o.cashCollected,
+            cashCollectedAt: event.cashCollected ? settledAt : o.cashCollectedAt,
+            collectedAmountVnd:
+                event.cashCollected ? settledAmount : o.collectedAmountVnd,
           );
         }
         return o;
@@ -296,6 +308,12 @@ class DriverOrdersBloc extends Bloc<DriverOrdersEvent, DriverOrdersState> {
         updatedActive = updatedActive.copyWith(
           status: event.targetStatus.dbStatus,
           deliveryPhoto: event.deliveryPhoto ?? updatedActive.deliveryPhoto,
+          cashCollected: event.cashCollected || updatedActive.cashCollected,
+          cashCollectedAt:
+              event.cashCollected ? settledAt : updatedActive.cashCollectedAt,
+          collectedAmountVnd: event.cashCollected
+              ? settledAmount
+              : updatedActive.collectedAmountVnd,
         );
       }
 

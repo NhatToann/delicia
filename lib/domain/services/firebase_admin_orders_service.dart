@@ -78,11 +78,13 @@ class FirebaseAdminOrdersService implements AdminOrdersService {
       );
     }
     try {
-      await ref.child(orderId).update(<String, Object>{
+      final updates = <String, Object>{
         'deliveryUserId': deliveryUserId,
         'deliveryUserName': deliveryUserName,
         'status': OrderRecord.statusDispatched,
-      });
+        'dispatchedAt': DateTime.now().millisecondsSinceEpoch,
+      };
+      await ref.child(orderId).update(updates);
     } catch (e) {
       if (e is AdminOrdersServiceException) rethrow;
       throw AdminOrdersServiceException(
@@ -104,7 +106,13 @@ class FirebaseAdminOrdersService implements AdminOrdersService {
       );
     }
     try {
-      await ref.child(orderId).update(<String, Object>{'status': status});
+      final updates = <String, Object>{'status': status};
+      // Stamp the lifecycle moment this status represents.
+      final stampKey = OrderRecord.timestampKeyFor(status);
+      if (stampKey != null) {
+        updates[stampKey] = DateTime.now().millisecondsSinceEpoch;
+      }
+      await ref.child(orderId).update(updates);
     } catch (e) {
       if (e is AdminOrdersServiceException) rethrow;
       throw AdminOrdersServiceException(

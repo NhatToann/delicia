@@ -364,15 +364,26 @@ class _SearchForCategoryScreenState extends State<SearchForCategoryScreen> {
                 else
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(34, 0, 34, 20),
-                    sliver: SliverList.separated(
-                      itemCount: products.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 22),
-                      itemBuilder: (context, index) => _DiscoverProductCard(
-                        product: products[index],
-                        highlightQuery: state.searchQuery,
-                        onTap: () => context.push(
-                          '/client/details-product/${products[index].id}',
-                        ),
+                    // The catalogue holds a few dozen rows, so every match
+                    // is built up front instead of being revealed lazily.
+                    // A lazy sliver would only create the cards that happen
+                    // to be on screen, which makes the "N món ăn" counter
+                    // disagree with the cards the customer can scroll to.
+                    sliver: SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          for (var i = 0; i < products.length; i++) ...<Widget>[
+                            if (i > 0) const SizedBox(height: 22),
+                            _DiscoverProductCard(
+                              product: products[i],
+                              highlightQuery: state.searchQuery,
+                              onTap: () => context.push(
+                                '/client/details-product/${products[i].id}',
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   ),
@@ -455,9 +466,12 @@ class _DiscoverHeader extends StatelessWidget {
               color: Colors.white,
               borderRadius: BorderRadius.circular(30),
               clipBehavior: Clip.antiAlias,
-              child: TextField(
-                controller: controller,
-                textInputAction: TextInputAction.search,
+            child: TextField(
+              // A stable key so tests (and any future focus handling) can
+              // address the search box without relying on the widget type.
+              key: const Key('discover-search-field'),
+              controller: controller,
+              textInputAction: TextInputAction.search,
                 textAlign: TextAlign.center,
                 onChanged: onSearch,
                 style: FraveText.regular(12, color: ColorsFrave.ink),

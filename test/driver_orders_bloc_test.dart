@@ -52,13 +52,16 @@ class _MockOrdersService implements OrdersService {
   }
 
   @override
-  Future<void> updateDeliveryStatus(String orderId, String newStatus, {String? deliveryPhoto}) async {
+  Future<void> updateDeliveryStatus(String orderId, String newStatus, {String? deliveryPhoto, bool cashCollected = false, int? collectedAmountVnd}) async {
     if (throwError) throw OrdersServiceException('Failed to update status');
     final index = assignedOrders.indexWhere((o) => o.id == orderId);
     if (index != -1) {
       assignedOrders[index] = assignedOrders[index].copyWith(
         status: newStatus,
         deliveryPhoto: deliveryPhoto,
+        cashCollected: cashCollected,
+        cashCollectedAt: cashCollected ? 1234567890 : 0,
+        collectedAmountVnd: collectedAmountVnd ?? 0,
       );
     }
   }

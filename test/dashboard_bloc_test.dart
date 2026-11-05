@@ -156,5 +156,34 @@ void main() {
         expect(bloc.state.error, isNotNull);
       },
     );
+
+    blocTest<DashboardBloc, DashboardState>(
+      'a cancelled order contributes neither revenue nor an order',
+      build: () => DashboardBloc(
+        ordersService: FakeAdminOrdersService(
+          orders: <OrderRecord>[
+            _order(id: 'o1', amount: 10, createdAt: _now),
+            _order(
+              id: 'o2',
+              amount: 100,
+              createdAt: _now,
+              status: OrderRecord.statusCancelled,
+            ),
+          ],
+        ),
+        clock: () => _now,
+      ),
+      act: (bloc) => bloc.add(const DashboardLoadRequested()),
+      wait: const Duration(milliseconds: 200),
+      verify: (bloc) {
+        // The cancelled order never became business — the customer
+        // cancelled before the courier collected the cash.
+        expect(bloc.state.stats.todayRevenue, 10);
+        expect(bloc.state.stats.newOrders, 1);
+        expect(bloc.state.totalOrders, 1);
+        expect(bloc.state.dailyStats.last.revenue, 10);
+        expect(bloc.state.dailyStats.last.orders, 1);
+      },
+    );
   });
 }

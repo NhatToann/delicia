@@ -52,5 +52,31 @@ abstract class OrdersService {
   Stream<List<OrderRecord>> watchAvailableOrders();
   Future<void> acceptOrder(String orderId, String deliveryId, {String? deliveryName});
   Future<void> rejectOrder(String orderId, String deliveryId);
-  Future<void> updateDeliveryStatus(String orderId, String newStatus, {String? deliveryPhoto});
+
+  /// Moves an order to [newStatus] and stamps the lifecycle moment that
+  /// status represents.
+  ///
+  /// The two extra parameters carry the **cash-on-delivery settlement**:
+  ///
+  /// * [cashCollected] — the courier confirms they took the money at the
+  ///   door. When `true` the service writes `cashCollected: true` together
+  ///   with `cashCollectedAt` (the moment of collection), in the same
+  ///   write as the status change, so a delivered order can never be
+  ///   observed without its settlement.
+  /// * [collectedAmountVnd] — how much was actually collected, in whole
+  ///   VND. It may differ from the quoted total (the customer paid a bit
+  ///   less, or handed over a round sum), and the difference is exactly
+  ///   what the restaurant needs to reconcile. `null` (or 0) means "the
+  ///   quoted amount was collected".
+  ///
+  /// Both parameters are optional, so every existing caller keeps working
+  /// unchanged — a status update without settlement simply writes neither
+  /// field.
+  Future<void> updateDeliveryStatus(
+    String orderId,
+    String newStatus, {
+    String? deliveryPhoto,
+    bool cashCollected = false,
+    int? collectedAmountVnd,
+  });
 }
